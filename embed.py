@@ -33,7 +33,7 @@ def extract_video_features(video_filepath: str):
         # video_clip_length=5,
         # video_start_offset_sec=30,
         # video_end_offset_sec=60,
-        # video_embedding_scopes=["clip" ,"video"]
+        video_embedding_scopes=["clip"],
     )
     print(
         f"Created task: id={task.id} model_name={task.model_name} status={task.status}"
@@ -56,4 +56,11 @@ def extract_video_features(video_filepath: str):
 
 
 def extract_text_features(input: str):
-    pass
+    client = TwelveLabs(api_key=TWELVELABS_API_KEY)
+
+    res = client.embed.create(
+        model_name="Marengo-retrieval-2.7", text_truncate="start", text=input
+    )
+
+    if res.text_embedding is not None and res.text_embedding.segments is not None:
+        return res.text_embedding.segments[0].embeddings_float

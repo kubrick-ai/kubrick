@@ -32,8 +32,8 @@ def setup():
                 id SERIAL PRIMARY KEY,
                 source TEXT NOT NULL,
                 type TEXT NOT NULL,
-                start REAL NOT NULL,
-                end REAL NOT NULL,
+                start_offset REAL NOT NULL,
+                end_offset REAL NOT NULL,
                 embedding vector(1024)
             );
         """)
@@ -46,7 +46,7 @@ def setup():
         conn.close()
 
 
-def store(video_filepath, embedding):
+def store(video_filepath, embedding_type, start_offset, end_offset, embedding):
     # Connect to Postgres
     conn = get_connection()
     cursor = conn.cursor()
@@ -54,8 +54,16 @@ def store(video_filepath, embedding):
     try:
         # Store in Postgres (convert to list first)
         cursor.execute(
-            "INSERT INTO video_embeddings (source, embedding) VALUES (%s, %s)",
-            (video_filepath, embedding),
+            """
+            INSERT INTO video_embeddings (
+                source,
+                type,
+                start_offset,
+                end_offset,
+                embedding
+            ) VALUES (%s, %s, %s, %s, %s)
+            """,
+            (video_filepath, embedding_type, start_offset, end_offset, embedding),
         )
         conn.commit()
 
@@ -108,6 +116,9 @@ def find_similar(embedding, limit=5):
             SELECT
                 id,
                 source,
+                type,
+                start_offset,
+                end_offset,
                 1 - (embedding <=> %s::vector) AS similarity
             FROM video_embeddings
             ORDER BY similarity DESC

@@ -1,22 +1,4 @@
-pytubefix
-moviepy==1.0.3
-pillow
-pandas
-numpy
-openai
-voyageai
-nltk
-
 psycopg2_binary==2.9.10
 python-dotenv==1.1.0
-
-torch
-torchvision
-transformers
-av
-sentencepiece
-protobuf
-
-openai-whisper
 
 twelvelabs
