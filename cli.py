@@ -153,5 +153,5 @@ def print_results(results):
         start_offset = result["start_offset"]
         end_offset = result["end_offset"]
         print(
-            f"Source: {source.ljust(27, ' ')} | Start: {start_offset:.1} | End: {end_offset:.1} | Type: {embedding_type.ljust(11, ' ')} | Similarity: {similarity:.5}"
+            f"Source: {source.ljust(27, ' ')} | Start: {start_offset}s | End: {end_offset}s | Type: {embedding_type.ljust(11, ' ')} | Similarity: {similarity:.5}"
         )

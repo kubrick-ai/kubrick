@@ -26,9 +26,9 @@ def download_video(url: str, output_path: str = "./downloads") -> Optional[int]:
 
     ydl_opts = {
         "outtmpl": os.path.join(output_path, "%(title).100s.%(ext)s"),
-        "format": "mp4",
+        # "format": "mp4",
         # If we use 'bestvideo+bestaudio/best' it requires ffmpeg
-        # 'format': 'bestvideo+bestaudio/best',
+        "format": "bestvideo+bestaudio/best",
         "quiet": False,
         "noplaylist": True,
     }
