@@ -1,6 +1,7 @@
 from enum import Enum
 
 from embed import extract_text_features, extract_video_features, print_segments
+import downloader
 import vector_db
 
 from prompt_toolkit import PromptSession, print_formatted_text, HTML
@@ -19,12 +20,13 @@ def print_hint():
 def print_help():
     help_doc = HTML("""
 Commands:
-<b><orange>/help</orange></b>       : Display this document
-<b><orange>/exit</orange></b>       : Exit the session
-<b><orange>/clear</orange></b>      : Clear the screen
-<b><orange>/db_setup</orange></b>   : Setup database table with pgvector
-<b><orange>/add_file</orange></b>   : Add a video file by filepath
-<b><orange>/search_text</orange></b>: Search with a text query
+<b><orange>/help</orange></b>           : Display this document
+<b><orange>/exit</orange></b>           : Exit the session
+<b><orange>/clear</orange></b>          : Clear the screen
+<b><orange>/db_setup</orange></b>       : Setup database table with pgvector
+<b><orange>/add_file</orange></b>       : Add a video file by filepath
+<b><orange>/add_youtube</orange></b>    : Add a video file by youtube link
+<b><orange>/search_text</orange></b>    : Search with a text query
 """)
     print_formatted_text(help_doc)
 
@@ -35,6 +37,7 @@ class CommandType(Enum):
     CLEAR = "clear"
     DB_SETUP = "db_setup"
     ADD_FILE = "add_file"
+    ADD_YOUTUBE = "add_youtube"
     SEARCH_TEXT = "search_text"
     UNKNOWN = "unknown"
 
@@ -50,6 +53,7 @@ def parse_command(user_input: str) -> CommandType | None:
         "clear": CommandType.CLEAR,
         "db_setup": CommandType.DB_SETUP,
         "add_file": CommandType.ADD_FILE,
+        "add_youtube": CommandType.ADD_YOUTUBE,
         "search_text": CommandType.SEARCH_TEXT,
         "unknown": CommandType.UNKNOWN,
     }
@@ -73,6 +77,12 @@ def handle_command(result: CommandType, session: PromptSession) -> None:
             # TODO: Add validation
             add_file(user_input)
             print(f"{user_input} has been added to database")
+        case CommandType.ADD_YOUTUBE:
+            user_input = session.prompt("Enter youtube link: ")
+            # TODO: Add validation
+            path = downloader.download_video(user_input)
+            add_file(path)
+            print(f"{path} has been added to database")
         case CommandType.SEARCH_TEXT:
             user_input = session.prompt("Search for: ")
             results = search_text(user_input)
