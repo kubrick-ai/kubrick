@@ -110,9 +110,8 @@ Parameters:
 ```json
 {
   "query_text": string,
-  "query_media_type": "image" | null,
-  "query_media_file": TODO,
-  "page_limit": integer
+  "page_limit": integer (optional),
+  "min_similarity": float (optional)
 }
 ```
 
@@ -125,8 +124,8 @@ Response:
   "data": [
     {
       "score": float,
-      "start": float,
-      "end": float,
+      "start_offset": float,
+      "end_offset": float,
       "video_id": string,
       "thumbnail_url": string,
     }
