@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from enum import Enum
 
 from embed import extract_text_features, extract_video_features, print_segments
@@ -155,3 +157,11 @@ def print_results(results):
         print(
             f"Source: {source.ljust(27, ' ')} | Start: {start_offset}s | End: {end_offset}s | Type: {embedding_type.ljust(11, ' ')} | Similarity: {similarity:.5}"
         )
+
+
+if __name__ == "__main__":
+    load_dotenv()
+
+    DEBUG = os.getenv("DEBUG", "").lower() == "true"
+
+    run(DEBUG)
