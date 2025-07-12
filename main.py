@@ -4,8 +4,8 @@ from flask import (
     request,
 )
 import os
-from task_store import TaskStore
-from worker import start_background_task, task_store
+from task_store import task_store
+from worker import start_background_task
 
 app = Flask(__name__)
 

@@ -4,9 +4,7 @@ import os
 import requests
 from embed import extract_video_features
 from vector_db import store
-from task_store import TaskStore
-
-task_store = TaskStore()
+from task_store import task_store
 
 def process_video(task_id: str, video_url: str):
     task = task_store.get_task(task_id)

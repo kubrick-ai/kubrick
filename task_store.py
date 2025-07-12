@@ -24,3 +24,5 @@ class TaskStore:
             del self._tasks[task_id]
             return True
         return False
+
+task_store = TaskStore()
