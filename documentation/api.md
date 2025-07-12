@@ -1,10 +1,12 @@
-`/tasks`
+# APIs
 
-Methods:
+## Create a video indexing task
+### Request
+Description: Creates a video indexing Task object.
 
-`post`:
+Endpoint: `/tasks`
 
-Description: Create a video indexing task
+Methods: `POST`
 
 Parameters:
 
@@ -14,30 +16,43 @@ Parameters:
 }
 ```
 
-Responses:
+### Successful Response
 
 `201` - Video indexing task has been successfully created
 
 ```json
 {
-  "id": string,
-  "video_id": string
+  "id": uuid string,
+  "status": "processing",
+  "video_url": "url_to_video_thats_hosted_somewhere"
 }
 ```
 
-`get`:
+**Note**: There are no error response, see GET "/tasks/task_id" endpoint
 
-Description: Return a list of tasks
+## Return a List of tasks
+Description: Returns all the Task objects stored in Task_Stored object
 
-Responses:
+Endpoint: `/tasks`
+
+Methods: `GET`
+
+Parameters [OPTIONAL]:
+```bash
+/tasks?page=1
+```
+**Note**: Default is 1
+
+### Successful Response
 
 `200` - OK
 
+**To be implemented:**
 ```json
 {
-  "data": [
+  "tasks": [
     {
-      "id": string,
+      ~"id": string,
       "created_at": string,
       "updated_at": string,
       "total_duration": integer,
@@ -47,24 +62,41 @@ Responses:
         "filename": string,
         "height": integer,
         "width": integer
-      }
-    }
+    },
   ]
 }
 ```
 
-`/tasks/{id}`
+**How it currently works**
+```json
+{
+    "tasks": [
+        {
+        "completed_at": string date,
+        "created_at": string date,
+        "status": "processing" | "ready" | "failed",
+        "task_id": uuid string,
+        "video_url": string url,
+        },
+    ]
+}
+```
+## Return a specific task
+### Request
+Description: Use this endpoint to query for status of task
 
-Methods:
+Endpoint: `/tasks/{id}`
 
-`get`:
+Methods: `GET`
 
-Description: Return a specific task
+Parameters:
 
-Responses:
+
+### Successful Response
 
 `200` - OK
 
+**To be implemented:**
 ```json
 {
   "id": string,
@@ -80,10 +112,25 @@ Responses:
   }
 }
 ```
+**How it currently works**
+```json
+{
+    "tasks": [
+        {
+        "error": null | "Failed to download video. HTTP 403",
+        "status": "processing" | "ready" | "failed",
+        "task_id": uuid string,
+        }
+    ]
+}
+```
 
-`delete`:
-
+## Delete a task
 Description: Delete a specific task
+
+Endpoint: `/delete`
+
+Methods: `DELETE`
 
 Parameters:
 
@@ -93,17 +140,20 @@ Parameters:
 }
 ```
 
-Responses:
+### Successful Response
 
 `200` - OK
 
+### Error Response
+
 `400` - Error
 
-`/search`
+## Query Search
+Description: Semantic query
 
-Methods
+Endpoint: `/search`
 
-`post`:
+Methods: `POST`
 
 Parameters:
 
