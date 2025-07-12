@@ -1,4 +1,5 @@
 import os
+from typing import Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -75,39 +76,7 @@ def store(video_filepath, embedding_type, start_offset, end_offset, embedding):
         conn.close()
 
 
-def search(embedding, limit=5):
-    """Search using vector similarity."""
-    try:
-        # Connect to the database
-        conn = get_connection()
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Execute the similarity search
-            cur.execute(
-                """
-            SELECT
-                *,
-                1 - (embedding <=> %s::vector) as similarity
-            FROM video_embeddings
-            WHERE 1 - (embedding <=> %s::vector) > 0.4
-            ORDER BY similarity DESC
-            LIMIT %s
-            """,
-                (embedding, embedding, limit),
-            )
-
-            # Fetch and return the results
-            results = cur.fetchall()
-
-        conn.close()
-
-        return results
-
-    except Exception as e:
-        print(f"Error searching embeddings: {e}")
-        raise e
-
-
-def find_similar(embedding, limit=5):
+def find_similar(embedding, page_limit=5, min_similarity=0.3) -> list[dict[str, Any]]:
     try:
         # Connect to the database
         conn = get_connection()
@@ -121,16 +90,17 @@ def find_similar(embedding, limit=5):
                 end_offset,
                 1 - (embedding <=> %s::vector) AS similarity
             FROM video_embeddings
+            WHERE (1 - (embedding <=> %s::vector)) > %s
             ORDER BY similarity DESC
             LIMIT %s;
         """
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(query, (embedding, limit))
+            cur.execute(query, (embedding, embedding, min_similarity, page_limit))
             results = cur.fetchall()
 
         conn.close()
         return results
 
     except Exception as e:
-        print(f"Error searching activities: {e}")
+        print(f"Error searching database: {e}")
         raise e
