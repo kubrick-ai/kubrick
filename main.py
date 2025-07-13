@@ -6,6 +6,8 @@ from flask import (
 import os
 from task_store import task_store
 from worker import start_background_task
+import embed
+import vector_db
 
 app = Flask(__name__)
 
@@ -16,8 +18,30 @@ def health():
 
 @app.route("/search", methods=("POST",))
 def search():
+    """
+    Expects a JSON body with the following properties:
+        query_text: string,
+        page_limit: integer (optional)
+        min_similarity: float (optional)
+    """
+    request_data = request.get_json()
+
+    if not request_data:
+        return jsonify(
+            {
+                "error": "Invalid request body - must be a JSON object with 'query_text' parameter."
+            }
+        ), 400
+
+    query_text = request_data.get("query_text")
+    page_limit = request_data.get("page_limit")
+    min_similarity = request_data.get("min_similarity")
+    text_embedding = embed.extract_text_features(query_text)
+
+    results = vector_db.find_similar(text_embedding, page_limit, min_similarity)
+
     data = {
-        "results": [],
+        "data": results,
     }
     return jsonify(data)
 
