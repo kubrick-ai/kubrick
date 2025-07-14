@@ -1,6 +1,6 @@
 import os
 from twelvelabs import TwelveLabs
-from typing import List, Optional, Literal
+from typing import List, Optional
 from twelvelabs.models.embed import EmbeddingsTask, SegmentEmbedding
 from dotenv import load_dotenv
 

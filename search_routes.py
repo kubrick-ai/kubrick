@@ -34,6 +34,7 @@ def search():
     if query_media_type:
         query_media_url = request.form.get("query_media_url")
         query_media_file = request.files.get("query_media_file")
+        embeddings = None
         if query_media_type == "video":
             if query_media_url:
                 embeddings = embed.extract_video_embeddings(url=query_media_url)
@@ -52,6 +53,13 @@ def search():
         results = vector_db.find_similar_batch(embeddings, page_limit, min_similarity)
 
     else:
+        if not query_text:
+            return jsonify(
+                {
+                    "error": "Invalid request body - If `query_media_type` is not specified, request body must contain `query_text`."
+                }
+            ), 400
+
         embedding = embed.extract_text_features(query_text)
         results = vector_db.find_similar(embedding)
 
