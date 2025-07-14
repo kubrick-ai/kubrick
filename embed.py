@@ -1,6 +1,6 @@
 import os
 from twelvelabs import TwelveLabs
-from typing import List
+from typing import List, Optional, Literal
 from twelvelabs.models.embed import EmbeddingsTask, SegmentEmbedding
 from dotenv import load_dotenv
 
@@ -23,14 +23,19 @@ def print_segments(segments: List[SegmentEmbedding], max_elements: int = 5):
             print(f"  embeddings: {segment.embeddings_float[:max_elements]}")
 
 
-def extract_video_features(video_filepath: str, DEBUG=False):
+def extract_video_features(
+    filepath: Optional[str] = None,
+    url: Optional[str] = None,
+    DEBUG=False,
+):
     # 1. Initialize the client
     client = TwelveLabs(api_key=TWELVELABS_API_KEY)
 
     # 2. Upload a video
     task = client.embed.task.create(
         model_name="Marengo-retrieval-2.7",
-        video_file=video_filepath,
+        video_file=filepath,
+        video_url=url,
         # video_clip_length=5,
         # video_start_offset_sec=30,
         # video_end_offset_sec=60,
@@ -55,6 +60,15 @@ def extract_video_features(video_filepath: str, DEBUG=False):
         raise Exception("Embedding failed")
 
     return task.video_embedding.segments
+
+
+def extract_video_embeddings(
+    filepath: Optional[str] = None,
+    url: Optional[str] = None,
+    DEBUG=False,
+):
+    segments = extract_video_features(filepath, url, DEBUG)
+    return [segment.embeddings_float for segment in segments]
 
 
 def extract_text_features(input: str):

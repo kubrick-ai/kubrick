@@ -4,46 +4,16 @@ from flask import (
     request,
 )
 import os
-import embed
-import vector_db
+from search_routes import search_bp
 
 
 app = Flask(__name__)
+app.register_blueprint(search_bp)
 
 
 @app.route("/health")
 def health():
     return "", 200
-
-
-@app.route("/search", methods=("POST",))
-def search():
-    """
-    Expects a JSON body with the following properties:
-        query_text: string,
-        page_limit: integer (optional)
-        min_similarity: float (optional)
-    """
-    request_data = request.get_json()
-
-    if not request_data:
-        return jsonify(
-            {
-                "error": "Invalid request body - must be a JSON object with 'query_text' parameter."
-            }
-        ), 400
-
-    query_text = request_data.get("query_text")
-    page_limit = request_data.get("page_limit")
-    min_similarity = request_data.get("min_similarity")
-    text_embedding = embed.extract_text_features(query_text)
-
-    results = vector_db.find_similar(text_embedding, page_limit, min_similarity)
-
-    data = {
-        "data": results,
-    }
-    return jsonify(data)
 
 
 # Route for video ingest tasks
