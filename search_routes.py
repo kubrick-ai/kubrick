@@ -9,7 +9,7 @@ search_bp = Blueprint("search", __name__)
 @search_bp.route("/search", methods=("POST",))
 def search():
     """
-    Expects a JSON body with the following properties:
+    Expects multipart/form-data with the following fields:
         query_text: string (optional)
         query_media_type: "image" | "video" | "audio" (optional)
         query_media_url: string (optional)
@@ -17,27 +17,31 @@ def search():
         page_limit: integer (optional)
         min_similarity: float (optional)
     """
-    request_data = request.get_json()
+    query_text = request.form.get("query_text")
+    query_media_type = request.form.get("query_media_type")
+    page_limit = request.form.get("page_limit", vector_db.DEFAULT_PAGE_LIMIT)
+    min_similarity = request.form.get(
+        "min_similarity", vector_db.DEFAULT_MIN_SIMILARITY
+    )
 
-    if not request_data:
-        return jsonify({"error": "Invalid request body - must be a JSON object."}), 400
+    # Convert string parameters to appropriate types
+    page_limit = int(page_limit)
+    min_similarity = float(min_similarity)
 
-    query_text = request_data.get("query_text")
-    query_media_type = request_data.get("query_media_type")
-    page_limit = request_data.get("page_limit")
-    min_similarity = request_data.get("min_similarity")
     # Currently only supporting one embedding source
     # TODO: should be able to search with multiple embeddings (text + some media)
 
     if query_media_type:
-        query_media_url = request_data.get("query_media_url")
-        query_media_file = request_data.get("query_media_file")
+        query_media_url = request.form.get("query_media_url")
+        query_media_file = request.files.get("query_media_file")
         if query_media_type == "video":
             if query_media_url:
                 embeddings = embed.extract_video_embeddings(url=query_media_url)
             elif query_media_file:
-                with tempfile.NamedTemporaryFile(delete=False) as f:
-                    embeddings = embed.extract_video_embeddings(filepath=f.filepath)
+                # Save the uploaded file to a temporary location
+                with tempfile.NamedTemporaryFile() as temp_file:
+                    query_media_file.save(temp_file.name)
+                    embeddings = embed.extract_video_embeddings(filepath=temp_file.name)
             else:
                 return jsonify(
                     {
@@ -45,10 +49,11 @@ def search():
                     }
                 ), 400
 
-    else:
-        embeddings = [embed.extract_text_features(query_text)]
+        results = vector_db.find_similar_batch(embeddings, page_limit, min_similarity)
 
-    results = vector_db.find_similar_batch(embeddings, page_limit, min_similarity)
+    else:
+        embedding = embed.extract_text_features(query_text)
+        results = vector_db.find_similar(embedding)
 
     data = {
         "data": results,
