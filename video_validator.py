@@ -30,6 +30,7 @@ def is_valid_video_file(file_path: str) -> bool:
         return False
     
     return (
+        is_valid_filesize(file_path) and
         has_video_stream(probe_data) and
         is_valid_duration(probe_data) and
         is_valid_dimensions(probe_data)

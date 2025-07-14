@@ -405,14 +405,16 @@ class TestIsValidVideoFile(TestVideoValidator):
     @patch('video_validator.os.path.exists')
     @patch('video_validator.has_valid_file_extension')
     @patch('video_validator.get_probe_data')
+    @patch('video_validator.is_valid_filesize')
     @patch('video_validator.has_video_stream')
     @patch('video_validator.is_valid_duration')
     @patch('video_validator.is_valid_dimensions')
     def test_all_validations_pass(self, mock_dimensions, mock_duration, 
-                                  mock_stream, mock_probe, mock_extension, mock_exists):
+                                  mock_stream, mock_filesize, mock_probe, mock_extension, mock_exists):
         mock_exists.return_value = True
         mock_extension.return_value = True
         mock_probe.return_value = self.valid_probe_data
+        mock_filesize.return_value = True
         mock_stream.return_value = True
         mock_duration.return_value = True
         mock_dimensions.return_value = True
@@ -424,13 +426,30 @@ class TestIsValidVideoFile(TestVideoValidator):
     @patch('video_validator.os.path.exists')
     @patch('video_validator.has_valid_file_extension')
     @patch('video_validator.get_probe_data')
+    @patch('video_validator.is_valid_filesize')
     @patch('video_validator.has_video_stream')
-    def test_video_stream_validation_fails(self, mock_stream, mock_probe, 
+    def test_video_stream_validation_fails(self, mock_stream, mock_filesize, mock_probe, 
                                           mock_extension, mock_exists):
         mock_exists.return_value = True
         mock_extension.return_value = True
         mock_probe.return_value = self.valid_probe_data
+        mock_filesize.return_value = True
         mock_stream.return_value = False
+        
+        result = video_validator.is_valid_video_file(self.valid_file_path)
+        
+        assert result is False
+    
+    @patch('video_validator.os.path.exists')
+    @patch('video_validator.has_valid_file_extension')
+    @patch('video_validator.get_probe_data')
+    @patch('video_validator.is_valid_filesize')
+    def test_filesize_validation_fails(self, mock_filesize, mock_probe, 
+                                      mock_extension, mock_exists):
+        mock_exists.return_value = True
+        mock_extension.return_value = True
+        mock_probe.return_value = self.valid_probe_data
+        mock_filesize.return_value = False
         
         result = video_validator.is_valid_video_file(self.valid_file_path)
         
