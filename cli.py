@@ -4,7 +4,7 @@ from enum import Enum
 
 from embed import extract_text_features, extract_video_features, print_segments
 import downloader
-import pg_db
+import vector_db_pg
 from mongo import MongoVectorStore
 from vector_db_pinecone import PineconeVectorStore
 
@@ -80,7 +80,7 @@ def handle_command(result: CommandType, session: PromptSession) -> None:
             clear()
             print_hint()
         case CommandType.DB_SETUP:
-            pg_db.setup()
+            vector_db_pg.setup()
         case CommandType.ADD_FILE:
             user_input = session.prompt("Enter filepath: ")
             # TODO: Add validation
@@ -138,7 +138,7 @@ def add_file(filepath, DEBUG=False):
     pinecone.store(filepath, video_embedding)
 
     for segment in video_embedding:
-        pg_db.store(
+        vector_db_pg.store(
             filepath,
             embedding_type=segment.embedding_option,
             start_offset=segment.start_offset_sec,
@@ -152,7 +152,7 @@ def search_text(query, DEBUG=False):
     if DEBUG and text_embedding is not None:
         print("text_embedding:", text_embedding)
 
-    pg_results = pg_db.find_similar(text_embedding)
+    pg_results = vector_db_pg.find_similar(text_embedding)
     mongo_results = mongo_db.search(text_embedding)
     pinecone_results = pinecone.search(text_embedding)
     return [pg_results, mongo_results, pinecone_results]
