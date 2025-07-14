@@ -4,12 +4,17 @@ from enum import Enum
 
 from embed import extract_text_features, extract_video_features, print_segments
 import downloader
-import vector_db
+import pg_db
+from mongo import MongoVectorStore
 
 from prompt_toolkit import PromptSession, print_formatted_text, HTML
 from prompt_toolkit.completion import FuzzyWordCompleter
 from prompt_toolkit.shortcuts import clear
 
+import certifi
+os.environ["SSL_CERT_FILE"] = certifi.where()
+
+mongo_db = MongoVectorStore()
 
 def print_hint():
     print_formatted_text(
@@ -73,7 +78,7 @@ def handle_command(result: CommandType, session: PromptSession) -> None:
             clear()
             print_hint()
         case CommandType.DB_SETUP:
-            vector_db.setup()
+            pg_db.setup()
         case CommandType.ADD_FILE:
             user_input = session.prompt("Enter filepath: ")
             # TODO: Add validation
@@ -121,12 +126,16 @@ def run(DEBUG=False):
 
 
 def add_file(filepath, DEBUG=False):
+
     video_embedding = extract_video_features(filepath, DEBUG)
     if DEBUG:
         print_segments(video_embedding)
 
+    # Store embeddings in mongo atlas
+    mongo_db.store(filepath, video_embedding)
+
     for segment in video_embedding:
-        vector_db.store(
+        pg_db.store(
             filepath,
             embedding_type=segment.embedding_option,
             start_offset=segment.start_offset_sec,
@@ -140,15 +149,18 @@ def search_text(query, DEBUG=False):
     if DEBUG and text_embedding is not None:
         print("text_embedding:", text_embedding)
 
-    results = vector_db.find_similar(text_embedding)
-
-    return results
+    pg_results = pg_db.find_similar(text_embedding)
+    mongo_results = mongo_db.search(text_embedding)
+    return [pg_results, mongo_results]
 
 
 def print_results(results):
     print("results:")
 
-    for result in results:
+    pg_results, mongo_results = results
+
+    print('pg results:')
+    for result in pg_results:
         source = result["source"].split("/")[-1]
         similarity = result["similarity"]
         embedding_type = result["type"]
@@ -157,6 +169,19 @@ def print_results(results):
         print(
             f"Source: {source.ljust(27, ' ')} | Start: {start_offset}s | End: {end_offset}s | Type: {embedding_type.ljust(11, ' ')} | Similarity: {similarity:.5}"
         )
+    print()
+    print('mongo results:')
+    for result in mongo_results:
+        embedding_type = result.get("type", "unknown")
+        source = result.get("filepath", "unknown")
+        start_offset = result.get("start_offset", "?")
+        end_offset = result.get("end_offset", "?")
+        similarity = result.get("score", 0)
+
+        print(
+            f"Source: {source.ljust(27, ' ')} | Start: {start_offset}s | End: {end_offset}s | Type: {embedding_type.ljust(11, ' ')} | Similarity: {similarity:.5}"
+        )
+
 
 
 if __name__ == "__main__":
