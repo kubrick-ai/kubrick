@@ -57,12 +57,14 @@ def tasks():
         tasks = task_store.list_tasks(page, page_limit)
 
         return jsonify({
-            "tasks": [{
-                "task_id": task.id,
+            "data": [{
+                "id": task.id,
                 "status": task.status,
                 "video_url": task.video_url,
                 "created_at": task.created_at,
-                "completed_at": task.completed_at,
+                "updated_at": task.updated_at,
+                "error": task.error,
+                "metadata": task.metadata,
             } for task in tasks],
         })
 
