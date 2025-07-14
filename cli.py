@@ -6,6 +6,7 @@ from embed import extract_text_features, extract_video_features, print_segments
 import downloader
 import pg_db
 from mongo import MongoVectorStore
+from vector_db_pinecone import PineconeVectorStore
 
 from prompt_toolkit import PromptSession, print_formatted_text, HTML
 from prompt_toolkit.completion import FuzzyWordCompleter
@@ -15,6 +16,7 @@ import certifi
 os.environ["SSL_CERT_FILE"] = certifi.where()
 
 mongo_db = MongoVectorStore()
+pinecone = PineconeVectorStore()
 
 def print_hint():
     print_formatted_text(
@@ -131,8 +133,9 @@ def add_file(filepath, DEBUG=False):
     if DEBUG:
         print_segments(video_embedding)
 
-    # Store embeddings in mongo atlas
+    # Store embeddings in mongo atlas and pinecone
     mongo_db.store(filepath, video_embedding)
+    pinecone.store(filepath, video_embedding)
 
     for segment in video_embedding:
         pg_db.store(
@@ -151,37 +154,35 @@ def search_text(query, DEBUG=False):
 
     pg_results = pg_db.find_similar(text_embedding)
     mongo_results = mongo_db.search(text_embedding)
-    return [pg_results, mongo_results]
+    pinecone_results = pinecone.search(text_embedding)
+    return [pg_results, mongo_results, pinecone_results]
 
 
 def print_results(results):
-    print("results:")
+    pg_results, mongo_results, pinecone_results = results
 
-    pg_results, mongo_results = results
+    def print_formatted(title, results, source_key="source", similarity_key="similarity"):
+        print(f"\n{title}")
+        print("-" * 115)
+        print(f"{'Source':<80} | {'Start':<7} | {'End':<7} | {'Type':<11} | {'Similarity':<10}")
+        print("-" * 115)
 
-    print('pg results:')
-    for result in pg_results:
-        source = result["source"].split("/")[-1]
-        similarity = result["similarity"]
-        embedding_type = result["type"]
-        start_offset = result["start_offset"]
-        end_offset = result["end_offset"]
-        print(
-            f"Source: {source.ljust(27, ' ')} | Start: {start_offset}s | End: {end_offset}s | Type: {embedding_type.ljust(11, ' ')} | Similarity: {similarity:.5}"
-        )
-    print()
-    print('mongo results:')
-    for result in mongo_results:
-        embedding_type = result.get("type", "unknown")
-        source = result.get("filepath", "unknown")
-        start_offset = result.get("start_offset", "?")
-        end_offset = result.get("end_offset", "?")
-        similarity = result.get("score", 0)
+        for result in results:
+            source = result.get(source_key, "unknown")
+            if isinstance(source, str):
+                source = source.split("/")[-1].replace("./downloads/", "")
 
-        print(
-            f"Source: {source.ljust(27, ' ')} | Start: {start_offset}s | End: {end_offset}s | Type: {embedding_type.ljust(11, ' ')} | Similarity: {similarity:.5}"
-        )
+            start = result.get("start_offset", "?")
+            end = result.get("end_offset", "?")
+            embedding_type = result.get("type", "unknown")
+            similarity = result.get(similarity_key, 0)
 
+            print(f"{source:<80} | {str(start):<7} | {str(end):<7} | {embedding_type:<11} | {similarity:<10.5f}")
+        print()
+
+    print_formatted("Postgres Results:", pg_results, source_key="source", similarity_key="similarity")
+    print_formatted("MongoDB Results:", mongo_results, source_key="filepath", similarity_key="score")
+    print_formatted("Pinecone Results:", pinecone_results, source_key="filepath", similarity_key="score")
 
 
 if __name__ == "__main__":
