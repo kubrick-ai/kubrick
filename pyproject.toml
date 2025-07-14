@@ -9,6 +9,7 @@ dependencies = [
   "flask>=3.1.1",
   "prompt-toolkit>=3.0.51",
   "psycopg2-binary>=2.9.10",
+  "pytest>=8.4.1",
   "python-dotenv>=1.1.1",
   "twelvelabs>=0.4.11",
   "yt-dlp>=2025.6.30",
