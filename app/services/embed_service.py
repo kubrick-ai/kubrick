@@ -37,7 +37,7 @@ class EmbedService:
             video_clip_length=clip_length,
             video_start_offset_sec=start_offset,
             video_end_offset_sec=end_offset,
-            video_embedding_scopes=["clip"],
+            video_embedding_scopes=["clip", "video"],
         )
         if self.config.DEBUG:
             print(
@@ -64,6 +64,20 @@ class EmbedService:
     ):
         segments = self.extract_video_features(filepath, url, debug)
         return [segment.embeddings_float for segment in segments]
+
+    def extract_video_embedding(
+        self,
+        filepath: Optional[str] = None,
+        url: Optional[str] = None,
+        debug=False,
+    ):
+        segments = self.extract_video_features(filepath, url, debug)
+
+        return [
+            segment.embeddings_float
+            for segment in segments
+            if segment.embedding_scope == "video"
+        ]
 
     def extract_image_embeddings(
         self,

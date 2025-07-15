@@ -66,14 +66,14 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
 
             elif query_media_type == "video":
                 if query_media_url:
-                    embeddings = embed_service.extract_video_embeddings(
+                    embeddings = embed_service.extract_video_embedding(
                         url=query_media_url
                     )
                 elif query_media_file:
                     # Save the uploaded file to a temporary location
                     with tempfile.NamedTemporaryFile() as temp_file:
                         query_media_file.save(temp_file.name)
-                        embeddings = embed_service.extract_video_embeddings(
+                        embeddings = embed_service.extract_video_embedding(
                             filepath=temp_file.name
                         )
                 else:
