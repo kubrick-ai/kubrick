@@ -56,20 +56,6 @@ class EmbedService:
         # TODO: Formalise this return type - right now it is arbitrary (based on Marengo API)
         return task.video_embedding.segments
 
-    def extract_video_embeddings(
-        self,
-        filepath: Optional[str] = None,
-        url: Optional[str] = None,
-        debug=False,
-    ):
-        segments = self.extract_video_features(filepath, url, debug)
-        print(segments)
-        return [
-            segment.embeddings_float
-            for segment in segments
-            if segment.embedding_scope == "clip"
-        ]
-
     def extract_video_embedding(
         self,
         filepath: Optional[str] = None,
