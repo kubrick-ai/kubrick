@@ -1,10 +1,11 @@
 from twelvelabs import TwelveLabs
-from typing import List, Optional
+from typing import List, Optional, BinaryIO
 from twelvelabs.models.embed import EmbeddingsTask, SegmentEmbedding
+from app.config import Config
 
 
 class EmbedService:
-    def __init__(self, config):
+    def __init__(self, config=Config()):
         self.config = config
         self.api_key = config.TWELVELABS_API_KEY
         self.client = TwelveLabs(api_key=self.api_key)
@@ -63,6 +64,25 @@ class EmbedService:
     ):
         segments = self.extract_video_features(filepath, url, debug)
         return [segment.embeddings_float for segment in segments]
+
+    def extract_image_embeddings(
+        self,
+        file: Optional[BinaryIO] = None,
+        url: Optional[str] = None,
+    ):
+        if url:
+            res = self.client.embed.create(
+                model_name="Marengo-retrieval-2.7", image_url=url
+            )
+        elif file:
+            res = self.client.embed.create(
+                model_name="Marengo-retrieval-2.7", image_file=file
+            )
+        else:
+            raise Exception("Expected image file or url as argument")
+
+        if res.image_embedding is not None and res.image_embedding.segments is not None:
+            return res.image_embedding.segments[0].embeddings_float
 
     def extract_text_embeddings(self, input_text: str):
         res = self.client.embed.create(
