@@ -42,20 +42,23 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             embeddings = None
             if query_media_type == "image":
                 if query_media_url:
-                    embedding = embed_service.extract_image_embeddings(
+                    embedding = embed_service.extract_image_embedding(
                         url=query_media_url
                     )
 
                 elif query_media_file:
-                    embedding = embed_service.extract_image_embeddings(
+                    embedding = embed_service.extract_image_embedding(
                         file=query_media_file
                     )
                 else:
-                    return jsonify(
-                        {
-                            "error": "Invalid request body - If `query_media_type` is specified, request body must contain `query_media_url` or `query_media_file`."
-                        }
-                    ), 400
+                    return (
+                        jsonify(
+                            {
+                                "error": "Invalid request body - If `query_media_type` is specified, request body must contain `query_media_url` or `query_media_file`."
+                            }
+                        ),
+                        400,
+                    )
 
                 results = vector_db_service.find_similar(
                     embedding, page_limit, min_similarity
@@ -63,22 +66,25 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
 
             elif query_media_type == "video":
                 if query_media_url:
-                    embeddings = embed_service.extract_video_embeddings(
+                    embeddings = embed_service.extract_video_embedding(
                         url=query_media_url
                     )
                 elif query_media_file:
                     # Save the uploaded file to a temporary location
                     with tempfile.NamedTemporaryFile() as temp_file:
                         query_media_file.save(temp_file.name)
-                        embeddings = embed_service.extract_video_embeddings(
+                        embeddings = embed_service.extract_video_embedding(
                             filepath=temp_file.name
                         )
                 else:
-                    return jsonify(
-                        {
-                            "error": "Invalid request body - If `query_media_type` is specified, request body must contain `query_media_url` or `query_media_file`."
-                        }
-                    ), 400
+                    return (
+                        jsonify(
+                            {
+                                "error": "Invalid request body - If `query_media_type` is specified, request body must contain `query_media_url` or `query_media_file`."
+                            }
+                        ),
+                        400,
+                    )
 
                 results = vector_db_service.find_similar_batch(
                     embeddings, page_limit, min_similarity
@@ -86,13 +92,16 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
 
         else:
             if not query_text:
-                return jsonify(
-                    {
-                        "error": "Invalid request body - If `query_media_type` is not specified, request body must contain `query_text`."
-                    }
-                ), 400
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid request body - If `query_media_type` is not specified, request body must contain `query_text`."
+                        }
+                    ),
+                    400,
+                )
 
-            embedding = embed_service.extract_text_embeddings(query_text)
+            embedding = embed_service.extract_text_embedding(query_text)
             results = vector_db_service.find_similar(embedding)
 
         data = {

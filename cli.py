@@ -21,7 +21,8 @@ def print_hint():
 
 
 def print_help():
-    help_doc = HTML("""
+    help_doc = HTML(
+        """
 Commands:
 <b><orange>/help</orange></b>           : Display this document
 <b><orange>/exit</orange></b>           : Exit the session
@@ -30,7 +31,8 @@ Commands:
 <b><orange>/add_file</orange></b>       : Add a video file by filepath
 <b><orange>/add_youtube</orange></b>    : Add a video file by youtube link
 <b><orange>/search_text</orange></b>    : Search with a text query
-""")
+"""
+    )
     print_formatted_text(help_doc)
 
 
@@ -154,7 +156,7 @@ def add_file(
 def search_text(
     query, embed_service: EmbedService, vector_db_service: VectorDBService, DEBUG=False
 ):
-    text_embedding = embed_service.extract_text_embeddings(query)
+    text_embedding = embed_service.extract_text_embedding(query)
     if DEBUG and text_embedding is not None:
         print("text_embedding:", text_embedding)
 
