@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "flask>=3.1.1",
+  "pinecone>=7.3.0",
   "prompt-toolkit>=3.0.51",
   "psycopg2-binary>=2.9.10",
   "python-dotenv>=1.1.1",
