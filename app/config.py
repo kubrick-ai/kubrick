@@ -14,20 +14,6 @@ class Config:
         "DATABASE_URL", f"postgresql://postgres@localhost/{DATABASE_NAME}"
     )
 
-    # SQLAlchemy configuration
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    # Vector storage configuration
-    VECTOR_STORAGE_TYPE = os.getenv(
-        "VECTOR_STORAGE_TYPE", "pgvector"
-    )  # 'pgvector' or 'pinecone'
-
-    # Pinecone configuration (only used if VECTOR_STORAGE_TYPE = 'pinecone')
-    PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-    PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT")
-    PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "kubrick-embeddings")
-
     # Default embedding parameters
     EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7")
     DEFAULT_CLIP_LENGTH = int(os.getenv("DEFAULT_CLIP_LENGTH", 6))
