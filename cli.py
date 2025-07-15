@@ -2,9 +2,10 @@ import os
 from dotenv import load_dotenv
 from enum import Enum
 
-from embed import extract_text_features, extract_video_features, print_segments
-import downloader
-import vector_db
+from app.services.embed_service import EmbedService
+from app.services.vector_db_service import VectorDBService
+from app.config import Config
+from app.utils import downloader
 
 from prompt_toolkit import PromptSession, print_formatted_text, HTML
 from prompt_toolkit.completion import FuzzyWordCompleter
@@ -63,7 +64,12 @@ def parse_command(user_input: str) -> CommandType | None:
     return command_map.get(cmd, None)
 
 
-def handle_command(result: CommandType, session: PromptSession) -> None:
+def handle_command(
+    result: CommandType,
+    session: PromptSession,
+    embed_service: EmbedService,
+    vector_db_service: VectorDBService,
+) -> None:
     match result:
         case CommandType.HELP:
             print_help()
@@ -73,21 +79,21 @@ def handle_command(result: CommandType, session: PromptSession) -> None:
             clear()
             print_hint()
         case CommandType.DB_SETUP:
-            vector_db.setup()
+            vector_db_service.setup()
         case CommandType.ADD_FILE:
             user_input = session.prompt("Enter filepath: ")
             # TODO: Add validation
-            add_file(user_input)
+            add_file(user_input, embed_service, vector_db_service)
             print(f"{user_input} has been added to database")
         case CommandType.ADD_YOUTUBE:
             user_input = session.prompt("Enter youtube link: ")
             # TODO: Add validation
             path = downloader.download_video(user_input)
-            add_file(path)
+            add_file(path, embed_service, vector_db_service)
             print(f"{path} has been added to database")
         case CommandType.SEARCH_TEXT:
             user_input = session.prompt("Search for: ")
-            results = search_text(user_input)
+            results = search_text(user_input, embed_service, vector_db_service)
             print_results(results)
         case _:
             print_hint()
@@ -98,6 +104,11 @@ def should_exit(result: CommandType) -> bool:
 
 
 def run(DEBUG=False):
+    # Initialize services
+    config = Config()
+    embed_service = EmbedService(config)
+    vector_db_service = VectorDBService(config)
+
     completer = FuzzyWordCompleter(
         [f"/{cmd.value}" for cmd in CommandType if cmd != CommandType.UNKNOWN]
     )
@@ -114,19 +125,24 @@ def run(DEBUG=False):
         user_input = session.prompt("> ")
         command = parse_command(user_input)
         if command:
-            handle_command(command, session)
+            handle_command(command, session, embed_service, vector_db_service)
             if command == CommandType.EXIT:
                 break
             continue
 
 
-def add_file(filepath, DEBUG=False):
-    video_embedding = extract_video_features(filepath, DEBUG)
+def add_file(
+    filepath,
+    embed_service: EmbedService,
+    vector_db_service: VectorDBService,
+    DEBUG=False,
+):
+    video_embedding = embed_service.extract_video_features(filepath)
     if DEBUG:
-        print_segments(video_embedding)
+        embed_service.print_segments(video_embedding)
 
     for segment in video_embedding:
-        vector_db.store(
+        vector_db_service.store(
             filepath,
             embedding_type=segment.embedding_option,
             start_offset=segment.start_offset_sec,
@@ -135,12 +151,14 @@ def add_file(filepath, DEBUG=False):
         )
 
 
-def search_text(query, DEBUG=False):
-    text_embedding = extract_text_features(query)
+def search_text(
+    query, embed_service: EmbedService, vector_db_service: VectorDBService, DEBUG=False
+):
+    text_embedding = embed_service.extract_text_embeddings(query)
     if DEBUG and text_embedding is not None:
         print("text_embedding:", text_embedding)
 
-    results = vector_db.find_similar(text_embedding)
+    results = vector_db_service.find_similar(text_embedding)
 
     return results
 

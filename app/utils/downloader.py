@@ -1,6 +1,6 @@
 import yt_dlp
 import os
-from typing import Optional, Dict
+from typing import Optional
 
 
 def prepare_output_folder(path: str) -> None:
@@ -10,7 +10,6 @@ def prepare_output_folder(path: str) -> None:
 def show_video_info(info: dict) -> None:
     print("\nVideo Info Preview:")
     print(f"Title     : {info.get('title')}")
-    # Just keeping it here in case we want uploader information (probably not)
     # print(f"Uploader  : {info.get('uploader')}")
     print(f"Duration  : {int(info.get('duration', 0))} seconds")
     print(f"Resolution: {info.get('width')}x{info.get('height')}")
@@ -27,7 +26,7 @@ def download_video(url: str, output_path: str = "./downloads") -> Optional[int]:
     ydl_opts = {
         "outtmpl": os.path.join(output_path, "%(title).100s.%(ext)s"),
         # "format": "mp4",
-        # If we use 'bestvideo+bestaudio/best' it requires ffmpeg
+        # 'bestvideo+bestaudio/best' requires ffmpeg
         "format": "bestvideo+bestaudio/best",
         "quiet": False,
         "noplaylist": True,
