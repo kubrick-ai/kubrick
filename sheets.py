@@ -11,7 +11,7 @@ def init_sheet():
     sheet = client.open_by_key(SHEET_ID)
     return sheet.worksheet(WORKSHEET_NAME)
 
-def append_result_row(yt_link, query, query_category, max_similarity, time_start, time_end, accuracy, notes):
+def append_result_row(source, query, query_category, max_similarity, time_start, time_end, accuracy, notes):
     sheet = init_sheet()
-    row = [yt_link, query, query_category, max_similarity, time_start, time_end, accuracy, notes]
+    row = [source, query, query_category, max_similarity, time_start, time_end, accuracy, notes]
     sheet.append_row(row)
