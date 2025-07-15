@@ -42,12 +42,12 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             embeddings = None
             if query_media_type == "image":
                 if query_media_url:
-                    embedding = embed_service.extract_image_embeddings(
+                    embedding = embed_service.extract_image_embedding(
                         url=query_media_url
                     )
 
                 elif query_media_file:
-                    embedding = embed_service.extract_image_embeddings(
+                    embedding = embed_service.extract_image_embedding(
                         file=query_media_file
                     )
                 else:
@@ -101,7 +101,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                     400,
                 )
 
-            embedding = embed_service.extract_text_embeddings(query_text)
+            embedding = embed_service.extract_text_embedding(query_text)
             results = vector_db_service.find_similar(embedding)
 
         data = {

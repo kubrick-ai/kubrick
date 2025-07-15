@@ -70,7 +70,7 @@ class EmbedService:
             if segment.embedding_scope == "video"
         ]
 
-    def extract_image_embeddings(
+    def extract_image_embedding(
         self,
         file: Optional[BinaryIO] = None,
         url: Optional[str] = None,
@@ -89,7 +89,7 @@ class EmbedService:
         if res.image_embedding is not None and res.image_embedding.segments is not None:
             return res.image_embedding.segments[0].embeddings_float
 
-    def extract_text_embeddings(self, input_text: str):
+    def extract_text_embedding(self, input_text: str):
         res = self.client.embed.create(
             model_name="Marengo-retrieval-2.7", text_truncate="start", text=input_text
         )

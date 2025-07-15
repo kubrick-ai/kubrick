@@ -156,7 +156,7 @@ def add_file(
 def search_text(
     query, embed_service: EmbedService, vector_db_service: VectorDBService, DEBUG=False
 ):
-    text_embedding = embed_service.extract_text_embeddings(query)
+    text_embedding = embed_service.extract_text_embedding(query)
     if DEBUG and text_embedding is not None:
         print("text_embedding:", text_embedding)
 
