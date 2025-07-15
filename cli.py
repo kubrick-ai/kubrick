@@ -5,18 +5,20 @@ from enum import Enum
 from embed import extract_text_features, extract_video_features, print_segments
 import downloader
 import vector_db_pg
-from mongo import MongoVectorStore
-from vector_db_pinecone import PineconeVectorStore
+# from mongo import MongoVectorStore
+# from vector_db_pinecone import PineconeVectorStore
 
 from prompt_toolkit import PromptSession, print_formatted_text, HTML
 from prompt_toolkit.completion import FuzzyWordCompleter
 from prompt_toolkit.shortcuts import clear
 
 import certifi
-os.environ["SSL_CERT_FILE"] = certifi.where()
+from sheets import append_result_row
 
-mongo_db = MongoVectorStore()
-pinecone = PineconeVectorStore()
+# os.environ["SSL_CERT_FILE"] = certifi.where()
+
+# mongo_db = MongoVectorStore()
+# pinecone = PineconeVectorStore()
 
 def print_hint():
     print_formatted_text(
@@ -96,6 +98,7 @@ def handle_command(result: CommandType, session: PromptSession) -> None:
             user_input = session.prompt("Search for: ")
             results = search_text(user_input)
             print_results(results)
+            share_results(results, user_input, session)
         case _:
             print_hint()
 
@@ -134,8 +137,8 @@ def add_file(filepath, DEBUG=False):
         print_segments(video_embedding)
 
     # Store embeddings in mongo atlas and pinecone
-    mongo_db.store(filepath, video_embedding)
-    pinecone.store(filepath, video_embedding)
+    # mongo_db.store(filepath, video_embedding)
+    # pinecone.store(filepath, video_embedding)
 
     for segment in video_embedding:
         vector_db_pg.store(
@@ -152,38 +155,68 @@ def search_text(query, DEBUG=False):
     if DEBUG and text_embedding is not None:
         print("text_embedding:", text_embedding)
 
-    pg_results = vector_db_pg.find_similar(text_embedding)
-    mongo_results = mongo_db.search(text_embedding)
-    pinecone_results = pinecone.search(text_embedding)
-    return [pg_results, mongo_results, pinecone_results]
+    return vector_db_pg.find_similar(text_embedding)
 
 
 def print_results(results):
-    pg_results, mongo_results, pinecone_results = results
+    pg_results = results
 
-    def print_formatted(title, results, source_key="source", similarity_key="similarity"):
+    def print_formatted(title, results):
         print(f"\n{title}")
         print("-" * 115)
         print(f"{'Source':<80} | {'Start':<7} | {'End':<7} | {'Type':<11} | {'Similarity':<10}")
         print("-" * 115)
 
         for result in results:
-            source = result.get(source_key, "unknown")
+            source = result.get("source", "unknown")
             if isinstance(source, str):
                 source = source.split("/")[-1].replace("./downloads/", "")
 
-            start = result.get("start_offset", "?")
-            end = result.get("end_offset", "?")
+            start = format_time(result.get("start_offset", 0))
+            end = format_time(result.get("end_offset", 0))
             embedding_type = result.get("type", "unknown")
-            similarity = result.get(similarity_key, 0)
+            similarity = result.get("similarity", 0)
 
             print(f"{source:<80} | {str(start):<7} | {str(end):<7} | {embedding_type:<11} | {similarity:<10.5f}")
         print()
 
-    print_formatted("Postgres Results:", pg_results, source_key="source", similarity_key="similarity")
-    print_formatted("MongoDB Results:", mongo_results, source_key="filepath", similarity_key="score")
-    print_formatted("Pinecone Results:", pinecone_results, source_key="filepath", similarity_key="score")
+    print_formatted("PG Vector Results:", pg_results)
 
+
+def share_results(results, query, session: PromptSession):
+    is_sharable = session.prompt("Do you want to share this results?: (y/n): ").strip().lower()
+
+    if is_sharable in ["y", "yes"]:
+        query_category = session.prompt("Enter the category of your search: (e.g. Human expression, logo identification, etc. ) ")
+        accuracy = session.prompt("Enter accuracy of the search (high/medium/low): ").lower()
+        notes = session.prompt("Enter notes related to your search: ")
+
+        save_results_to_sheet(results, query, query_category, accuracy, notes)
+
+
+def save_results_to_sheet(results, query, query_category, accuracy, notes):
+
+    def get_top_similarity(results):
+        if not results:
+            return None, None, None, None
+
+        top = max(results, key=lambda r: r.get("similarity", 0))
+        sim = top.get("similarity", 0)
+        start = format_time(top.get("start_offset", 0))
+        end = format_time(top.get("end_offset", 0))
+        source = top.get("source").split("/")[-1].replace("./downloads/", "")
+
+        return sim, start, end, source
+
+    max_similarity, time_start, time_end, source = get_top_similarity(results)
+
+    append_result_row(source, query, query_category, max_similarity, time_start, time_end, accuracy, notes)
+
+
+def format_time(seconds):
+    minutes = int(seconds) // 60
+    secs = int(seconds) % 60
+    return f"{minutes}:{secs:02d}"
 
 if __name__ == "__main__":
     load_dotenv()
