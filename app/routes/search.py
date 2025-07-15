@@ -40,7 +40,28 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             query_media_url = request.form.get("query_media_url")
             query_media_file = request.files.get("query_media_file")
             embeddings = None
-            if query_media_type == "video":
+            if query_media_type == "image":
+                if query_media_url:
+                    embedding = embed_service.extract_image_embeddings(
+                        url=query_media_url
+                    )
+
+                elif query_media_file:
+                    embedding = embed_service.extract_image_embeddings(
+                        file=query_media_file
+                    )
+                else:
+                    return jsonify(
+                        {
+                            "error": "Invalid request body - If `query_media_type` is specified, request body must contain `query_media_url` or `query_media_file`."
+                        }
+                    ), 400
+
+                results = vector_db_service.find_similar(
+                    embedding, page_limit, min_similarity
+                )
+
+            elif query_media_type == "video":
                 if query_media_url:
                     embeddings = embed_service.extract_video_embeddings(
                         url=query_media_url
@@ -59,9 +80,9 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                         }
                     ), 400
 
-            results = vector_db_service.find_similar_batch(
-                embeddings, page_limit, min_similarity
-            )
+                results = vector_db_service.find_similar_batch(
+                    embeddings, page_limit, min_similarity
+                )
 
         else:
             if not query_text:
@@ -77,6 +98,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
         data = {
             "data": results,
         }
+
         return jsonify(data)
 
     return search_bp
