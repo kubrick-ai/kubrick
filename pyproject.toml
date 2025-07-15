@@ -5,7 +5,7 @@ description = ""
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "ffmpeg>=1.4",
+  "ffmpeg-python>=0.2.0",
   "flask>=3.1.1",
   "get-video-properties>=0.1.1",
   "prompt-toolkit>=3.0.51",
@@ -13,4 +13,14 @@ dependencies = [
   "python-dotenv>=1.1.1",
   "twelvelabs>=0.4.11",
   "yt-dlp>=2025.6.30",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "."
 ]
