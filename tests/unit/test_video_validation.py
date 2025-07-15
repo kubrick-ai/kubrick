@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import patch
-from pathlib import Path
 from app.utils import video_validation
 
 
@@ -86,7 +85,7 @@ class TestHasValidFileExtension(TestVideoValidator):
 
 
 class TestGetProbeData(TestVideoValidator):
-    @patch("video_validation.ffmpeg.probe")
+    @patch("app.utils.video_validation.ffmpeg.probe")
     def test_successful_probe(self, mock_probe):
         mock_probe.return_value = self.valid_probe_data
 
@@ -95,15 +94,17 @@ class TestGetProbeData(TestVideoValidator):
         assert result == self.valid_probe_data
         mock_probe.assert_called_once_with(self.valid_file_path)
 
-    @patch("video_validation.ffmpeg.probe")
+    @patch("app.utils.video_validation.ffmpeg.probe")
     def test_ffmpeg_error(self, mock_probe):
-        mock_probe.side_effect = video_validation.ffmpeg.Error("cmd", "stdout", "stderr")
+        mock_probe.side_effect = video_validation.ffmpeg.Error(
+            "cmd", "stdout", "stderr"
+        )
 
         result = video_validation.get_probe_data(self.valid_file_path)
 
         assert result is None
 
-    @patch("video_validation.ffmpeg.probe")
+    @patch("app.utils.video_validation.ffmpeg.probe")
     def test_general_exception(self, mock_probe):
         mock_probe.side_effect = Exception("General error")
 
@@ -271,7 +272,7 @@ class TestIsValidDimensions(TestVideoValidator):
 
 
 class TestIsValidFilesize(TestVideoValidator):
-    @patch("video_validation.os.path.getsize")
+    @patch("app.utils.video_validation.os.path.getsize")
     def test_valid_filesize_small_file(self, mock_getsize):
         mock_getsize.return_value = 1000000  # 1MB
 
@@ -280,7 +281,7 @@ class TestIsValidFilesize(TestVideoValidator):
         assert result is True
         mock_getsize.assert_called_once_with(self.valid_file_path)
 
-    @patch("video_validation.os.path.getsize")
+    @patch("app.utils.video_validation.os.path.getsize")
     def test_valid_filesize_at_limit(self, mock_getsize):
         mock_getsize.return_value = video_validation.MAX_FILESIZE
 
@@ -289,7 +290,7 @@ class TestIsValidFilesize(TestVideoValidator):
         assert result is True
         mock_getsize.assert_called_once_with(self.valid_file_path)
 
-    @patch("video_validation.os.path.getsize")
+    @patch("app.utils.video_validation.os.path.getsize")
     def test_valid_filesize_just_under_limit(self, mock_getsize):
         mock_getsize.return_value = video_validation.MAX_FILESIZE - 1
 
@@ -298,7 +299,7 @@ class TestIsValidFilesize(TestVideoValidator):
         assert result is True
         mock_getsize.assert_called_once_with(self.valid_file_path)
 
-    @patch("video_validation.os.path.getsize")
+    @patch("app.utils.video_validation.os.path.getsize")
     def test_invalid_filesize_exceeds_limit(self, mock_getsize):
         mock_getsize.return_value = video_validation.MAX_FILESIZE + 1
 
@@ -307,7 +308,7 @@ class TestIsValidFilesize(TestVideoValidator):
         assert result is False
         mock_getsize.assert_called_once_with(self.valid_file_path)
 
-    @patch("video_validation.os.path.getsize")
+    @patch("app.utils.video_validation.os.path.getsize")
     def test_invalid_filesize_large_file(self, mock_getsize):
         mock_getsize.return_value = 5000000000  # 5GB
 
@@ -316,7 +317,7 @@ class TestIsValidFilesize(TestVideoValidator):
         assert result is False
         mock_getsize.assert_called_once_with(self.valid_file_path)
 
-    @patch("video_validation.os.path.getsize")
+    @patch("app.utils.video_validation.os.path.getsize")
     def test_filesize_zero_bytes(self, mock_getsize):
         mock_getsize.return_value = 0
 
@@ -331,7 +332,7 @@ class TestIsValidFilesize(TestVideoValidator):
 
 
 class TestIsValidVideoFile(TestVideoValidator):
-    @patch("video_validation.os.path.exists")
+    @patch("app.utils.video_validation.os.path.exists")
     def test_file_does_not_exist(self, mock_exists):
         mock_exists.return_value = False
 
@@ -340,8 +341,8 @@ class TestIsValidVideoFile(TestVideoValidator):
         assert result is False
         mock_exists.assert_called_once_with(self.invalid_file_path)
 
-    @patch("video_validation.os.path.exists")
-    @patch("video_validation.has_valid_file_extension")
+    @patch("app.utils.video_validation.os.path.exists")
+    @patch("app.utils.video_validation.has_valid_file_extension")
     def test_invalid_file_extension(self, mock_extension, mock_exists):
         mock_exists.return_value = True
         mock_extension.return_value = False
@@ -350,9 +351,9 @@ class TestIsValidVideoFile(TestVideoValidator):
 
         assert result is False
 
-    @patch("video_validation.os.path.exists")
-    @patch("video_validation.has_valid_file_extension")
-    @patch("video_validation.get_probe_data")
+    @patch("app.utils.video_validation.os.path.exists")
+    @patch("app.utils.video_validation.has_valid_file_extension")
+    @patch("app.utils.video_validation.get_probe_data")
     def test_probe_data_none(self, mock_probe, mock_extension, mock_exists):
         mock_exists.return_value = True
         mock_extension.return_value = True
@@ -362,13 +363,13 @@ class TestIsValidVideoFile(TestVideoValidator):
 
         assert result is False
 
-    @patch("video_validation.os.path.exists")
-    @patch("video_validation.has_valid_file_extension")
-    @patch("video_validation.get_probe_data")
-    @patch("video_validation.is_valid_filesize")
-    @patch("video_validation.has_video_stream")
-    @patch("video_validation.is_valid_duration")
-    @patch("video_validation.is_valid_dimensions")
+    @patch("app.utils.video_validation.os.path.exists")
+    @patch("app.utils.video_validation.has_valid_file_extension")
+    @patch("app.utils.video_validation.get_probe_data")
+    @patch("app.utils.video_validation.is_valid_filesize")
+    @patch("app.utils.video_validation.has_video_stream")
+    @patch("app.utils.video_validation.is_valid_duration")
+    @patch("app.utils.video_validation.is_valid_dimensions")
     def test_all_validations_pass(
         self,
         mock_dimensions,
@@ -391,11 +392,11 @@ class TestIsValidVideoFile(TestVideoValidator):
 
         assert result is True
 
-    @patch("video_validation.os.path.exists")
-    @patch("video_validation.has_valid_file_extension")
-    @patch("video_validation.get_probe_data")
-    @patch("video_validation.is_valid_filesize")
-    @patch("video_validation.has_video_stream")
+    @patch("app.utils.video_validation.os.path.exists")
+    @patch("app.utils.video_validation.has_valid_file_extension")
+    @patch("app.utils.video_validation.get_probe_data")
+    @patch("app.utils.video_validation.is_valid_filesize")
+    @patch("app.utils.video_validation.has_video_stream")
     def test_video_stream_validation_fails(
         self, mock_stream, mock_filesize, mock_probe, mock_extension, mock_exists
     ):
@@ -409,10 +410,10 @@ class TestIsValidVideoFile(TestVideoValidator):
 
         assert result is False
 
-    @patch("video_validation.os.path.exists")
-    @patch("video_validation.has_valid_file_extension")
-    @patch("video_validation.get_probe_data")
-    @patch("video_validation.is_valid_filesize")
+    @patch("app.utils.video_validation.os.path.exists")
+    @patch("app.utils.video_validation.has_valid_file_extension")
+    @patch("app.utils.video_validation.get_probe_data")
+    @patch("app.utils.video_validation.is_valid_filesize")
     def test_filesize_validation_fails(
         self, mock_filesize, mock_probe, mock_extension, mock_exists
     ):
@@ -428,14 +429,14 @@ class TestIsValidVideoFile(TestVideoValidator):
 
 class TestConstants(TestVideoValidator):
     def test_constants_exist(self):
-        assert hasattr(video_validator, "VALID_VIDEO_EXTENSIONS")
-        assert hasattr(video_validator, "MIN_WIDTH")
-        assert hasattr(video_validator, "MAX_WIDTH")
-        assert hasattr(video_validator, "MIN_HEIGHT")
-        assert hasattr(video_validator, "MAX_HEIGHT")
-        assert hasattr(video_validator, "MIN_DURATION")
-        assert hasattr(video_validator, "MAX_DURATION")
-        assert hasattr(video_validator, "MAX_FILESIZE")
+        assert hasattr(video_validation, "VALID_VIDEO_EXTENSIONS")
+        assert hasattr(video_validation, "MIN_WIDTH")
+        assert hasattr(video_validation, "MAX_WIDTH")
+        assert hasattr(video_validation, "MIN_HEIGHT")
+        assert hasattr(video_validation, "MAX_HEIGHT")
+        assert hasattr(video_validation, "MIN_DURATION")
+        assert hasattr(video_validation, "MAX_DURATION")
+        assert hasattr(video_validation, "MAX_FILESIZE")
 
     def test_valid_extensions_list(self):
         expected_extensions = [
