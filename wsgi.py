@@ -1,11 +1,8 @@
 import os
 from app import create_app
 
-config_name = os.getenv('FLASK_ENV', 'development')
-app = create_app(config_name)
+app = create_app(os.getenv("FLASK_ENV", "development"))
 
 if __name__ == "__main__":
-    if config_name == "production":
-        app.run(debug=False)
-    else:
-        app.run(debug=True, port=5003)
+    # For local development - don't use app.run for production deployment
+    app.run(debug=app.config["DEBUG"], port=app.config["PORT"], host=app.config["HOST"])
