@@ -51,11 +51,14 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                         file=query_media_file
                     )
                 else:
-                    return jsonify(
-                        {
-                            "error": "Invalid request body - If `query_media_type` is specified, request body must contain `query_media_url` or `query_media_file`."
-                        }
-                    ), 400
+                    return (
+                        jsonify(
+                            {
+                                "error": "Invalid request body - If `query_media_type` is specified, request body must contain `query_media_url` or `query_media_file`."
+                            }
+                        ),
+                        400,
+                    )
 
                 results = vector_db_service.find_similar(
                     embedding, page_limit, min_similarity
@@ -74,11 +77,14 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                             filepath=temp_file.name
                         )
                 else:
-                    return jsonify(
-                        {
-                            "error": "Invalid request body - If `query_media_type` is specified, request body must contain `query_media_url` or `query_media_file`."
-                        }
-                    ), 400
+                    return (
+                        jsonify(
+                            {
+                                "error": "Invalid request body - If `query_media_type` is specified, request body must contain `query_media_url` or `query_media_file`."
+                            }
+                        ),
+                        400,
+                    )
 
                 results = vector_db_service.find_similar_batch(
                     embeddings, page_limit, min_similarity
@@ -86,11 +92,14 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
 
         else:
             if not query_text:
-                return jsonify(
-                    {
-                        "error": "Invalid request body - If `query_media_type` is not specified, request body must contain `query_text`."
-                    }
-                ), 400
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid request body - If `query_media_type` is not specified, request body must contain `query_text`."
+                        }
+                    ),
+                    400,
+                )
 
             embedding = embed_service.extract_text_embeddings(query_text)
             results = vector_db_service.find_similar(embedding)
