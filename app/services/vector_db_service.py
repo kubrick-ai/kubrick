@@ -162,3 +162,40 @@ class VectorDBService:
         except Exception as e:
             print(f"Error searching database with batch: {e}")
             raise e
+
+    def find_similar_by_scope(
+        self, embedding, scope, page_limit=None, min_similarity=None
+    ) -> list[dict[str, Any]]:
+        page_limit = page_limit or self.default_page_limit
+        min_similarity = min_similarity or self.default_min_similarity
+
+        try:
+            conn = self.get_connection()
+
+            query = """
+                    SELECT
+                        id,
+                        source,
+                        modality,
+                        scope,
+                        start_time,
+                        end_time,
+                        1 - (embedding <=> %s::vector) AS similarity
+                    FROM video_embeddings
+                    WHERE (1 - (embedding <=> %s::vector)) > %s
+                    AND scope = %s
+                    ORDER BY similarity DESC
+                    LIMIT %s;
+                """
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    query, (embedding, embedding, min_similarity, scope, page_limit)
+                )
+                results = cur.fetchall()
+
+            conn.close()
+            return results
+
+        except Exception as e:
+            print(f"Error searching database: {e}")
+            raise e

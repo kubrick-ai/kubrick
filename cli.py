@@ -23,13 +23,16 @@ def print_help():
     help_doc = HTML(
         """
 Commands:
-<b><orange>/help</orange></b>           : Display this document
-<b><orange>/exit</orange></b>           : Exit the session
-<b><orange>/clear</orange></b>          : Clear the screen
-<b><orange>/db_setup</orange></b>       : Setup database table with pgvector
-<b><orange>/add_file</orange></b>       : Add a video file by filepath
-<b><orange>/add_youtube</orange></b>    : Add a video file by youtube link
-<b><orange>/search_text</orange></b>    : Search with a text query
+<b><orange>/help</orange></b>                    : Display this document
+<b><orange>/exit</orange></b>                    : Exit the session
+<b><orange>/clear</orange></b>                   : Clear the screen
+<b><orange>/db_setup</orange></b>                : Setup database table with pgvector
+<b><orange>/add_file</orange></b>                : Add a video file by filepath
+<b><orange>/add_youtube</orange></b>             : Add a video file by youtube link
+<b><orange>/search_text</orange></b>             : Search all with a text query
+<b><orange>/search_clips_by_text</orange></b>    : Search clips with a text query
+<b><orange>/search_videos_by_text</orange></b>   : Search videos with a text query
+
 """
     )
     print_formatted_text(help_doc)
@@ -43,6 +46,8 @@ class CommandType(Enum):
     ADD_FILE = "add_file"
     ADD_YOUTUBE = "add_youtube"
     SEARCH_TEXT = "search_text"
+    SEARCH_CLIPS_BY_TEXT = "search_clips_by_text"
+    SEARCH_VIDEOS_BY_TEXT = "search_videos_by_text"
     UNKNOWN = "unknown"
 
 
@@ -59,6 +64,8 @@ def parse_command(user_input: str) -> CommandType | None:
         "add_file": CommandType.ADD_FILE,
         "add_youtube": CommandType.ADD_YOUTUBE,
         "search_text": CommandType.SEARCH_TEXT,
+        "search_clips_by_text": CommandType.SEARCH_CLIPS_BY_TEXT,
+        "search_videos_by_text": CommandType.SEARCH_VIDEOS_BY_TEXT,
         "unknown": CommandType.UNKNOWN,
     }
 
@@ -95,6 +102,20 @@ def handle_command(
         case CommandType.SEARCH_TEXT:
             user_input = session.prompt("Search for: ")
             results = search_text(user_input, embed_service, vector_db_service)
+            print_results(results)
+        case CommandType.SEARCH_CLIPS_BY_TEXT:
+            scope = "clip"
+            user_input = session.prompt("Search clips for: ")
+            results = search_scope_by_text(
+                user_input, scope, embed_service, vector_db_service
+            )
+            print_results(results)
+        case CommandType.SEARCH_VIDEOS_BY_TEXT:
+            scope = "video"
+            user_input = session.prompt("Search videos for: ")
+            results = search_scope_by_text(
+                user_input, scope, embed_service, vector_db_service
+            )
             print_results(results)
         case _:
             print_hint()
@@ -161,6 +182,22 @@ def search_text(
         print("text_embedding:", text_embedding)
 
     results = vector_db_service.find_similar(text_embedding)
+
+    return results
+
+
+def search_scope_by_text(
+    query,
+    scope,
+    embed_service: EmbedService,
+    vector_db_service: VectorDBService,
+    DEBUG=False,
+):
+    text_embedding = embed_service.extract_text_embedding(query)
+    if DEBUG and text_embedding is not None:
+        print("text_embedding:", text_embedding)
+
+    results = vector_db_service.find_similar_by_scope(text_embedding, scope=scope)
 
     return results
 
