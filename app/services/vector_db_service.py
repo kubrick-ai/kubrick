@@ -20,16 +20,19 @@ class VectorDBService:
 
         try:
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-            cur.execute("""
+            cur.execute(
+                """
                 CREATE TABLE IF NOT EXISTS video_embeddings (
                     id SERIAL PRIMARY KEY,
                     source TEXT NOT NULL,
                     type TEXT NOT NULL,
-                    start_offset REAL NOT NULL,
-                    end_offset REAL NOT NULL,
+                    scope TEXT NOT NULL,
+                    start_time REAL NOT NULL,
+                    end_time REAL NOT NULL,
                     embedding vector(1024)
                 );
-            """)
+            """
+            )
             conn.commit()
             print("Database setup complete!")
         except Exception as e:
@@ -39,7 +42,7 @@ class VectorDBService:
             conn.close()
 
     def store(
-        self, video_filepath, embedding_type, start_offset, end_offset, embedding
+        self, video_filepath, embedding_type, scope, start_time, end_time, embedding
     ):
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -50,12 +53,20 @@ class VectorDBService:
                 INSERT INTO video_embeddings (
                     source,
                     type,
-                    start_offset,
-                    end_offset,
+                    scope,
+                    start_time,
+                    end_time,
                     embedding
-                ) VALUES (%s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s)
                 """,
-                (video_filepath, embedding_type, start_offset, end_offset, embedding),
+                (
+                    video_filepath,
+                    embedding_type,
+                    scope,
+                    start_time,
+                    end_time,
+                    embedding,
+                ),
             )
             conn.commit()
 
@@ -112,7 +123,8 @@ class VectorDBService:
             params = []
 
             for i, embedding in enumerate(embeddings):
-                query_parts.append(f"""
+                query_parts.append(
+                    f"""
                     SELECT
                         id,
                         source,
@@ -123,7 +135,8 @@ class VectorDBService:
                         {i} AS query_index
                     FROM video_embeddings
                     WHERE (1 - (embedding <=> %s::vector)) > %s
-                """)
+                """
+                )
                 params.extend([embedding, embedding, min_similarity])
 
             full_query = f"""
