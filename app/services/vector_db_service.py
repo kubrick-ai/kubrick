@@ -91,6 +91,7 @@ class VectorDBService:
                     id,
                     source,
                     type,
+                    scope,
                     start_offset,
                     end_offset,
                     1 - (embedding <=> %s::vector) AS similarity
@@ -129,6 +130,7 @@ class VectorDBService:
                         id,
                         source,
                         type,
+                        scope,
                         start_offset,
                         end_offset,
                         1 - (embedding <=> %s::vector) AS similarity,
