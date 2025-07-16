@@ -1,6 +1,7 @@
 from typing import Dict, Optional, List
 from .task import Task
 
+
 class TaskStore:
     def __init__(self):
         self._tasks: Dict[str, Task] = {}
@@ -24,5 +25,6 @@ class TaskStore:
             del self._tasks[task_id]
             return True
         return False
+
 
 task_store = TaskStore()
