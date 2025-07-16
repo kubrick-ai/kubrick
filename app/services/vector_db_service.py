@@ -42,14 +42,24 @@ class VectorDBService:
             cur.close()
             conn.close()
 
-    def store(
-        self, video_filepath, embedding_type, scope, start_time, end_time, embedding
-    ):
+    def store(self, video_filepath, video_embeddings):
         conn = self.get_connection()
         cursor = conn.cursor()
 
         try:
-            cursor.execute(
+            data_to_insert = [
+                (
+                    video_filepath,
+                    segment["modality"],
+                    segment["scope"],
+                    segment["start_time"],
+                    segment["end_time"],
+                    segment["embedding"],
+                )
+                for segment in video_embeddings
+            ]
+
+            cursor.executemany(
                 """
                 INSERT INTO video_embeddings (
                     source,
@@ -60,15 +70,9 @@ class VectorDBService:
                     embedding
                 ) VALUES (%s, %s, %s, %s, %s, %s)
                 """,
-                (
-                    video_filepath,
-                    embedding_type,
-                    scope,
-                    start_time,
-                    end_time,
-                    embedding,
-                ),
+                data_to_insert,
             )
+
             conn.commit()
 
         except Exception as e:
