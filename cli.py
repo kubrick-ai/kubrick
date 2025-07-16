@@ -1,13 +1,12 @@
 import os
-from dotenv import load_dotenv
 from enum import Enum
 
+from app.config import Config
 from app.services.embed_service import EmbedService
 from app.services.vector_db_service import VectorDBService
-from app.config import Config
 from app.utils import downloader
-
-from prompt_toolkit import PromptSession, print_formatted_text, HTML
+from dotenv import load_dotenv
+from prompt_toolkit import HTML, PromptSession, print_formatted_text
 from prompt_toolkit.completion import FuzzyWordCompleter
 from prompt_toolkit.shortcuts import clear
 
@@ -164,7 +163,7 @@ def print_results(results):
     for result in results:
         source = result["source"].split("/")[-1]
         similarity = result["similarity"]
-        embedding_type = result["type"]
+        embedding_type = result["modality"]
         scope = result["scope"]
         start_time = result["start_time"]
         end_time = result["end_time"]

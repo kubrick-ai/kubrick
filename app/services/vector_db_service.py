@@ -1,7 +1,8 @@
 from typing import Any
+
 import psycopg2
-from psycopg2.extras import RealDictCursor
 from app.config import Config
+from psycopg2.extras import RealDictCursor
 
 
 class VectorDBService:
@@ -25,7 +26,7 @@ class VectorDBService:
                 CREATE TABLE IF NOT EXISTS video_embeddings (
                     id SERIAL PRIMARY KEY,
                     source TEXT NOT NULL,
-                    type TEXT NOT NULL,
+                    modality TEXT NOT NULL,
                     scope TEXT NOT NULL,
                     start_time REAL NOT NULL,
                     end_time REAL NOT NULL,
@@ -49,7 +50,7 @@ class VectorDBService:
             data_to_insert = [
                 (
                     video_filepath,
-                    segment["type"],
+                    segment["modality"],
                     segment["scope"],
                     segment["start_time"],
                     segment["end_time"],
@@ -62,7 +63,7 @@ class VectorDBService:
                 """
                 INSERT INTO video_embeddings (
                     source,
-                    type,
+                    modality,
                     scope,
                     start_time,
                     end_time,
@@ -94,7 +95,7 @@ class VectorDBService:
                 SELECT
                     id,
                     source,
-                    type,
+                    modality,
                     scope,
                     start_time,
                     end_time,
@@ -133,7 +134,7 @@ class VectorDBService:
                     SELECT
                         id,
                         source,
-                        type,
+                        modality,
                         scope,
                         start_time,
                         end_time,
