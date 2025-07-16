@@ -145,10 +145,11 @@ def add_file(
 
     for segment in video_embedding:
         vector_db_service.store(
-            filepath,
+            video_filepath=filepath,
             embedding_type=segment.embedding_option,
-            start_offset=segment.start_offset_sec,
-            end_offset=segment.end_offset_sec,
+            scope=segment.embedding_scope,
+            start_time=segment.start_offset_sec,
+            end_time=segment.end_offset_sec,
             embedding=segment.embeddings_float,
         )
 
@@ -172,10 +173,11 @@ def print_results(results):
         source = result["source"].split("/")[-1]
         similarity = result["similarity"]
         embedding_type = result["type"]
-        start_offset = result["start_offset"]
-        end_offset = result["end_offset"]
+        scope = result["scope"]
+        start_time = result["start_time"]
+        end_time = result["end_time"]
         print(
-            f"Source: {source.ljust(27, ' ')} | Start: {start_offset}s | End: {end_offset}s | Type: {embedding_type.ljust(11, ' ')} | Similarity: {similarity:.5}"
+            f"Source: {source.ljust(27, ' ')} | Start: {start_time}s | End: {end_time}s | Type: {embedding_type.ljust(11, ' ')} | Scope: {scope} | Similarity: {similarity:.5}"
         )
 
 

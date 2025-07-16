@@ -92,8 +92,8 @@ class VectorDBService:
                     source,
                     type,
                     scope,
-                    start_offset,
-                    end_offset,
+                    start_time,
+                    end_time,
                     1 - (embedding <=> %s::vector) AS similarity
                 FROM video_embeddings
                 WHERE (1 - (embedding <=> %s::vector)) > %s
@@ -131,8 +131,8 @@ class VectorDBService:
                         source,
                         type,
                         scope,
-                        start_offset,
-                        end_offset,
+                        start_time,
+                        end_time,
                         1 - (embedding <=> %s::vector) AS similarity,
                         {i} AS query_index
                     FROM video_embeddings
