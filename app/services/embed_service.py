@@ -1,10 +1,11 @@
 from twelvelabs import TwelveLabs
-from typing import List, Optional
+from typing import List, Optional, BinaryIO
 from twelvelabs.models.embed import EmbeddingsTask, SegmentEmbedding
+from app.config import Config
 
 
 class EmbedService:
-    def __init__(self, config):
+    def __init__(self, config=Config()):
         self.config = config
         self.api_key = config.TWELVELABS_API_KEY
         self.client = TwelveLabs(api_key=self.api_key)
@@ -36,7 +37,7 @@ class EmbedService:
             video_clip_length=clip_length,
             video_start_offset_sec=start_offset,
             video_end_offset_sec=end_offset,
-            video_embedding_scopes=["clip"],
+            video_embedding_scopes=["clip", "video"],
         )
         if self.config.DEBUG:
             print(
@@ -55,16 +56,40 @@ class EmbedService:
         # TODO: Formalise this return type - right now it is arbitrary (based on Marengo API)
         return task.video_embedding.segments
 
-    def extract_video_embeddings(
+    def extract_video_embedding(
         self,
         filepath: Optional[str] = None,
         url: Optional[str] = None,
         debug=False,
     ):
         segments = self.extract_video_features(filepath, url, debug)
-        return [segment.embeddings_float for segment in segments]
 
-    def extract_text_embeddings(self, input_text: str):
+        return [
+            segment.embeddings_float
+            for segment in segments
+            if segment.embedding_scope == "video"
+        ]
+
+    def extract_image_embedding(
+        self,
+        file: Optional[BinaryIO] = None,
+        url: Optional[str] = None,
+    ):
+        if url:
+            res = self.client.embed.create(
+                model_name="Marengo-retrieval-2.7", image_url=url
+            )
+        elif file:
+            res = self.client.embed.create(
+                model_name="Marengo-retrieval-2.7", image_file=file
+            )
+        else:
+            raise Exception("Expected image file or url as argument")
+
+        if res.image_embedding is not None and res.image_embedding.segments is not None:
+            return res.image_embedding.segments[0].embeddings_float
+
+    def extract_text_embedding(self, input_text: str):
         res = self.client.embed.create(
             model_name="Marengo-retrieval-2.7", text_truncate="start", text=input_text
         )
