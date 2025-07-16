@@ -1,6 +1,6 @@
 from twelvelabs import TwelveLabs
 from typing import List, Optional, BinaryIO
-from twelvelabs.models.embed import EmbeddingsTask, SegmentEmbedding
+from twelvelabs.models.embed import EmbeddingsTask
 from app.config import Config
 
 
@@ -10,16 +10,16 @@ class EmbedService:
         self.api_key = config.TWELVELABS_API_KEY
         self.client = TwelveLabs(api_key=self.api_key)
 
-    def on_task_update(self, task: EmbeddingsTask):
+    def _on_task_update(self, task: EmbeddingsTask):
         print(f"  Status={task.status}")
 
-    def print_segments(self, segments: List[SegmentEmbedding], max_elements: int = 5):
+    def print_segments(self, segments, max_elements: int = 5):
         for segment in segments:
             print(
-                f"  embedding_scope={segment.embedding_scope} embedding_option={segment.embedding_option} start_offset_sec={segment.start_offset_sec} end_offset_sec={segment.end_offset_sec}"
+                f"  embedding_scope={segment["scope"]} embedding_type={segment["type"]} start_time={segment["start_time"]} end_time={segment["end_time"]}"
             )
-            if segment.embeddings_float is not None:
-                print(f"  embeddings: {segment.embeddings_float[:max_elements]}")
+            if segment["embedding"] is not None:
+                print(f"  embeddings: {segment["embedding"][:max_elements]}")
 
     def extract_video_features(
         self,
@@ -64,7 +64,7 @@ class EmbedService:
         return task
 
     def _wait_for_task_completion(self, task):
-        status = task.wait_for_done(sleep_interval=5, callback=self.on_task_update)
+        status = task.wait_for_done(sleep_interval=5, callback=self._on_task_update)
         if self.config.DEBUG:
             print(f"Embedding done: {status}")
 
