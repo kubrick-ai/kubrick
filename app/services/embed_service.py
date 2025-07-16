@@ -16,7 +16,7 @@ class EmbedService:
     def print_segments(self, segments, max_elements: int = 5):
         for segment in segments:
             print(
-                f"  embedding_scope={segment["scope"]} embedding_type={segment["modality"]} start_time={segment["start_time"]} end_time={segment["end_time"]}"
+                f"  embedding_scope={segment["scope"]} embedding_modality={segment["modality"]} start_time={segment["start_time"]} end_time={segment["end_time"]}"
             )
             if segment["embedding"] is not None:
                 print(f"  embeddings: {segment["embedding"][:max_elements]}")
