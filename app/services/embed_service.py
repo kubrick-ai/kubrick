@@ -29,7 +29,23 @@ class EmbedService:
         start_offset: Optional[float] = None,
         end_offset: Optional[float] = None,
     ):
-        clip_length = self.config.DEFAULT_CLIP_LENGTH
+        task = self._create_embedding_task(
+            filepath, url, clip_length, start_offset, end_offset
+        )
+        self._wait_for_task_completion(task)
+        task = self._retrieve_embedding(task)
+        return self._process_segments(task)
+
+    def _create_embedding_task(
+        self,
+        filepath: Optional[str],
+        url: Optional[str],
+        clip_length: Optional[int],
+        start_offset: Optional[float],
+        end_offset: Optional[float],
+    ):
+        clip_length = clip_length or self.config.DEFAULT_CLIP_LENGTH
+
         task = self.client.embed.task.create(
             model_name=self.config.EMBEDDING_MODEL_NAME,
             video_file=filepath,
@@ -39,22 +55,40 @@ class EmbedService:
             video_end_offset_sec=end_offset,
             video_embedding_scopes=["clip", "video"],
         )
+
         if self.config.DEBUG:
             print(
                 f"Created task: id={task.id} model_name={task.model_name} status={task.status}"
             )
 
+        return task
+
+    def _wait_for_task_completion(self, task):
         status = task.wait_for_done(sleep_interval=5, callback=self.on_task_update)
         if self.config.DEBUG:
             print(f"Embedding done: {status}")
 
+    def _retrieve_embedding(self, task):
         task = task.retrieve(embedding_option=["visual-text", "audio"])
 
-        if task.video_embedding is None or task.video_embedding.segments is None:
+        if not task.video_embedding or not task.video_embedding.segments:
             raise Exception("Embedding failed")
 
-        # TODO: Formalise this return type - right now it is arbitrary (based on Marengo API)
-        return task.video_embedding.segments
+        return task
+
+    def _process_segments(self, task):
+        segments = []
+        for segment in task.video_embedding.segments:
+            segments.append(
+                {
+                    "start_time": segment.start_offset_sec,
+                    "end_time": segment.end_offset_sec,
+                    "scope": segment.embedding_scope,  # "clip" or "video"
+                    "type": segment.embedding_option,  # "text-visual" or "audio"
+                    "embedding": segment.embeddings_float,
+                }
+            )
+        return segments
 
     def extract_video_embedding(
         self,
