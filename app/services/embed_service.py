@@ -1,5 +1,5 @@
 from twelvelabs import TwelveLabs
-from typing import List, Optional, BinaryIO
+from typing import Optional, BinaryIO
 from twelvelabs.models.embed import EmbeddingsTask
 from app.config import Config
 
@@ -10,7 +10,7 @@ class EmbedService:
         self.api_key = config.TWELVELABS_API_KEY
         self.client = TwelveLabs(api_key=self.api_key)
 
-    def _on_task_update(self, task: EmbeddingsTask):
+    def _on_request_update(self, task: EmbeddingsTask):
         print(f"  Status={task.status}")
 
     def print_segments(self, segments, max_elements: int = 5):
@@ -29,57 +29,59 @@ class EmbedService:
         start_offset: Optional[float] = None,
         end_offset: Optional[float] = None,
     ):
-        task = self._create_embedding_task(
+        embedding_request = self._create_embedding_request(
             filepath, url, clip_length, start_offset, end_offset
         )
-        self._wait_for_task_completion(task)
-        task = self._retrieve_embedding(task)
-        return self._process_segments(task)
+        self._wait_for_request_completion(embedding_request)
+        segments = self._retrieve_segments(embedding_request)
+        return self._normalize_segments(segments)
 
-    def _create_embedding_task(
+    def _create_embedding_request(
         self,
         filepath: Optional[str],
         url: Optional[str],
         clip_length: Optional[int],
-        start_offset: Optional[float],
-        end_offset: Optional[float],
+        start_time: Optional[float],
+        end_time: Optional[float],
     ):
         clip_length = clip_length or self.config.DEFAULT_CLIP_LENGTH
 
-        task = self.client.embed.task.create(
+        embedding_request = self.client.embed.task.create(
             model_name=self.config.EMBEDDING_MODEL_NAME,
             video_file=filepath,
             video_url=url,
             video_clip_length=clip_length,
-            video_start_offset_sec=start_offset,
-            video_end_offset_sec=end_offset,
+            video_start_offset_sec=start_time,
+            video_end_offset_sec=end_time,
             video_embedding_scopes=["clip", "video"],
         )
 
         if self.config.DEBUG:
             print(
-                f"Created task: id={task.id} model_name={task.model_name} status={task.status}"
+                f"Created task: id={embedding_request.id} model_name={embedding_request.model_name} status={embedding_request.status}"
             )
 
-        return task
+        return embedding_request
 
-    def _wait_for_task_completion(self, task):
-        status = task.wait_for_done(sleep_interval=5, callback=self._on_task_update)
+    def _wait_for_request_completion(self, embedding_request):
+        status = embedding_request.wait_for_done(
+            sleep_interval=5, callback=self._on_request_update
+        )
         if self.config.DEBUG:
             print(f"Embedding done: {status}")
 
-    def _retrieve_embedding(self, task):
-        task = task.retrieve(embedding_option=["visual-text", "audio"])
+    def _retrieve_segments(self, embedding_request):
+        segments = embedding_request.retrieve(embedding_option=["visual-text", "audio"])
 
-        if not task.video_embedding or not task.video_embedding.segments:
+        if not segments.video_embedding or not segments.video_embedding.segments:
             raise Exception("Embedding failed")
 
-        return task
+        return segments.video_embedding.segments
 
-    def _process_segments(self, task):
-        segments = []
-        for segment in task.video_embedding.segments:
-            segments.append(
+    def _normalize_segments(self, segments):
+        result = []
+        for segment in segments:
+            result.append(
                 {
                     "start_time": segment.start_offset_sec,
                     "end_time": segment.end_offset_sec,
@@ -88,7 +90,7 @@ class EmbedService:
                     "embedding": segment.embeddings_float,
                 }
             )
-        return segments
+        return result
 
     def extract_video_embedding(
         self,

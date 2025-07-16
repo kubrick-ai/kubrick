@@ -34,9 +34,9 @@ def process_video(
             temp_path = tmp_file.name
 
         video_embeddings = embed_service.extract_video_features(filepath=temp_path)
-        clip_ids = []
         vector_db_service.store(video_url, video_embeddings)
 
+        clip_ids = []
         for segment in video_embeddings:
             clip_ids.append(f"{segment["start_time"]}-{segment["end_time"]}")
 
