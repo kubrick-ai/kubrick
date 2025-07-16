@@ -34,8 +34,9 @@ def process_video(task_id: str, video_url: str, embed_service: EmbedService, vec
             vector_db_service.store(
                 video_url,
                 embedding_type=segment.embedding_option,
-                start_offset=segment.start_offset_sec,
-                end_offset=segment.end_offset_sec,
+                start_time=segment.start_offset_sec,
+                scope=segment.embedding_scope,
+                end_time=segment.end_offset_sec,
                 embedding=segment.embeddings_float,
             )
             clip_ids.append(f"{segment.start_offset_sec}-{segment.end_offset_sec}")
