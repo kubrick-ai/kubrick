@@ -41,8 +41,8 @@ class EmbedService:
         filepath: Optional[str],
         url: Optional[str],
         clip_length: Optional[int],
-        start_time: Optional[float],
-        end_time: Optional[float],
+        start_offset: Optional[float],
+        end_offset: Optional[float],
     ):
         clip_length = clip_length or self.config.DEFAULT_CLIP_LENGTH
 
@@ -51,8 +51,8 @@ class EmbedService:
             video_file=filepath,
             video_url=url,
             video_clip_length=clip_length,
-            video_start_offset_sec=start_time,
-            video_end_offset_sec=end_time,
+            video_start_offset_sec=start_offset,
+            video_end_offset_sec=end_offset,
             video_embedding_scopes=["clip", "video"],
         )
 
