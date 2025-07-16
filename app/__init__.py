@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from .config import config
 from .services.embed_service import EmbedService
 from .services.vector_db_service import VectorDBService
-from .routes import create_search_bp
+from .routes import create_search_bp, create_tasks_bp
 
 
 def create_app(config_name=None):
@@ -19,24 +19,11 @@ def create_app(config_name=None):
 
     # Register blueprints and pass services via closure
     app.register_blueprint(create_search_bp(embed_service, vector_db_service))
+    app.register_blueprint(create_tasks_bp(embed_service, vector_db_service))
 
     # Health check route
     @app.route("/health")
     def health():
         return "", 200
-
-    # Route for video ingest tasks
-    @app.route("/tasks", methods=("GET", "POST"))
-    def tasks():
-        if request.method == "GET":
-            data = {
-                "tasks": [{"id": "1234"}],
-            }
-            return jsonify(data)
-        else:
-            data = {
-                "id": "1234",
-            }
-            return jsonify(data), 201
 
     return app
