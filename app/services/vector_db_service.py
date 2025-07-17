@@ -123,30 +123,56 @@ class VectorDBService:
         )
 
     def find_similar(
-        self, embedding, page_limit=None, min_similarity=None
+        self, embedding, scope=None, modality=None, page_limit=None, min_similarity=None
     ) -> list[dict[str, Any]]:
         page_limit = page_limit or self.default_page_limit
         min_similarity = min_similarity or self.default_min_similarity
 
+        query_parts = []
+        query_params = []
+
+        query_parts.append(
+            f"""
+            SELECT
+                videos.id,
+                videos.title,
+                videos.url,
+                videos.filename,
+                videos.duration,
+                videos.created_at,
+                videos.updated_at,
+                videos.height,
+                videos.width,
+                video_segments.id,
+                video_segments.modality,
+                video_segments.scope,
+                video_segments.start_time,
+                video_segments.end_time,
+                1 - (video_segments.embedding <=> %s::vector) AS similarity
+            FROM videos
+            INNER JOIN video_segments ON videos.id = video_segments.video_id
+            WHERE (1 - (video_segments.embedding <=> %s::vector)) > %s
+            """
+        )
+        query_params.extend([embedding, embedding, min_similarity])
+
+        if scope:
+            query_parts.append(f"AND scope = %s")
+            query_params.append(scope)
+        if modality:
+            query_parts.append(f"AND modality = %s")
+            query_params.append(modality)
+
+        query_parts.append("ORDER BY similarity DESC LIMIT %s")
+        query_params.append(page_limit)
+
         try:
             conn = self.get_connection()
 
-            query = """
-                SELECT
-                    id,
-                    video_id,
-                    modality,
-                    scope,
-                    start_time,
-                    end_time,
-                    1 - (embedding <=> %s::vector) AS similarity
-                FROM video_segments
-                WHERE (1 - (embedding <=> %s::vector)) > %s
-                ORDER BY similarity DESC
-                LIMIT %s;
-            """
+            query = "\n".join(query_parts)
+
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(query, (embedding, embedding, min_similarity, page_limit))
+                cur.execute(query, query_params)
                 results = cur.fetchall()
 
             conn.close()
