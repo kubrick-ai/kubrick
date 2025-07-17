@@ -134,7 +134,7 @@ class VectorDBService:
             query = """
                 SELECT
                     id,
-                    source,
+                    video_id,
                     modality,
                     scope,
                     start_time,
@@ -173,7 +173,7 @@ class VectorDBService:
                     f"""
                     SELECT
                         id,
-                        source,
+                        video_id,
                         modality,
                         scope,
                         start_time,
