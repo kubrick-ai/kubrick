@@ -17,7 +17,7 @@ def create_app(config_name=None):
     embed_service = EmbedService(config_obj)
     vector_db_service = VectorDBService(config_obj)
 
-    # Setup DB
+    # DB setup
     vector_db_service.setup()
 
     # Register blueprints and pass services via closure
