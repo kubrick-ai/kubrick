@@ -1,8 +1,9 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
+
 from .config import config
+from .routes import create_search_bp, create_tasks_bp, create_videos_bp
 from .services.embed_service import EmbedService
 from .services.vector_db_service import VectorDBService
-from .routes import create_search_bp, create_tasks_bp
 
 
 def create_app(config_name=None):
@@ -23,6 +24,7 @@ def create_app(config_name=None):
     # Register blueprints and pass services via closure
     app.register_blueprint(create_search_bp(embed_service, vector_db_service))
     app.register_blueprint(create_tasks_bp(embed_service, vector_db_service))
+    app.register_blueprint(create_videos_bp(vector_db_service))
 
     # Health check route
     @app.route("/health")
