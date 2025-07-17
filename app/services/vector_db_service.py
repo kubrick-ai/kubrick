@@ -59,45 +59,68 @@ class VectorDBService:
             cur.close()
             conn.close()
 
-    def store(self, video_filepath, video_embeddings):
+    def store(self, video_metadata, video_segments):
         conn = self.get_connection()
         cursor = conn.cursor()
 
         try:
-            data_to_insert = [
-                (
-                    video_filepath,
-                    segment["modality"],
-                    segment["scope"],
-                    segment["start_time"],
-                    segment["end_time"],
-                    segment["embedding"],
-                )
-                for segment in video_embeddings
-            ]
-
-            cursor.executemany(
-                """
-                INSERT INTO video_embeddings (
-                    source,
-                    modality,
-                    scope,
-                    start_time,
-                    end_time,
-                    embedding
-                ) VALUES (%s, %s, %s, %s, %s, %s)
-                """,
-                data_to_insert,
-            )
-
+            video_id = self._insert_video(cursor, video_metadata)
+            self._insert_video_embeddings(cursor, video_id, video_segments)
             conn.commit()
+            print(f"Stored video and {len(video_segments)} embeddings.")
 
         except Exception as e:
             print("Error storing embedding:", e)
+            conn.rollback()
 
         finally:
             cursor.close()
             conn.close()
+
+    def _insert_video(self, cursor, metadata: dict) -> int:
+        cursor.execute(
+            """
+            INSERT INTO videos (title, url, filename, duration, height, width, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            RETURNING id
+            """,
+            (
+                metadata.get("title"),
+                metadata["url"],
+                metadata["filename"],
+                metadata["duration"],
+                metadata["height"],
+                metadata["width"],
+            ),
+        )
+        return cursor.fetchone()[0]
+
+    def _insert_video_embeddings(self, cursor, video_id: int, segments: list[dict]):
+        data_to_insert = [
+            (
+                video_id,
+                segment["modality"],
+                segment["scope"],
+                segment["start_time"],
+                segment["end_time"],
+                segment["embedding"],
+            )
+            for segment in segments
+        ]
+
+        cursor.executemany(
+            """
+            INSERT INTO video_embeddings (
+                video_id,
+                modality,
+                scope,
+                start_time,
+                end_time,
+                embedding
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            data_to_insert,
+        )
 
     def find_similar(
         self, embedding, page_limit=None, min_similarity=None

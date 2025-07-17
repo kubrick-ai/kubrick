@@ -22,35 +22,51 @@ def process_video(
         return
 
     try:
-        response = requests.get(video_url, stream=True)
-        if response.status_code != 200:
-            task.mark_failed(f"Failed to download video. HTTP {response.status_code}")
-            return
+        temp_path = download_to_temp_file(video_url)
+        video_segments = embed_service.extract_video_features(filepath=temp_path)
 
-        suffix = os.path.splitext(video_url)[1] or ".mp4"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-            for chunk in response.iter_content(chunk_size=8192):
-                tmp_file.write(chunk)
-            temp_path = tmp_file.name
+        clip_ids = get_clip_ids(video_segments)
+        width, height, duration = get_video_metadata(temp_path)
 
-        video_embeddings = embed_service.extract_video_features(filepath=temp_path)
-        vector_db_service.store(video_url, video_embeddings)
+        update_task_metadata(task, width, height, duration)
 
-        clip_ids = []
-        for segment in video_embeddings:
-            clip_ids.append(f"{segment["start_time"]}-{segment["end_time"]}")
-
-        [width, height, duration] = get_video_metadata(temp_path)
-
-        task.metadata["width"] = width
-        task.metadata["height"] = height
-        task.metadata["duration"] = duration
+        # Store video + embeddings
+        video_metadata = {
+            "url": video_url,
+            "filename": task.metadata["filename"],
+            "duration": duration,
+            "height": height,
+            "width": width,
+        }
+        vector_db_service.store(video_metadata, video_segments)
 
         os.remove(temp_path)
         task.mark_ready(clip_ids)
 
     except Exception as e:
         task.mark_failed(str(e))
+
+
+def download_to_temp_file(video_url: str) -> str:
+    response = requests.get(video_url, stream=True)
+    if response.status_code != 200:
+        raise Exception(f"Failed to download video. HTTP {response.status_code}")
+
+    suffix = os.path.splitext(video_url)[1] or ".mp4"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+        for chunk in response.iter_content(chunk_size=8192):
+            tmp_file.write(chunk)
+        return tmp_file.name
+
+
+def get_clip_ids(segments: list[dict]) -> list[str]:
+    return [f"{s['start_time']}-{s['end_time']}" for s in segments]
+
+
+def update_task_metadata(task, width: int, height: int, duration: float):
+    task.metadata["width"] = width
+    task.metadata["height"] = height
+    task.metadata["duration"] = duration
 
 
 def start_background_task(
