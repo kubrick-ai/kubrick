@@ -21,18 +21,35 @@ class VectorDBService:
 
         try:
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS videos (
+                    id SERIAL PRIMARY KEY,
+                    title TEXT,
+                    url TEXT,
+                    filename TEXT,
+                    duration REAL NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    height INTEGER NOT NULL,
+                    width INTEGER NOT NULL
+                );
+                """
+            )
+
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS video_embeddings (
                     id SERIAL PRIMARY KEY,
-                    source TEXT NOT NULL,
+                    video_id INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
                     modality TEXT NOT NULL,
                     scope TEXT NOT NULL,
                     start_time REAL NOT NULL,
                     end_time REAL NOT NULL,
                     embedding vector(1024)
                 );
-            """
+                """
             )
             conn.commit()
             print("Database setup complete!")
