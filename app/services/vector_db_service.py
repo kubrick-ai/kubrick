@@ -123,30 +123,47 @@ class VectorDBService:
         )
 
     def find_similar(
-        self, embedding, page_limit=None, min_similarity=None
+        self, embedding, scope=None, modality=None, page_limit=None, min_similarity=None
     ) -> list[dict[str, Any]]:
         page_limit = page_limit or self.default_page_limit
         min_similarity = min_similarity or self.default_min_similarity
 
+        query_parts = []
+        query_params = []
+
+        query_parts.append(
+            f"""
+            SELECT
+                id,
+                video_id,
+                modality,
+                scope,
+                start_time,
+                end_time,
+                1 - (embedding <=> %s::vector) AS similarity
+            FROM video_segments
+            WHERE (1 - (embedding <=> %s::vector)) > %s
+            """
+        )
+        query_params.extend([embedding, embedding, min_similarity])
+
+        if scope:
+            query_parts.append(f"AND scope = %s")
+            query_params.append(scope)
+        if modality:
+            query_parts.append(f"AND modality = %s")
+            query_params.append(modality)
+
+        query_parts.append("ORDER BY similarity DESC LIMIT %s")
+        query_params.append(page_limit)
+
         try:
             conn = self.get_connection()
 
-            query = """
-                SELECT
-                    id,
-                    video_id,
-                    modality,
-                    scope,
-                    start_time,
-                    end_time,
-                    1 - (embedding <=> %s::vector) AS similarity
-                FROM video_segments
-                WHERE (1 - (embedding <=> %s::vector)) > %s
-                ORDER BY similarity DESC
-                LIMIT %s;
-            """
+            query = "\n".join(query_parts)
+
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(query, (embedding, embedding, min_similarity, page_limit))
+                cur.execute(query, query_params)
                 results = cur.fetchall()
 
             conn.close()
@@ -205,58 +222,4 @@ class VectorDBService:
 
         except Exception as e:
             print(f"Error searching database with batch: {e}")
-            raise e
-
-    def find_similar_filtered(
-        self, embedding, scope=None, modality=None, page_limit=None, min_similarity=None
-    ) -> list[dict[str, Any]]:
-        page_limit = page_limit or self.default_page_limit
-        min_similarity = min_similarity or self.default_min_similarity
-
-        query_parts = []
-        query_params = []
-
-        query_parts.append(
-            f"""
-            SELECT
-                id,
-                source,
-                modality,
-                scope,
-                start_time,
-                end_time,
-                1 - (embedding <=> %s::vector) AS similarity
-            FROM video_embeddings
-            WHERE (1 - (embedding <=> %s::vector)) > %s
-            """
-        )
-        query_params.extend([embedding, embedding, min_similarity])
-
-        if scope:
-            query_parts.append(f"AND scope = %s")
-            query_params.append(scope)
-        if modality:
-            query_parts.append(f"AND modality = %s")
-            query_params.append(modality)
-
-        query_params.append("ORDER BY similarity DESC")
-
-        if page_limit:
-            query_parts.append(f"LIMIT %s")
-            query_params.append(page_limit)
-
-        try:
-            conn = self.get_connection()
-
-            query = "".join(query_parts)
-
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(query, query_params)
-                results = cur.fetchall()
-
-            conn.close()
-            return results
-
-        except Exception as e:
-            print(f"Error searching database: {e}")
             raise e

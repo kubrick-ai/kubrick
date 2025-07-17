@@ -18,6 +18,8 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             query_media_file: file (optional)
             page_limit: integer (optional)
             min_similarity: float (optional)
+            query_scope: "video" | "clip" (optional)
+            query_modality: "visual-text" | "audio"  (optional)
         """
 
         query_text = request.form.get("query_text")
@@ -28,6 +30,8 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
         min_similarity = request.form.get(
             "min_similarity", vector_db_service.default_min_similarity
         )
+        scope = request.form.get("query_scope")
+        modality = request.form.get("query_modality")
 
         # Convert string parameters to appropriate types
         page_limit = int(page_limit)
@@ -61,7 +65,11 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                     )
 
                 results = vector_db_service.find_similar(
-                    embedding, page_limit, min_similarity
+                    embedding,
+                    page_limit=page_limit,
+                    min_similarity=min_similarity,
+                    modality=modality,
+                    scope=scope,
                 )
 
             elif query_media_type == "video":
@@ -85,9 +93,18 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                         ),
                         400,
                     )
-
                 results = vector_db_service.find_similar_batch(
                     embeddings, page_limit, min_similarity
+                )
+
+            else:
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid request body - `query_media_type` value must be `image` or `video`."
+                        }
+                    ),
+                    400,
                 )
 
         else:
@@ -102,7 +119,13 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                 )
 
             embedding = embed_service.extract_text_embedding(query_text)
-            results = vector_db_service.find_similar(embedding)
+            results = vector_db_service.find_similar(
+                embedding,
+                scope=scope,
+                modality=modality,
+                page_limit=page_limit,
+                min_similarity=min_similarity,
+            )
 
         data = {"data": results}
 
