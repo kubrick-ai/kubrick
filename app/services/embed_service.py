@@ -1,7 +1,8 @@
-from twelvelabs import TwelveLabs
-from typing import Optional, BinaryIO
-from twelvelabs.models.embed import EmbeddingsTask
+from typing import BinaryIO, Optional
+
 from app.config import Config
+from twelvelabs import TwelveLabs
+from twelvelabs.models.embed import EmbeddingsTask
 
 
 class EmbedService:
@@ -101,9 +102,7 @@ class EmbedService:
         segments = self.extract_video_features(filepath, url, debug)
 
         return [
-            segment["embedding"]
-            for segment in segments
-            if segment["scope"] == "video"
+            segment["embedding"] for segment in segments if segment["scope"] == "video"
         ]
 
     def extract_image_embedding(

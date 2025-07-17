@@ -1,8 +1,9 @@
-from flask import Blueprint, jsonify, request
+import json
 import tempfile
 
 from app.services.embed_service import EmbedService
 from app.services.vector_db_service import VectorDBService
+from flask import Blueprint, jsonify, request
 
 
 def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBService):
@@ -20,6 +21,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             min_similarity: float (optional)
             search_modality: "visual-text" | "audio" (default: "visual-text", optional)
             operator: "or" | "and" (default: "or") (optional)
+            filter: JSON (optional)
         """
 
         query_text = request.form.get("query_text")
@@ -30,8 +32,11 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
         min_similarity = request.form.get(
             "min_similarity", vector_db_service.default_min_similarity
         )
-        search_modality = request.form.get("search_modality", "visual-text")
-        operator = request.form.get("operator", "or")
+
+        filter = request.form.get("filter")
+
+        if filter:
+            filter = json.loads(filter)
 
         # Convert string parameters to appropriate types
         page_limit = int(page_limit)
@@ -65,7 +70,10 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                     )
 
                 results = vector_db_service.find_similar(
-                    embedding, page_limit, min_similarity
+                    embedding,
+                    page_limit=page_limit,
+                    min_similarity=min_similarity,
+                    filter=filter,
                 )
 
             elif query_media_type == "video":
@@ -89,9 +97,18 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                         ),
                         400,
                     )
-
                 results = vector_db_service.find_similar_batch(
                     embeddings, page_limit, min_similarity
+                )
+
+            else:
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid request body - `query_media_type` value must be `image` or `video`."
+                        }
+                    ),
+                    400,
                 )
 
         else:
@@ -106,11 +123,14 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                 )
 
             embedding = embed_service.extract_text_embedding(query_text)
-            results = vector_db_service.find_similar(embedding)
+            results = vector_db_service.find_similar(
+                embedding,
+                filter=filter,
+                page_limit=page_limit,
+                min_similarity=min_similarity,
+            )
 
-        data = {
-            "data": results,
-        }
+        data = {"data": results}
 
         return jsonify(data)
 
