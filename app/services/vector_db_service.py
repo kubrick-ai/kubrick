@@ -40,7 +40,7 @@ class VectorDBService:
 
             cur.execute(
                 """
-                CREATE TABLE IF NOT EXISTS video_embeddings (
+                CREATE TABLE IF NOT EXISTS video_segments (
                     id SERIAL PRIMARY KEY,
                     video_id INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
                     modality TEXT NOT NULL,
@@ -110,7 +110,7 @@ class VectorDBService:
 
         cursor.executemany(
             """
-            INSERT INTO video_embeddings (
+            INSERT INTO video_segments (
                 video_id,
                 modality,
                 scope,
@@ -140,7 +140,7 @@ class VectorDBService:
                     start_time,
                     end_time,
                     1 - (embedding <=> %s::vector) AS similarity
-                FROM video_embeddings
+                FROM video_segments
                 WHERE (1 - (embedding <=> %s::vector)) > %s
                 ORDER BY similarity DESC
                 LIMIT %s;
@@ -180,7 +180,7 @@ class VectorDBService:
                         end_time,
                         1 - (embedding <=> %s::vector) AS similarity,
                         {i} AS query_index
-                    FROM video_embeddings
+                    FROM video_segments
                     WHERE (1 - (embedding <=> %s::vector)) > %s
                 """
                 )
