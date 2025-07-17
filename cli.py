@@ -159,19 +159,11 @@ def add_file(
     vector_db_service: VectorDBService,
     DEBUG=False,
 ):
-    video_embedding = embed_service.extract_video_features(filepath)
+    video_embeddings = embed_service.extract_video_features(filepath)
     if DEBUG:
-        embed_service.print_segments(video_embedding)
+        embed_service.print_segments(video_embeddings)
 
-    for segment in video_embedding:
-        vector_db_service.store(
-            video_filepath=filepath,
-            embedding_type=segment.embedding_option,
-            scope=segment.embedding_scope,
-            start_time=segment.start_offset_sec,
-            end_time=segment.end_offset_sec,
-            embedding=segment.embeddings_float,
-        )
+    vector_db_service.store(filepath, video_embeddings)
 
 
 def search_text(

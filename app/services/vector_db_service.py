@@ -21,18 +21,35 @@ class VectorDBService:
 
         try:
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+
             cur.execute(
                 """
-                CREATE TABLE IF NOT EXISTS video_embeddings (
+                CREATE TABLE IF NOT EXISTS videos (
                     id SERIAL PRIMARY KEY,
-                    source TEXT NOT NULL,
+                    title TEXT,
+                    url TEXT,
+                    filename TEXT,
+                    duration REAL NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    height INTEGER NOT NULL,
+                    width INTEGER NOT NULL
+                );
+                """
+            )
+
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS video_segments (
+                    id SERIAL PRIMARY KEY,
+                    video_id INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
                     modality TEXT NOT NULL,
                     scope TEXT NOT NULL,
                     start_time REAL NOT NULL,
                     end_time REAL NOT NULL,
                     embedding vector(1024)
                 );
-            """
+                """
             )
             conn.commit()
             print("Database setup complete!")
@@ -42,41 +59,68 @@ class VectorDBService:
             cur.close()
             conn.close()
 
-    def store(
-        self, video_filepath, embedding_type, scope, start_time, end_time, embedding
-    ):
+    def store(self, video_metadata, video_segments):
         conn = self.get_connection()
         cursor = conn.cursor()
 
         try:
-            cursor.execute(
-                """
-                INSERT INTO video_embeddings (
-                    source,
-                    modality,
-                    scope,
-                    start_time,
-                    end_time,
-                    embedding
-                ) VALUES (%s, %s, %s, %s, %s, %s)
-                """,
-                (
-                    video_filepath,
-                    embedding_type,
-                    scope,
-                    start_time,
-                    end_time,
-                    embedding,
-                ),
-            )
+            video_id = self._insert_video(cursor, video_metadata)
+            self._insert_video_segments(cursor, video_id, video_segments)
             conn.commit()
+            print(f"Stored video and {len(video_segments)} embeddings.")
 
         except Exception as e:
             print("Error storing embedding:", e)
+            conn.rollback()
 
         finally:
             cursor.close()
             conn.close()
+
+    def _insert_video(self, cursor, metadata: dict) -> int:
+        cursor.execute(
+            """
+            INSERT INTO videos (title, url, filename, duration, height, width, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            RETURNING id
+            """,
+            (
+                metadata.get("title"),
+                metadata["url"],
+                metadata["filename"],
+                metadata["duration"],
+                metadata["height"],
+                metadata["width"],
+            ),
+        )
+        return cursor.fetchone()[0]
+
+    def _insert_video_segments(self, cursor, video_id: int, segments: list[dict]):
+        data_to_insert = [
+            (
+                video_id,
+                segment["modality"],
+                segment["scope"],
+                segment["start_time"],
+                segment["end_time"],
+                segment["embedding"],
+            )
+            for segment in segments
+        ]
+
+        cursor.executemany(
+            """
+            INSERT INTO video_segments (
+                video_id,
+                modality,
+                scope,
+                start_time,
+                end_time,
+                embedding
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            data_to_insert,
+        )
 
     def find_similar(
         self, embedding, page_limit=None, min_similarity=None
@@ -90,13 +134,13 @@ class VectorDBService:
             query = """
                 SELECT
                     id,
-                    source,
+                    video_id,
                     modality,
                     scope,
                     start_time,
                     end_time,
                     1 - (embedding <=> %s::vector) AS similarity
-                FROM video_embeddings
+                FROM video_segments
                 WHERE (1 - (embedding <=> %s::vector)) > %s
                 ORDER BY similarity DESC
                 LIMIT %s;
@@ -129,14 +173,14 @@ class VectorDBService:
                     f"""
                     SELECT
                         id,
-                        source,
+                        video_id,
                         modality,
                         scope,
                         start_time,
                         end_time,
                         1 - (embedding <=> %s::vector) AS similarity,
                         {i} AS query_index
-                    FROM video_embeddings
+                    FROM video_segments
                     WHERE (1 - (embedding <=> %s::vector)) > %s
                 """
                 )

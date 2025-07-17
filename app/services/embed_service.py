@@ -1,6 +1,6 @@
 from twelvelabs import TwelveLabs
-from typing import List, Optional, BinaryIO
-from twelvelabs.models.embed import EmbeddingsTask, SegmentEmbedding
+from typing import Optional, BinaryIO
+from twelvelabs.models.embed import EmbeddingsTask
 from app.config import Config
 
 
@@ -10,16 +10,16 @@ class EmbedService:
         self.api_key = config.TWELVELABS_API_KEY
         self.client = TwelveLabs(api_key=self.api_key)
 
-    def on_task_update(self, task: EmbeddingsTask):
+    def _on_request_update(self, task: EmbeddingsTask):
         print(f"  Status={task.status}")
 
-    def print_segments(self, segments: List[SegmentEmbedding], max_elements: int = 5):
+    def print_segments(self, segments, max_elements: int = 5):
         for segment in segments:
             print(
-                f"  embedding_scope={segment.embedding_scope} embedding_option={segment.embedding_option} start_offset_sec={segment.start_offset_sec} end_offset_sec={segment.end_offset_sec}"
+                f"  embedding_scope={segment["scope"]} embedding_modality={segment["modality"]} start_time={segment["start_time"]} end_time={segment["end_time"]}"
             )
-            if segment.embeddings_float is not None:
-                print(f"  embeddings: {segment.embeddings_float[:max_elements]}")
+            if segment["embedding"] is not None:
+                print(f"  embeddings: {segment["embedding"][:max_elements]}")
 
     def extract_video_features(
         self,
@@ -29,8 +29,24 @@ class EmbedService:
         start_offset: Optional[float] = None,
         end_offset: Optional[float] = None,
     ):
-        clip_length = self.config.DEFAULT_CLIP_LENGTH
-        task = self.client.embed.task.create(
+        embedding_request = self._create_embedding_request(
+            filepath, url, clip_length, start_offset, end_offset
+        )
+        self._wait_for_request_completion(embedding_request)
+        segments = self._retrieve_segments(embedding_request)
+        return self._normalize_segments(segments)
+
+    def _create_embedding_request(
+        self,
+        filepath: Optional[str],
+        url: Optional[str],
+        clip_length: Optional[int],
+        start_offset: Optional[float],
+        end_offset: Optional[float],
+    ):
+        clip_length = clip_length or self.config.DEFAULT_CLIP_LENGTH
+
+        embedding_request = self.client.embed.task.create(
             model_name=self.config.EMBEDDING_MODEL_NAME,
             video_file=filepath,
             video_url=url,
@@ -39,22 +55,42 @@ class EmbedService:
             video_end_offset_sec=end_offset,
             video_embedding_scopes=["clip", "video"],
         )
+
         if self.config.DEBUG:
             print(
-                f"Created task: id={task.id} model_name={task.model_name} status={task.status}"
+                f"Created task: id={embedding_request.id} model_name={embedding_request.model_name} status={embedding_request.status}"
             )
 
-        status = task.wait_for_done(sleep_interval=5, callback=self.on_task_update)
+        return embedding_request
+
+    def _wait_for_request_completion(self, embedding_request):
+        status = embedding_request.wait_for_done(
+            sleep_interval=5, callback=self._on_request_update
+        )
         if self.config.DEBUG:
             print(f"Embedding done: {status}")
 
-        task = task.retrieve(embedding_option=["visual-text", "audio"])
+    def _retrieve_segments(self, embedding_request):
+        segments = embedding_request.retrieve(embedding_option=["visual-text", "audio"])
 
-        if task.video_embedding is None or task.video_embedding.segments is None:
+        if not segments.video_embedding or not segments.video_embedding.segments:
             raise Exception("Embedding failed")
 
-        # TODO: Formalise this return type - right now it is arbitrary (based on Marengo API)
-        return task.video_embedding.segments
+        return segments.video_embedding.segments
+
+    def _normalize_segments(self, segments):
+        result = []
+        for segment in segments:
+            result.append(
+                {
+                    "start_time": segment.start_offset_sec,
+                    "end_time": segment.end_offset_sec,
+                    "scope": segment.embedding_scope,  # "clip" or "video"
+                    "modality": segment.embedding_option,  # "text-visual" or "audio"
+                    "embedding": segment.embeddings_float,
+                }
+            )
+        return result
 
     def extract_video_embedding(
         self,

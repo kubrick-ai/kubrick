@@ -11,41 +11,34 @@ from .task_store import task_store
 from typing import Tuple
 
 
-def process_video(task_id: str, video_url: str, embed_service: EmbedService, vector_db_service: VectorDBService):
+def process_video(
+    task_id: str,
+    video_url: str,
+    embed_service: EmbedService,
+    vector_db_service: VectorDBService,
+):
     task = task_store.get_task(task_id)
     if not task:
         return
 
     try:
-        response = requests.get(video_url, stream=True)
-        if response.status_code != 200:
-            task.mark_failed(f"Failed to download video. HTTP {response.status_code}")
-            return
+        temp_path = download_to_temp_file(video_url)
+        video_segments = embed_service.extract_video_features(filepath=temp_path)
 
-        suffix = os.path.splitext(video_url)[1] or ".mp4"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-            for chunk in response.iter_content(chunk_size=8192):
-                tmp_file.write(chunk)
-            temp_path = tmp_file.name
+        clip_ids = get_clip_ids(video_segments)
+        width, height, duration = get_video_metadata(temp_path)
 
-        video_embedding = embed_service.extract_video_features(filepath=temp_path)
-        clip_ids = []
-        for segment in video_embedding:
-            vector_db_service.store(
-                video_url,
-                embedding_type=segment.embedding_option,
-                start_time=segment.start_offset_sec,
-                scope=segment.embedding_scope,
-                end_time=segment.end_offset_sec,
-                embedding=segment.embeddings_float,
-            )
-            clip_ids.append(f"{segment.start_offset_sec}-{segment.end_offset_sec}")
+        update_task_metadata(task, width, height, duration)
 
-        [width, height, duration] = get_video_metadata(temp_path)
-
-        task.metadata["width"] = width
-        task.metadata["height"] = height
-        task.metadata["duration"] = duration
+        # Store video + embeddings
+        video_metadata = {
+            "url": video_url,
+            "filename": task.metadata["filename"],
+            "duration": duration,
+            "height": height,
+            "width": width,
+        }
+        vector_db_service.store(video_metadata, video_segments)
 
         os.remove(temp_path)
         task.mark_ready(clip_ids)
@@ -53,21 +46,56 @@ def process_video(task_id: str, video_url: str, embed_service: EmbedService, vec
     except Exception as e:
         task.mark_failed(str(e))
 
-def start_background_task(task_id: str, video_url: str, embed_service: EmbedService = None, vector_db_service: VectorDBService = None):
+
+def download_to_temp_file(video_url: str) -> str:
+    response = requests.get(video_url, stream=True)
+    if response.status_code != 200:
+        raise Exception(f"Failed to download video. HTTP {response.status_code}")
+
+    suffix = os.path.splitext(video_url)[1] or ".mp4"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+        for chunk in response.iter_content(chunk_size=8192):
+            tmp_file.write(chunk)
+        return tmp_file.name
+
+
+def get_clip_ids(segments: list[dict]) -> list[str]:
+    return [f"{s['start_time']}-{s['end_time']}" for s in segments]
+
+
+def update_task_metadata(task, width: int, height: int, duration: float):
+    task.metadata["width"] = width
+    task.metadata["height"] = height
+    task.metadata["duration"] = duration
+
+
+def start_background_task(
+    task_id: str,
+    video_url: str,
+    embed_service: EmbedService = None,
+    vector_db_service: VectorDBService = None,
+):
     # Create service instances if not provided
     if embed_service is None:
         from app.config import Config
+
         embed_service = EmbedService(Config())
     if vector_db_service is None:
         from app.config import Config
+
         vector_db_service = VectorDBService(Config())
-    
-    thread = threading.Thread(target=process_video, args=(task_id, video_url, embed_service, vector_db_service))
+
+    thread = threading.Thread(
+        target=process_video,
+        args=(task_id, video_url, embed_service, vector_db_service),
+    )
     thread.start()
+
 
 def ensure_ffprobe_available():
     if shutil.which("ffprobe") is None:
         raise EnvironmentError("ffprobe not found in system PATH")
+
 
 def run_ffprobe(path: str, timeout: int = 10) -> dict:
     if not os.path.exists(path):
@@ -75,8 +103,10 @@ def run_ffprobe(path: str, timeout: int = 10) -> dict:
 
     cmd = [
         "ffprobe",
-        "-v", "quiet",
-        "-print_format", "json",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
         "-show_streams",
         "-show_format",
         path,
@@ -92,8 +122,11 @@ def run_ffprobe(path: str, timeout: int = 10) -> dict:
     except json.JSONDecodeError:
         raise ValueError("Invalid JSON returned from ffprobe")
 
+
 def extract_resolution(probe: dict) -> tuple[int, int]:
-    video_streams = [s for s in probe.get("streams", []) if s.get("codec_type") == "video"]
+    video_streams = [
+        s for s in probe.get("streams", []) if s.get("codec_type") == "video"
+    ]
     if not video_streams:
         raise ValueError("No video stream found")
 
@@ -106,12 +139,14 @@ def extract_resolution(probe: dict) -> tuple[int, int]:
 
     return width, height
 
+
 def extract_duration(probe: dict) -> float:
     duration_str = probe.get("format", {}).get("duration")
     if not duration_str:
         raise ValueError("Duration not found")
 
     return float(duration_str)
+
 
 def get_video_metadata(path: str, timeout: int = 10) -> tuple[int, int, float]:
     ensure_ffprobe_available()
