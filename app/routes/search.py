@@ -1,8 +1,8 @@
-from flask import Blueprint, jsonify, request
 import tempfile
 
 from app.services.embed_service import EmbedService
 from app.services.vector_db_service import VectorDBService
+from flask import Blueprint, jsonify, request
 
 
 def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBService):
@@ -104,9 +104,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             embedding = embed_service.extract_text_embedding(query_text)
             results = vector_db_service.find_similar(embedding)
 
-        data = {
-            "data": results,
-        }
+        data = {"data": results}
 
         return jsonify(data)
 
