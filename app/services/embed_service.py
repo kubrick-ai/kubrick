@@ -101,9 +101,9 @@ class EmbedService:
         segments = self.extract_video_features(filepath, url, debug)
 
         return [
-            segment.embeddings_float
+            segment["embedding"]
             for segment in segments
-            if segment.embedding_scope == "video"
+            if segment["scope"] == "video"
         ]
 
     def extract_image_embedding(

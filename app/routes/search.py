@@ -18,6 +18,8 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             query_media_file: file (optional)
             page_limit: integer (optional)
             min_similarity: float (optional)
+            search_modality: "visual-text" | "audio" (default: "visual-text", optional)
+            operator: "or" | "and" (default: "or") (optional)
         """
 
         query_text = request.form.get("query_text")
@@ -28,6 +30,8 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
         min_similarity = request.form.get(
             "min_similarity", vector_db_service.default_min_similarity
         )
+        search_modality = request.form.get("search_modality", "visual-text")
+        operator = request.form.get("operator", "or")
 
         # Convert string parameters to appropriate types
         page_limit = int(page_limit)
