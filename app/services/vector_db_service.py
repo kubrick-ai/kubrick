@@ -134,15 +134,24 @@ class VectorDBService:
         query_parts.append(
             f"""
             SELECT
-                id,
-                video_id,
-                modality,
-                scope,
-                start_time,
-                end_time,
-                1 - (embedding <=> %s::vector) AS similarity
-            FROM video_segments
-            WHERE (1 - (embedding <=> %s::vector)) > %s
+                videos.id,
+                videos.title,
+                videos.url,
+                videos.filename,
+                videos.duration,
+                videos.created_at,
+                videos.updated_at,
+                videos.height,
+                videos.width,
+                video_segments.id,
+                video_segments.modality,
+                video_segments.scope,
+                video_segments.start_time,
+                video_segments.end_time,
+                1 - (video_segments.embedding <=> %s::vector) AS similarity
+            FROM videos
+            INNER JOIN video_segments ON videos.id = video_segments.video_id
+            WHERE (1 - (video_segments.embedding <=> %s::vector)) > %s
             """
         )
         query_params.extend([embedding, embedding, min_similarity])
