@@ -97,13 +97,16 @@ class EmbedService:
         self,
         filepath: Optional[str] = None,
         url: Optional[str] = None,
+        search_modality: Optional[str] = "visual-text",
         debug=False,
     ):
         segments = self.extract_video_features(filepath, url, debug)
 
         return [
-            segment["embedding"] for segment in segments if segment["scope"] == "video"
-        ]
+            segment["embedding"]
+            for segment in segments
+            if segment["scope"] == "video" and segment["modality"] == search_modality
+        ][0]
 
     def extract_image_embedding(
         self,

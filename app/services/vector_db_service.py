@@ -125,7 +125,7 @@ class VectorDBService:
     def find_similar(
         self,
         embedding,
-        filter,
+        filter=None,
         page_limit=None,
         min_similarity=None,
     ) -> list[dict[str, Any]]:
