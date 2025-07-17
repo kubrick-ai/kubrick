@@ -65,7 +65,7 @@ class VectorDBService:
 
         try:
             video_id = self._insert_video(cursor, video_metadata)
-            self._insert_video_embeddings(cursor, video_id, video_segments)
+            self._insert_video_segments(cursor, video_id, video_segments)
             conn.commit()
             print(f"Stored video and {len(video_segments)} embeddings.")
 
@@ -95,7 +95,7 @@ class VectorDBService:
         )
         return cursor.fetchone()[0]
 
-    def _insert_video_embeddings(self, cursor, video_id: int, segments: list[dict]):
+    def _insert_video_segments(self, cursor, video_id: int, segments: list[dict]):
         data_to_insert = [
             (
                 video_id,
