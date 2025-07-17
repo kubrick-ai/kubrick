@@ -77,6 +77,29 @@ class VectorDBService:
             cursor.close()
             conn.close()
 
+    def fetch_videos(self, page, limit):
+        conn = self.get_connection()
+        params = [limit, page]
+
+        try:
+            query = f"""
+                SELECT * 
+                FROM videos 
+                LIMIT %s 
+                OFFSET %s
+            """
+
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, params)
+                results = cur.fetchall()
+
+            conn.close()
+            return results
+
+        except Exception as e:
+            print(f"Error searching database with batch: {e}")
+            raise e
+
     def _insert_video(self, cursor, metadata: dict) -> int:
         cursor.execute(
             """
