@@ -123,7 +123,11 @@ class VectorDBService:
         )
 
     def find_similar(
-        self, embedding, scope=None, modality=None, page_limit=None, min_similarity=None
+        self,
+        embedding,
+        filter,
+        page_limit=None,
+        min_similarity=None,
     ) -> list[dict[str, Any]]:
         page_limit = page_limit or self.default_page_limit
         min_similarity = min_similarity or self.default_min_similarity
@@ -156,12 +160,12 @@ class VectorDBService:
         )
         query_params.extend([embedding, embedding, min_similarity])
 
-        if scope:
+        if filter and "scope" in filter:
             query_parts.append(f"AND scope = %s")
-            query_params.append(scope)
-        if modality:
+            query_params.append(filter["scope"])
+        if filter and "modality" in filter:
             query_parts.append(f"AND modality = %s")
-            query_params.append(modality)
+            query_params.append(filter["modality"])
 
         query_parts.append("ORDER BY similarity DESC LIMIT %s")
         query_params.append(page_limit)

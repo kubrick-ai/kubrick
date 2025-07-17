@@ -1,3 +1,4 @@
+import json
 import tempfile
 
 from app.services.embed_service import EmbedService
@@ -18,8 +19,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             query_media_file: file (optional)
             page_limit: integer (optional)
             min_similarity: float (optional)
-            query_scope: "video" | "clip" (optional)
-            query_modality: "visual-text" | "audio"  (optional)
+            filter: JSON (optional)
         """
 
         query_text = request.form.get("query_text")
@@ -30,8 +30,10 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
         min_similarity = request.form.get(
             "min_similarity", vector_db_service.default_min_similarity
         )
-        scope = request.form.get("query_scope")
-        modality = request.form.get("query_modality")
+        filter = request.form.get("filter")
+
+        if filter:
+            filter = json.loads(filter)
 
         # Convert string parameters to appropriate types
         page_limit = int(page_limit)
@@ -68,8 +70,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                     embedding,
                     page_limit=page_limit,
                     min_similarity=min_similarity,
-                    modality=modality,
-                    scope=scope,
+                    filter=filter,
                 )
 
             elif query_media_type == "video":
@@ -121,8 +122,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             embedding = embed_service.extract_text_embedding(query_text)
             results = vector_db_service.find_similar(
                 embedding,
-                scope=scope,
-                modality=modality,
+                filter=filter,
                 page_limit=page_limit,
                 min_similarity=min_similarity,
             )
