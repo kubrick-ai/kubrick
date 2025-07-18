@@ -283,8 +283,7 @@ class VectorDBService:
                 results = cur.fetchall()
 
             conn.close()
-            # TODO: Use _normalize_find_similar_results here
-            return results
+            return self._normalize_find_similar_results(results)
 
         except Exception as e:
             print(f"Error searching database with batch: {e}")
