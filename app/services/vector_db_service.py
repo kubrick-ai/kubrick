@@ -268,6 +268,7 @@ class VectorDBService:
                 results = cur.fetchall()
 
             conn.close()
+            # TODO: Use _normalize_find_similar_results here
             return results
 
         except Exception as e:
