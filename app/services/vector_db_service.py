@@ -175,7 +175,7 @@ class VectorDBService:
         query_parts.append(
             """
             SELECT
-                videos.id,
+                videos.id AS video_id,
                 videos.title,
                 videos.url,
                 videos.filename,
@@ -184,7 +184,7 @@ class VectorDBService:
                 videos.updated_at,
                 videos.height,
                 videos.width,
-                video_segments.id,
+                video_segments.id AS segment_id,
                 video_segments.modality,
                 video_segments.scope,
                 video_segments.start_time,
@@ -237,7 +237,7 @@ class VectorDBService:
             for i, embedding in enumerate(embeddings):
                 sub_query = f"""
                     SELECT
-                        videos.id,
+                        videos.id AS video_id,
                         videos.title,
                         videos.url,
                         videos.filename,
@@ -246,7 +246,7 @@ class VectorDBService:
                         videos.updated_at,
                         videos.height,
                         videos.width,
-                        video_segments.id,
+                        video_segments.id AS segment_id,
                         video_segments.modality,
                         video_segments.scope,
                         video_segments.start_time,
@@ -292,16 +292,17 @@ class VectorDBService:
     def _normalize_find_similar_results(self, raw_results):
         return [
             {
+                "id": raw_result["segment_id"],
                 "modality": raw_result["modality"],
                 "scope": raw_result["scope"],
                 "start_time": raw_result["start_time"],
                 "end_time": raw_result["end_time"],
                 "similarity": raw_result["similarity"],
                 "video": {
-                    "id": raw_result["id"],
+                    "id": raw_result["video_id"],
                     "title": raw_result["title"],
                     "url": raw_result["url"],
-                    "file_name": raw_result["filename"],
+                    "filename": raw_result["filename"],
                     "duration": raw_result["duration"],
                     "created_at": raw_result["created_at"],
                     "updated_at": raw_result["updated_at"],
