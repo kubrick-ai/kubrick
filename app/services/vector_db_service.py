@@ -83,21 +83,35 @@ class VectorDBService:
 
         try:
             query = f"""
-                SELECT * 
-                FROM videos 
-                LIMIT %s 
+                SELECT *
+                FROM videos
+                LIMIT %s
                 OFFSET %s
             """
 
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(query, params)
-                results = cur.fetchall()
+                raw_results = cur.fetchall()
 
             conn.close()
-            return results
+
+            return [
+                {
+                    "id": video["id"],
+                    "title": video["title"],
+                    "url": video["url"],
+                    "file_name": video["filename"],
+                    "duration": video["duration"],
+                    "created_at": video["created_at"],
+                    "updated_at": video["updated_at"],
+                    "height": video["height"],
+                    "width": video["width"],
+                }
+                for video in raw_results
+            ]
 
         except Exception as e:
-            print(f"Error searching database with batch: {e}")
+            print(f"Error searching video in database: {e}")
             raise e
 
     def _insert_video(self, cursor, metadata: dict) -> int:
@@ -202,7 +216,7 @@ class VectorDBService:
                 results = cur.fetchall()
 
             conn.close()
-            return results
+            return self._normalize_find_similar_results(results)
 
         except Exception as e:
             print(f"Error searching database: {e}")
@@ -259,3 +273,26 @@ class VectorDBService:
         except Exception as e:
             print(f"Error searching database with batch: {e}")
             raise e
+
+    def _normalize_find_similar_results(self, raw_results):
+        return [
+            {
+                "modality": raw_result["modality"],
+                "scope": raw_result["scope"],
+                "start_time": raw_result["start_time"],
+                "end_time": raw_result["end_time"],
+                "similarity": raw_result["similarity"],
+                "video": {
+                    "id": raw_result["id"],
+                    "title": raw_result["title"],
+                    "url": raw_result["url"],
+                    "file_name": raw_result["filename"],
+                    "duration": raw_result["duration"],
+                    "created_at": raw_result["created_at"],
+                    "updated_at": raw_result["updated_at"],
+                    "height": raw_result["height"],
+                    "width": raw_result["width"],
+                },
+            }
+            for raw_result in raw_results
+        ]

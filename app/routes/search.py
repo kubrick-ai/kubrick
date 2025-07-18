@@ -107,7 +107,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                     )
                 else:
                     results = vector_db_service.find_similar(
-                        embeddings=embeddings,
+                        embedding=embeddings[0],
                         page_limit=page_limit,
                         min_similarity=min_similarity,
                         filter=filter,
@@ -141,6 +141,8 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                 page_limit=page_limit,
                 min_similarity=min_similarity,
             )
+
+        print(results)
 
         data = {"data": results}
 
