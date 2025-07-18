@@ -172,7 +172,6 @@ class VectorDBService:
 
         try:
             conn = self.get_connection()
-
             query = "\n".join(query_parts)
 
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -186,6 +185,7 @@ class VectorDBService:
             print(f"Error searching database: {e}")
             raise e
 
+    # TODO: This function has to return the same data as find_similar
     def find_similar_batch(
         self, embeddings, page_limit=None, min_similarity=None
     ) -> list[dict[str, Any]]:

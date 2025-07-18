@@ -1,4 +1,4 @@
-from typing import BinaryIO, Optional
+from typing import BinaryIO, Optional, List
 
 from app.config import Config
 from twelvelabs import TwelveLabs
@@ -97,7 +97,7 @@ class EmbedService:
         self,
         filepath: Optional[str] = None,
         url: Optional[str] = None,
-        search_modality: Optional[str] = "visual-text",
+        search_modality: List[str] = ["visual-text"],
         debug=False,
     ):
         segments = self.extract_video_features(filepath, url, debug)
@@ -105,8 +105,8 @@ class EmbedService:
         return [
             segment["embedding"]
             for segment in segments
-            if segment["scope"] == "video" and segment["modality"] == search_modality
-        ][0]
+            if segment["scope"] == "video" and segment["modality"] in search_modality
+        ]
 
     def extract_image_embedding(
         self,

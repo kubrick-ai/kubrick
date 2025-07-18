@@ -32,7 +32,8 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
         min_similarity = request.form.get(
             "min_similarity", vector_db_service.default_min_similarity
         )
-        search_modality = request.form.get("search_modality", "visual-text")
+        search_modality = request.form.getlist("search_modality")
+
         # operator = request.form.get("operator", "or") TODO: Add operator functionality
         filter = request.form.get("filter", None)
 
@@ -79,14 +80,14 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
 
             elif query_media_type == "video":
                 if query_media_url:
-                    embedding = embed_service.extract_video_embedding(
+                    embeddings = embed_service.extract_video_embedding(
                         url=query_media_url, search_modality=search_modality
                     )
                 elif query_media_file:
                     # Save the uploaded file to a temporary location
                     with tempfile.NamedTemporaryFile() as temp_file:
                         query_media_file.save(temp_file.name)
-                        embedding = embed_service.extract_video_embedding(
+                        embeddings = embed_service.extract_video_embedding(
                             filepath=temp_file.name, search_modality=search_modality
                         )
                 else:
@@ -98,13 +99,19 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                         ),
                         400,
                     )
-
-                results = vector_db_service.find_similar(
-                    embedding=embedding,
-                    page_limit=page_limit,
-                    min_similarity=min_similarity,
-                    filter=filter,
-                )
+                if len(embeddings) > 1:
+                    results = vector_db_service.find_similar_batch(
+                        embeddings=embeddings,
+                        page_limit=page_limit,
+                        min_similarity=min_similarity,
+                    )
+                else:
+                    results = vector_db_service.find_similar(
+                        embeddings=embeddings,
+                        page_limit=page_limit,
+                        min_similarity=min_similarity,
+                        filter=filter,
+                    )
 
             else:
                 return (
