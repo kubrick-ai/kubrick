@@ -83,21 +83,35 @@ class VectorDBService:
 
         try:
             query = """
-                SELECT * 
-                FROM videos 
-                LIMIT %s 
+                SELECT *
+                FROM videos
+                LIMIT %s
                 OFFSET %s
             """
 
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(query, params)
-                results = cur.fetchall()
+                raw_results = cur.fetchall()
 
             conn.close()
-            return results
+
+            return [
+                {
+                    "id": video["id"],
+                    "title": video["title"],
+                    "url": video["url"],
+                    "file_name": video["filename"],
+                    "duration": video["duration"],
+                    "created_at": video["created_at"],
+                    "updated_at": video["updated_at"],
+                    "height": video["height"],
+                    "width": video["width"],
+                }
+                for video in raw_results
+            ]
 
         except Exception as e:
-            print(f"Error searching database with batch: {e}")
+            print(f"Error searching video in database: {e}")
             raise e
 
     def _insert_video(self, cursor, metadata: dict) -> int:
@@ -161,7 +175,7 @@ class VectorDBService:
         query_parts.append(
             """
             SELECT
-                videos.id,
+                videos.id AS video_id,
                 videos.title,
                 videos.url,
                 videos.filename,
@@ -170,7 +184,7 @@ class VectorDBService:
                 videos.updated_at,
                 videos.height,
                 videos.width,
-                video_segments.id,
+                video_segments.id AS segment_id,
                 video_segments.modality,
                 video_segments.scope,
                 video_segments.start_time,
@@ -202,7 +216,7 @@ class VectorDBService:
                 results = cur.fetchall()
 
             conn.close()
-            return results
+            return self._normalize_find_similar_results(results)
 
         except Exception as e:
             print(f"Error searching database: {e}")
@@ -223,7 +237,7 @@ class VectorDBService:
             for i, embedding in enumerate(embeddings):
                 sub_query = f"""
                     SELECT
-                        videos.id,
+                        videos.id AS video_id,
                         videos.title,
                         videos.url,
                         videos.filename,
@@ -232,7 +246,7 @@ class VectorDBService:
                         videos.updated_at,
                         videos.height,
                         videos.width,
-                        video_segments.id,
+                        video_segments.id AS segment_id,
                         video_segments.modality,
                         video_segments.scope,
                         video_segments.start_time,
@@ -269,8 +283,32 @@ class VectorDBService:
                 results = cur.fetchall()
 
             conn.close()
-            return results
+            return self._normalize_find_similar_results(results)
 
         except Exception as e:
             print(f"Error searching database with batch: {e}")
             raise e
+
+    def _normalize_find_similar_results(self, raw_results):
+        return [
+            {
+                "id": raw_result["segment_id"],
+                "modality": raw_result["modality"],
+                "scope": raw_result["scope"],
+                "start_time": raw_result["start_time"],
+                "end_time": raw_result["end_time"],
+                "similarity": raw_result["similarity"],
+                "video": {
+                    "id": raw_result["video_id"],
+                    "title": raw_result["title"],
+                    "url": raw_result["url"],
+                    "filename": raw_result["filename"],
+                    "duration": raw_result["duration"],
+                    "created_at": raw_result["created_at"],
+                    "updated_at": raw_result["updated_at"],
+                    "height": raw_result["height"],
+                    "width": raw_result["width"],
+                },
+            }
+            for raw_result in raw_results
+        ]

@@ -12,22 +12,7 @@ def create_videos_bp(vector_db_service: VectorDBService):
         page_limit = min(int(request.args.get("page_limit", 10)), 50)
         videos = vector_db_service.fetch_videos(page, page_limit)
 
-        results = [
-            {
-                "id": video["id"],
-                "title": video["title"],
-                "url": video["url"],
-                "file_name": video["filename"],
-                "duration": video["duration"],
-                "created_at": video["created_at"],
-                "updated_at": video["updated_at"],
-                "height": video["height"],
-                "width": video["width"],
-            }
-            for video in videos
-        ]
-
-        data = {"data": results}
+        data = {"data": videos}
 
         return (jsonify(data), 200)
 
