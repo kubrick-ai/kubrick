@@ -82,7 +82,7 @@ class VectorDBService:
         params = [limit, page]
 
         try:
-            query = f"""
+            query = """
                 SELECT * 
                 FROM videos 
                 LIMIT %s 
@@ -159,7 +159,7 @@ class VectorDBService:
         query_params = []
 
         query_parts.append(
-            f"""
+            """
             SELECT
                 videos.id,
                 videos.title,
@@ -184,10 +184,10 @@ class VectorDBService:
         query_params.extend([embedding, embedding, min_similarity])
 
         if filter and "scope" in filter:
-            query_parts.append(f"AND scope = %s")
+            query_parts.append("AND scope = %s")
             query_params.append(filter["scope"])
         if filter and "modality" in filter:
-            query_parts.append(f"AND modality = %s")
+            query_parts.append("AND modality = %s")
             query_params.append(filter["modality"])
 
         query_parts.append("ORDER BY similarity DESC LIMIT %s")
@@ -208,9 +208,8 @@ class VectorDBService:
             print(f"Error searching database: {e}")
             raise e
 
-    # TODO: This function has to return the same data as find_similar
     def find_similar_batch(
-        self, embeddings, page_limit=None, min_similarity=None
+        self, embeddings, filter=None, page_limit=None, min_similarity=None
     ) -> list[dict[str, Any]]:
         page_limit = page_limit or self.default_page_limit
         min_similarity = min_similarity or self.default_min_similarity
@@ -219,25 +218,41 @@ class VectorDBService:
             conn = self.get_connection()
 
             query_parts = []
-            params = []
+            query_params = []
 
             for i, embedding in enumerate(embeddings):
-                query_parts.append(
-                    f"""
+                sub_query = f"""
                     SELECT
-                        id,
-                        video_id,
-                        modality,
-                        scope,
-                        start_time,
-                        end_time,
-                        1 - (embedding <=> %s::vector) AS similarity,
+                        videos.id,
+                        videos.title,
+                        videos.url,
+                        videos.filename,
+                        videos.duration,
+                        videos.created_at,
+                        videos.updated_at,
+                        videos.height,
+                        videos.width,
+                        video_segments.id,
+                        video_segments.modality,
+                        video_segments.scope,
+                        video_segments.start_time,
+                        video_segments.end_time,
+                        1 - (video_segments.embedding <=> %s::vector) AS similarity
                         {i} AS query_index
-                    FROM video_segments
-                    WHERE (1 - (embedding <=> %s::vector)) > %s
+                    FROM videos
+                    INNER JOIN video_segments ON videos.id = video_segments.video_id
+                    WHERE (1 - (video_segments.embedding <=> %s::vector)) > %s
                 """
-                )
-                params.extend([embedding, embedding, min_similarity])
+                query_params.extend([embedding, embedding, min_similarity])
+
+                if filter:
+                    if "scope" in filter:
+                        sub_query += "\nAND scope = %s"
+                        query_params.append(filter["scope"])
+                    if "modality" in filter:
+                        sub_query += "\nAND modality = %s"
+                        query_params.append(filter["modality"])
+                query_parts.append(sub_query)
 
             full_query = f"""
                 WITH combined_results AS (
@@ -247,10 +262,10 @@ class VectorDBService:
                 ORDER BY similarity DESC
                 LIMIT %s;
             """
-            params.append(page_limit)
+            query_params.append(page_limit)
 
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(full_query, params)
+                cur.execute(full_query, query_params)
                 results = cur.fetchall()
 
             conn.close()

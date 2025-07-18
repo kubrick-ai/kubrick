@@ -19,7 +19,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             query_media_file: file (optional)
             page_limit: integer (optional)
             min_similarity: float (optional)
-            search_modality: "visual-text" | "audio" (default: "visual-text", optional)
+            query_modality: "visual-text" | "audio" (default: "visual-text", optional)
             operator: "or" | "and" (default: "or") (optional) NOT BEING USED
             filter: JSON (optional)
         """
@@ -32,7 +32,7 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
         min_similarity = request.form.get(
             "min_similarity", vector_db_service.default_min_similarity
         )
-        search_modality = request.form.getlist("search_modality")
+        query_modality = request.form.getlist("query_modality") or ["visual-text"]
 
         # operator = request.form.get("operator", "or") TODO: Add operator functionality
         filter = request.form.get("filter", None)
@@ -81,14 +81,14 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
             elif query_media_type == "video":
                 if query_media_url:
                     embeddings = embed_service.extract_video_embedding(
-                        url=query_media_url, search_modality=search_modality
+                        url=query_media_url, query_modality=query_modality
                     )
                 elif query_media_file:
                     # Save the uploaded file to a temporary location
                     with tempfile.NamedTemporaryFile() as temp_file:
                         query_media_file.save(temp_file.name)
                         embeddings = embed_service.extract_video_embedding(
-                            filepath=temp_file.name, search_modality=search_modality
+                            filepath=temp_file.name, query_modality=query_modality
                         )
                 else:
                     return (
@@ -99,19 +99,23 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                         ),
                         400,
                     )
+
                 if len(embeddings) > 1:
                     results = vector_db_service.find_similar_batch(
                         embeddings=embeddings,
                         page_limit=page_limit,
                         min_similarity=min_similarity,
                     )
-                else:
+
+                elif len(embeddings) == 1:
                     results = vector_db_service.find_similar(
-                        embeddings=embeddings,
+                        embedding=embeddings[0],
                         page_limit=page_limit,
                         min_similarity=min_similarity,
                         filter=filter,
                     )
+                else:
+                    raise Exception("Could not extract video embeddings.")
 
             else:
                 return (
