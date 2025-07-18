@@ -142,8 +142,6 @@ def create_search_bp(embed_service: EmbedService, vector_db_service: VectorDBSer
                 min_similarity=min_similarity,
             )
 
-        print(results)
-
         data = {"data": results}
 
         return jsonify(data)
