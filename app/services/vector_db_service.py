@@ -100,7 +100,7 @@ class VectorDBService:
                     "id": video["id"],
                     "title": video["title"],
                     "url": video["url"],
-                    "file_name": video["filename"],
+                    "filename": video["filename"],
                     "duration": video["duration"],
                     "created_at": video["created_at"],
                     "updated_at": video["updated_at"],
