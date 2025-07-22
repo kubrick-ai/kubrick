@@ -92,10 +92,9 @@ def lambda_handler(event, context):
 
         message_body = json.dumps(
             {
-                "task_id": task_id,
-                "source_video": key,
-                "s3_bucket": bucket,
-                "presigned_url": presigned_url,
+                "twelvelabs_video_embedding_task_id": task_id,
+                "bucket": bucket,
+                "key": key,
             }
         )
 

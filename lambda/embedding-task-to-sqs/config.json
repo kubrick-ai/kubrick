@@ -1,0 +1,9 @@
+{
+  "model_name": "Marengo-retrieval-2.7",
+  "video_embedding_scopes": ["clip", "video"],
+  "secret_name": "JorgeTwelveLabsAPIKeySecret",
+  "clip_length": 6,
+  "presigned_url_expiry": 600,
+  "file_check_retries": 2,
+  "file_check_delay_sec": 0.5
+}
