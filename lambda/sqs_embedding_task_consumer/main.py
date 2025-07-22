@@ -29,7 +29,7 @@ def lambda_handler(event, context):
 
     for record in event["Records"]:
         message_body = json.loads(record["body"])
-        task_id = message_body.get("taskId")
+        task_id = message_body.get("TwelveLabsVideoEmbeddingTaskId")
         receipt_handle = record["receiptHandle"]
 
         try:
@@ -74,17 +74,14 @@ def get_db_connection():
 def _insert_video(cursor, metadata):
     cursor.execute(
         """
-            INSERT INTO videos (title, url, filename, duration, height, width, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            INSERT INTO videos (url, filename, duration, created_at, updated_at)
+            VALUES (%s, %s, %s, NOW(), NOW())
             RETURNING id
             """,
         (
-            metadata.get("title"),
             metadata["url"],
             metadata["filename"],
             metadata["duration"],
-            metadata["height"],
-            metadata["width"],
         ),
     )
     return cursor.fetchone()["id"]
