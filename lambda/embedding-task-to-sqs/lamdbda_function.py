@@ -29,9 +29,6 @@ def get_api_key():
         raise
 
 
-client = TwelveLabs(api_key=get_api_key())
-
-
 def wait_for_file(s3_client, bucket, key, retries=3, delay=2):
     for attempt in range(retries):
         try:
@@ -50,7 +47,7 @@ def wait_for_file(s3_client, bucket, key, retries=3, delay=2):
     return False
 
 
-def create_embedding_request(url, start_offset=None, end_offset=None):
+def create_embedding_request(client, url, start_offset=None, end_offset=None):
     embedding_request = client.embed.task.create(
         model_name=CONFIG["model_name"],
         video_url=url,
@@ -73,22 +70,15 @@ def lambda_handler(event, context):
         if not bucket or not key:
             raise ValueError("Missing bucket or key in event")
 
-        if not wait_for_file(
-            s3,
-            bucket,
-            key,
-            CONFIG["file_check_retries"],
-            CONFIG["file_check_delay_sec"],
-        ):
+        if not wait_for_file(s3, bucket, key, CONFIG["file_check_retries"], CONFIG["file_check_delay_sec"]):
             raise Exception(f"File s3://{bucket}/{key} not found after retries.")
 
         presigned_url = s3.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=CONFIG["presigned_url_expiry"],
+            "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=CONFIG["presigned_url_expiry"]
         )
 
-        task_id = create_embedding_request(url=presigned_url)
+        twelvelabs_client = TwelveLabs(api_key=get_api_key())
+        task_id = create_embedding_request(client=twelvelabs_client, url=presigned_url)
 
         message_body = json.dumps(
             {
