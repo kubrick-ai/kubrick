@@ -1,85 +1,52 @@
 import json
+import time
+import logging
 import os
-import boto3
 from twelvelabs import TwelveLabs, VideoSegment
 from twelvelabs.embed import TasksStatusResponse
 import psycopg2
+from psycopg2.extensions import connection
 from psycopg2.extras import RealDictCursor
+from config import load_config, get_secret
 
-# Assuming the queue URL for re-queuing is the same as the source queue,
-# or you can get it from the event if needed.
-QUEUE_URL = os.getenv("SQS_QUEUE_URL", "")
-TWELVELABS_API_KEY = os.getenv("TWELVELABS_API_KEY", "")
-DB_CONFIG = {
-    "host": os.getenv("DB_URL"),
-    "database": "kubrick",
-    "user": "postgres",
-    "password": os.getenv("DB_PASSWORD"),
-    "port": 5432,
-}
-
-sqs_client = boto3.client("sqs")
-tl_client = TwelveLabs(api_key=TWELVELABS_API_KEY)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
-def lambda_handler(event, context):
-    failed_message_ids = []
-    pending_message_ids = []
-    successful_message_ids = []
-
-    for record in event["Records"]:
-        message_body = json.loads(record["body"])
-        task_id = message_body.get("twelveLabsVideoEmbeddingTaskId")
-        receipt_handle = record["receiptHandle"]
-
-        try:
-            # Call TwelveLabs API to get status
-            task_status = get_task_status(task_id)
-
-            if task_status == "ready":
-                store(task_id)  # Your RDS insertion logic
-                successful_message_ids.append(record["messageId"])
-                # Lambda will automatically delete successful_message_ids if not in failed_message_ids
-            elif task_status == "failed":
-                failed_message_ids.append({"itemIdentifier": record["messageId"]})
-                print(f"Task {task_id} failed.")
-            elif task_status == "pending":
-                # If status is "pending", add to failed list for re-queuing
-                pending_message_ids.append({"itemIdentifier": record["messageId"]})
-                # No explicit SQS send needed here, Lambda handles it
-                print(f"Task {task_id} is still pending. Re-queueing.")
-            else:
-                raise Exception(f"Unexpected value for task status {task_status}")
-
-        except Exception as e:
-            print(f"Error processing task {task_id}: {e}")
-            failed_message_ids.append({"itemIdentifier": record["messageId"]})
-
-    # Return the list of pending message IDs
-    if pending_message_ids:
-        return {"batchItemFailures": pending_message_ids}
-    else:
-        return {}  # All messages processed successfully
-
-
-def get_task_status(task_id):
-    response = tl_client.embed.tasks.status(task_id=task_id)
+def get_embedding_provider_task_status(tl_client, task_id):
+    response: TasksStatusResponse = tl_client.embed.tasks.status(task_id=task_id)
     return response.status
 
 
-def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG, cursor_factory=RealDictCursor)
+def get_db_connection(db_config: dict, max_retries=3) -> connection:
+    attempt = 0
+    while True:
+        try:
+            logger.info("Connecting to database...")
+            return psycopg2.connect(**db_config, cursor_factory=RealDictCursor)
+        except psycopg2.OperationalError as e:
+            attempt += 1
+            if attempt == max_retries - 1:
+                logger.error(
+                    f"Failed to connect to database after {attempt + 1} attempts: {e}"
+                )
+                raise
+            logger.warning(
+                f"Database connection attempt {attempt + 1} failed. Retrying..."
+            )
+            time.sleep(2**attempt)
 
 
 def _insert_video(cursor, metadata):
     cursor.execute(
         """
-            INSERT INTO videos (url, filename, duration, created_at, updated_at)
-            VALUES (%s, %s, %s, NOW(), NOW())
+            INSERT INTO videos (s3_bucket, s3_key, filename, duration, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, NOW(), NOW())
             RETURNING id
             """,
         (
-            metadata["url"],
+            metadata["s3_bucket"],
+            metadata["s3_key"],
             metadata["filename"],
             metadata["duration"],
         ),
@@ -91,10 +58,10 @@ def get_video_metadata(response):
     if response.video_embedding and response.video_embedding.metadata:
         md = response.video_embedding.metadata
         return {
-            "url": md.input_url,
             "filename": md.input_filename,
             "duration": md.duration,
         }
+    return {}
 
 
 def _insert_video_segments(cursor, video_id: int, segments: list[VideoSegment]):
@@ -125,27 +92,83 @@ def _insert_video_segments(cursor, video_id: int, segments: list[VideoSegment]):
     )
 
 
-def store(task_id):
+def store(tl_client, db_connection, message_body):
+    task_id = message_body["twelvelabs_video_embedding_task_id"]
+    if not task_id:
+        raise ValueError("Failed to find twelvelabs_video_embedding_task_id")
+
     response = tl_client.embed.tasks.retrieve(task_id=task_id)
-    video_metadata = get_video_metadata(response)
+
     if response.video_embedding is None or response.video_embedding.segments is None:
-        raise Exception("No embedding returned from TwelveLabs API")
+        raise ValueError("No embedding returned from TwelveLabs API")
+
+    video_metadata = get_video_metadata(response)
+    video_metadata["s3_bucket"] = message_body["s3_bucket"]
+    video_metadata["s3_key"] = message_body["s3_key"]
 
     video_segments = response.video_embedding.segments
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    with db_connection.cursor() as cursor:
+        try:
+            video_id = _insert_video(cursor, video_metadata)
+            _insert_video_segments(cursor, video_id, video_segments)
+            db_connection.commit()
+            logger.info(f"Stored video and {len(video_segments)} embeddings.")
 
-    try:
-        video_id = _insert_video(cursor, video_metadata)
-        _insert_video_segments(cursor, video_id, video_segments)
-        conn.commit()
-        print(f"Stored video and {len(video_segments)} embeddings.")
+        except Exception as e:
+            logger.error("Error storing embedding:", e)
+            db_connection.rollback()
 
-    except Exception as e:
-        print("Error storing embedding:", e)
-        conn.rollback()
 
-    finally:
-        cursor.close()
-        conn.close()
+def lambda_handler(event, context):
+    config = load_config()
+    SECRET = get_secret(config)
+    tl_client = TwelveLabs(api_key=SECRET["TWELVELABS_API_KEY"])
+    logger.info("Established TL client")
+
+    DB_CONFIG = {
+        "host": os.getenv("DB_URL"),
+        "database": "kubrick",
+        "user": "postgres",
+        "password": SECRET["DB_PASSWORD"],
+        "port": 5432,
+    }
+
+    with get_db_connection(DB_CONFIG) as conn:
+        pending_message_ids = []
+
+        for record in event["Records"]:
+            message_body = json.loads(record["body"])
+            task_id = message_body.get("twelvelabs_video_embedding_task_id")
+            # use receipt_handle to distinguish between different records representing the same message
+            # receipt_handle = record["receiptHandle"]
+
+            try:
+                task_status = get_embedding_provider_task_status(tl_client, task_id)
+
+                if task_status == "ready":
+                    store(tl_client, conn, message_body)
+
+                elif task_status == "failed":
+                    logger.error(
+                        f"TwelveLabs video embedding task failed: {message_body}"
+                    )
+
+                elif task_status == "processing":
+                    # If status is "processing", add to pending list for re-queuing
+                    pending_message_ids.append({"itemIdentifier": record["messageId"]})
+                    logger.info(
+                        f"TwelveLabs video embedding task {task_id} is still pending. Re-queueing."
+                    )
+                else:
+                    raise Exception(f"Unexpected value for task status {task_status}")
+
+            except Exception as e:
+                logger.error(f"Error processing task {task_id}: {e}")
+                pending_message_ids.append({"itemIdentifier": record["messageId"]})
+
+    # Return the list of pending message IDs
+    if pending_message_ids:
+        return {"batchItemFailures": pending_message_ids}
+    else:
+        return {}  # All messages processed successfully
