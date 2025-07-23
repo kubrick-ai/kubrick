@@ -139,9 +139,9 @@ def lambda_handler(event, context):
     logger.info("Established TL client")
 
     DB_CONFIG = {
-        "host": os.getenv("DB_URL"),
-        "database": "kubrick",
-        "user": "postgres",
+        "host": os.getenv("DB_HOST", "localhost"),
+        "database": os.getenv("DB_NAME", "kubrick"),
+        "user": os.getenv("DB_USER", "postgres"),
         "password": SECRET["DB_PASSWORD"],
         "port": 5432,
     }
