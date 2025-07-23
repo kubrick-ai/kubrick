@@ -92,21 +92,33 @@ def _insert_video_segments(cursor, video_id: int, segments: list[VideoSegment]):
     )
 
 
+def extract_filename(s3_key):
+    filename = os.path.basename(s3_key)
+    logger.info(f"Extracting filename from s3 key: {filename}")
+    return filename
+
+
 def store(tl_client, db_connection, message_body):
     task_id = message_body["twelvelabs_video_embedding_task_id"]
     if not task_id:
         raise ValueError("Failed to find twelvelabs_video_embedding_task_id")
 
-    response = tl_client.embed.tasks.retrieve(task_id=task_id)
+    tl_response = tl_client.embed.tasks.retrieve(task_id=task_id)
 
-    if response.video_embedding is None or response.video_embedding.segments is None:
+    if (
+        tl_response.video_embedding is None
+        or tl_response.video_embedding.segments is None
+    ):
         raise ValueError("No embedding returned from TwelveLabs API")
 
-    video_metadata = get_video_metadata(response)
+    video_metadata = get_video_metadata(tl_response)
+    video_metadata["filename"] = video_metadata["filename"] or extract_filename(
+        message_body["s3_key"]
+    )
     video_metadata["s3_bucket"] = message_body["s3_bucket"]
     video_metadata["s3_key"] = message_body["s3_key"]
 
-    video_segments = response.video_embedding.segments
+    video_segments = tl_response.video_embedding.segments
 
     with db_connection.cursor() as cursor:
         try:
