@@ -1,112 +1,67 @@
 from typing import Any
 import os
+import time
 
+from logging import getLogger
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from psycopg2.extensions import connection
+
+DEFAULT_PAGE_LIMIT = os.getenv("DEFAULT_PAGE_LIMIT", 10)
+DEFAULT_MIN_SIMILARITY = os.getenv("DEFAULT_MIN_SIMILARITY", 0.2)
 
 
 class VectorDBService:
     def __init__(
         self,
+        db_params,
+        page_limit=DEFAULT_PAGE_LIMIT,
+        min_similarity=DEFAULT_MIN_SIMILARITY,
+        logger=getLogger(),
     ):
-        self.db_params = {
-            "host": os.getenv("DB_HOST", "localhost"),
-            "database": os.getenv("DB_NAME", "kubrick"),
-            "user": os.getenv("DB_USER", "postgres"),
-            "password": SECRET["DB_PASSWORD"],
-            "port": 5432,
-        }
-        self.default_page_limit = self.config.DEFAULT_PAGE_LIMIT
-        self.default_min_similarity = self.config.DEFAULT_MIN_SIMILARITY
+        self.db_params = db_params
+        self.default_page_limit = page_limit
+        self.default_min_similarity = min_similarity
+        self.logger = logger
+        self.conn = self.get_connection()
 
-    def get_connection(self):
-        return psycopg2.connect(**self.db_params)
-
-    def setup(self):
-        conn = self.get_connection()
-        cur = conn.cursor()
-
-        try:
-            cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS videos (
-                    id SERIAL PRIMARY KEY,
-                    title TEXT,
-                    url TEXT,
-                    filename TEXT,
-                    duration REAL NOT NULL,
-                    created_at TIMESTAMP DEFAULT NOW(),
-                    updated_at TIMESTAMP DEFAULT NOW(),
-                    height INTEGER NOT NULL,
-                    width INTEGER NOT NULL
-                );
-                """
-            )
-
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS video_segments (
-                    id SERIAL PRIMARY KEY,
-                    video_id INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
-                    modality TEXT NOT NULL,
-                    scope TEXT NOT NULL,
-                    start_time REAL NOT NULL,
-                    end_time REAL NOT NULL,
-                    embedding vector(1024)
-                );
-                """
-            )
-            conn.commit()
-            print("Database setup complete!")
-        except Exception as e:
-            print("Error during setup:", e)
-        finally:
-            cur.close()
-            conn.close()
-
-    def store(self, video_metadata, video_segments):
-        conn = self.get_connection()
-        cursor = conn.cursor()
-
-        try:
-            video_id = self._insert_video(cursor, video_metadata)
-            self._insert_video_segments(cursor, video_id, video_segments)
-            conn.commit()
-            print(f"Stored video and {len(video_segments)} embeddings.")
-
-        except Exception as e:
-            print("Error storing embedding:", e)
-            conn.rollback()
-
-        finally:
-            cursor.close()
-            conn.close()
+    def get_connection(self, max_retries=3) -> connection:
+        attempt = 0
+        while True:
+            try:
+                self.logger.info("Connecting to database...")
+                return psycopg2.connect(**self.db_params)
+            except psycopg2.OperationalError as e:
+                attempt += 1
+                if attempt == max_retries - 1:
+                    self.logger.error(
+                        f"Failed to connect to database after {attempt + 1} attempts: {e}"
+                    )
+                    raise
+                self.logger.warning(
+                    f"Database connection attempt {attempt + 1} failed. Retrying..."
+                )
+                time.sleep(2**attempt)
 
     def fetch_videos(self, page, limit):
-        conn = self.get_connection()
-        params = [limit, page]
-
+        # Assumes page is 0-indexed
         try:
-            query = """
-                SELECT *
-                FROM videos
-                LIMIT %s
-                OFFSET %s
-            """
-
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(query, params)
-                raw_results = cur.fetchall()
-
-            conn.close()
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                offset = page * limit
+                query = """
+                    SELECT *
+                    FROM videos
+                    LIMIT %s
+                    OFFSET %s
+                    """
+                cursor.execute(query, (limit, offset))
+                raw_results = cursor.fetchall()
 
             return [
                 {
                     "id": video["id"],
-                    "title": video["title"],
-                    "url": video["url"],
+                    "s3_bucket": video["s3_bucket"],
+                    "s3_key": video["s3_key"],
                     "filename": video["filename"],
                     "duration": video["duration"],
                     "created_at": video["created_at"],
@@ -118,26 +73,43 @@ class VectorDBService:
             ]
 
         except Exception as e:
-            print(f"Error searching video in database: {e}")
+            self.logger.error(f"Error searching video in database: {e}")
             raise e
 
-    def _insert_video(self, cursor, metadata: dict) -> int:
-        cursor.execute(
-            """
-            INSERT INTO videos (title, url, filename, duration, height, width, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
-            RETURNING id
-            """,
-            (
-                metadata.get("title"),
-                metadata["url"],
-                metadata["filename"],
-                metadata["duration"],
-                metadata["height"],
-                metadata["width"],
-            ),
-        )
-        return cursor.fetchone()[0]
+    def store(self, video_metadata, video_segments):
+        with self.conn.cursor() as cursor:
+            try:
+                video_id = self._insert_video(video_metadata)
+                self._insert_video_segments(cursor, video_id, video_segments)
+                self.conn.commit()
+                self.logger.info(f"Stored video and {len(video_segments)} embeddings.")
+
+            except Exception as e:
+                self.logger.error("Error storing embedding:", e)
+                self.conn.rollback()
+
+            finally:
+                cursor.close()
+
+    def _insert_video(self, metadata: dict) -> int:
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO videos (s3_bucket, s3_key, filename, duration, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, NOW(), NOW())
+                RETURNING id
+                """,
+                (
+                    metadata["s3_bucket"],
+                    metadata["s3_key"],
+                    metadata["filename"],
+                    metadata["duration"],
+                ),
+            )
+            result = cursor.fetchone()
+            if result is None:
+                raise Exception(f"Error during process of storing video: {metadata}")
+            return result["id"]
 
     def _insert_video_segments(self, cursor, video_id: int, segments: list[dict]):
         data_to_insert = [
@@ -183,8 +155,8 @@ class VectorDBService:
             """
             SELECT
                 videos.id AS video_id,
-                videos.title,
-                videos.url,
+                videos.s3_bucket,
+                videos.s3_key,
                 videos.filename,
                 videos.duration,
                 videos.created_at,
@@ -218,15 +190,15 @@ class VectorDBService:
             conn = self.get_connection()
             query = "\n".join(query_parts)
 
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(query, query_params)
-                results = cur.fetchall()
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, query_params)
+                results = cursor.fetchall()
 
             conn.close()
             return self._normalize_find_similar_results(results)
 
         except Exception as e:
-            print(f"Error searching database: {e}")
+            self.logger.error(f"Error searching database: {e}")
             raise e
 
     def find_similar_batch(
@@ -245,8 +217,8 @@ class VectorDBService:
                 sub_query = f"""
                     SELECT
                         videos.id AS video_id,
-                        videos.title,
-                        videos.url,
+                        videos.s3_bucket,
+                        videos.s3_key,
                         videos.filename,
                         videos.duration,
                         videos.created_at,
@@ -285,15 +257,15 @@ class VectorDBService:
             """
             query_params.append(page_limit)
 
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(full_query, query_params)
-                results = cur.fetchall()
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(full_query, query_params)
+                results = cursor.fetchall()
 
             conn.close()
             return self._normalize_find_similar_results(results)
 
         except Exception as e:
-            print(f"Error searching database with batch: {e}")
+            self.logger.error(f"Error searching database with batch: {e}")
             raise e
 
     def _normalize_find_similar_results(self, raw_results):
@@ -307,8 +279,8 @@ class VectorDBService:
                 "similarity": raw_result["similarity"],
                 "video": {
                     "id": raw_result["video_id"],
-                    "title": raw_result["title"],
-                    "url": raw_result["url"],
+                    "s3_bucket": raw_result["s3_bucket"],
+                    "s3_key": raw_result["s3_key"],
                     "filename": raw_result["filename"],
                     "duration": raw_result["duration"],
                     "created_at": raw_result["created_at"],
