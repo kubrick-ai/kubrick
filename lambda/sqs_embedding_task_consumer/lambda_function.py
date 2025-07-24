@@ -17,7 +17,6 @@ def get_video_metadata(response, message_body):
 
     if response.video_embedding and response.video_embedding.metadata:
         md = response.video_embedding.metadata
-        metadata["filename"] = md.input_filename
         metadata["duration"] = md.duration
 
     metadata["s3_bucket"] = message_body["s3_bucket"]
@@ -80,11 +79,17 @@ def lambda_handler(event, context):
                 ):
                     raise ValueError("No embedding returned from TwelveLabs API")
 
+                logger.info("Extracting video metadata...")
                 video_metadata = get_video_metadata(tl_response, message_body)
+                logger.info(f"Successfully extracted video metadata: {video_metadata}")
+
+                logger.info("Normalizing segments...")
                 video_segments = normalize_segments(
                     tl_response.video_embedding.segments
                 )
+
                 db.store(video_metadata, video_segments)
+                logger.info("Successfully stored video and segments in DB")
 
             elif task_status == "failed":
                 logger.error(f"TwelveLabs video embedding task failed: {message_body}")

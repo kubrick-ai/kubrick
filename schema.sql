@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS video_segments (
 
 CREATE TABLE IF NOT EXISTS tasks (
   id SERIAL PRIMARY KEY,
-  sqs_message_id INTEGER,
+  sqs_message_id TEXT,
   s3_bucket TEXT NOT NULL,
   s3_key TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
