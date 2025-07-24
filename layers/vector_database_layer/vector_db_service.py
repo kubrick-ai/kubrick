@@ -22,8 +22,8 @@ class VectorDBService:
         self.db_params = db_params
         self.default_page_limit = page_limit
         self.default_min_similarity = min_similarity
-        self.conn = self.get_connection()
         self.logger = logger
+        self.conn = self.get_connection()
 
     def get_connection(self, max_retries=3) -> connection:
         attempt = 0
