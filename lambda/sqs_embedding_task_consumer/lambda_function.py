@@ -6,6 +6,7 @@ from twelvelabs.embed import TasksStatusResponse
 from config import load_config, get_secret
 from vector_db_service import VectorDBService
 
+
 def get_embedding_provider_task_status(tl_client, task_id):
     response: TasksStatusResponse = tl_client.embed.tasks.status(task_id=task_id)
     return response.status
