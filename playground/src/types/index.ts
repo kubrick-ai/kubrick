@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const MediaTypeSchema = z.enum(["image", "video", "audio"]);
+export const MediaTypeSchema = z.enum(["image", "video", "audio", "text"]);
 export type MediaType = z.infer<typeof MediaTypeSchema>;
 
 export const CosineSimilaritySchema = z.number().min(0).max(1);
@@ -42,7 +42,7 @@ export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 export const SearchFormSchema = z.object({
   query_text: z.string().optional(),
-  query_media_type: MediaTypeSchema.optional(),
+  query_type: MediaTypeSchema,
   query_media_url: z.url().optional(),
   query_media_file: z.instanceof(File).optional(),
   query_modality: EmbeddingModalitySchema.array().optional(),
@@ -57,7 +57,7 @@ export const SearchFormSchema = z.object({
 
 export const SearchParamsSchema = z.object({
   query_text: z.string().optional(),
-  query_media_type: MediaTypeSchema.optional(),
+  query_type: MediaTypeSchema,
   query_media_url: z.url().optional(),
   query_media_file: z.instanceof(File).optional(),
   query_modality: EmbeddingModalitySchema.array().optional(),

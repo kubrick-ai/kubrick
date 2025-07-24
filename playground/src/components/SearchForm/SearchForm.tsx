@@ -48,7 +48,7 @@ const SearchForm = ({
 }: SearchFormParams) => {
   const defaultValues = {
     query_text: "",
-    query_media_type: undefined,
+    query_type: "text" as const,
     query_media_url: undefined,
     query_media_file: undefined,
     query_modality: ["visual-text" as const],
@@ -67,7 +67,7 @@ const SearchForm = ({
   const onSubmit = (values: z.infer<typeof SearchFormSchema>) => {
     const params: SearchParams = {
       query_text: values.query_text,
-      query_media_type: values.query_media_type,
+      query_type: values.query_type,
       query_media_url: values.query_media_url,
       query_media_file: values.query_media_file,
       query_modality: values.query_modality,
@@ -98,7 +98,9 @@ const SearchForm = ({
   };
 
   const reset = () => {
-    setSearchParams({});
+    setSearchParams({
+      query_type: "text" as const,
+    });
     form.reset({
       ...defaultValues,
     });
@@ -139,7 +141,7 @@ const SearchForm = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
-                name="query_media_type"
+                name="query_type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Media Type</FormLabel>
