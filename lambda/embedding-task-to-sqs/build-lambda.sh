@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PACKAGE_NAME="sqsEmbeddingTaskConsumerLambda"
+PACKAGE_NAME="package"
 
 # Clean previous builds
 rm -rf package ${PACKAGE_NAME}.zip ${PACKAGE_NAME}/ *.egg-info/ build/

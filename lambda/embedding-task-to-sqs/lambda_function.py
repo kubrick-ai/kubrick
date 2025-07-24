@@ -27,23 +27,25 @@ def wait_for_file(s3_client, bucket, key, retries=3, delay=2):
                 logger.warning(f"Attempt {attempt + 1}: File not found")
                 time.sleep(delay)
             else:
-                logger.error(f"Unexpected error while checking file: {e}")
+                logger.error(
+                    f"Unexpected error while checking file (Code: {code}): {e}"
+                )
                 raise
     logger.warning("File still not found after retries")
     return False
 
 
 def create_embedding_request(config, client, url, start_offset=None, end_offset=None):
-    embedding_request = client.embed.tasks.create(
-        model_name=config["model_name"],
-        video_url=url,
-        video_start_offset_sec=start_offset,
-        video_end_offset_sec=end_offset,
-        video_clip_length=config["clip_length"],
-        video_embedding_scope=config["video_embedding_scopes"],
-    )
-
-    return embedding_request.id
+    try:
+        return client.embed.tasks.create(
+            model_name=config["model_name"],
+            video_url=url,
+            video_clip_length=config["clip_length"],
+            video_embedding_scope=config["video_embedding_scopes"],
+        ).id
+    except Exception as e:
+        logger.error(f"Failed to create embedding request: {e}")
+        raise
 
 
 def lambda_handler(event, context):
@@ -51,9 +53,13 @@ def lambda_handler(event, context):
     SECRET = get_secret(config)
     tl_client = TwelveLabs(api_key=SECRET["TWELVELABS_API_KEY"])
     logger.info("Established TL client")
+    QUEUE_URL = os.environ["QUEUE_URL"]
 
     try:
-        record = event.get("Records", [{}])[0]
+        records = event.get("Records", [])
+        if not records:
+            raise ValueError("No Records found in event")
+        record = records[0]
         bucket = record.get("s3", {}).get("bucket", {}).get("name")
         key = urllib.parse.unquote_plus(
             record.get("s3", {}).get("object", {}).get("key", "")
@@ -77,6 +83,10 @@ def lambda_handler(event, context):
             ExpiresIn=config["presigned_url_ttl"],
         )
 
+        logger.info(
+            f"Generated presigned URL for s3://{bucket}/{key}, available for {config['presigned_url_ttl']} seconds"
+        )
+
         task_id = create_embedding_request(
             config=config, client=tl_client, url=presigned_url
         )
@@ -89,14 +99,23 @@ def lambda_handler(event, context):
             }
         )
 
-        response = sqs.send_message(QueueUrl=os.getenv("QUEUE_URL"), MessageBody=message_body)
+        response = sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=message_body)
         sqs_message_id = response["MessageId"]
 
+        logger.info(
+            f"Task ID: {task_id} for video: {key} has been added to the queue with message ID: {sqs_message_id}"
+        )
         # TODO: Store in the DB the task with: sqs_message_id, s3_bucket, s3_key, status="processing"
 
-        logger.info(f"Task ID: {task_id} for video: {key} has been added to the queue")
-        return {} # Task added to the queue
+        return {
+            "status": "success",
+            "task_id": task_id,
+            "sqs_message_id": sqs_message_id,
+            "s3_bucket": bucket,
+            "s3_key": key,
+        }
 
     except Exception as e:
         logger.exception("Unhandled error in lambda_handler")
+        # TODO: Store in the DB errors with status "failed"
         return {"status": "error", "message": str(e)}
