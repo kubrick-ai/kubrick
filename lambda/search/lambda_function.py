@@ -37,11 +37,9 @@ embed_service = EmbedService(
     model_name=os.getenv("EMBEDDING_MODEL_NAME"),
     clip_length=os.getenv("DEFAULT_CLIP_LENGTH"),
 )
-vector_db_service = VectorDBService(
-    db_params=DB_CONFIG,
-    default_min_similarity=os.getenv("DEFAULT_MIN_SIMILARITY"),
-    default_page_limit=os.getenv("DEFAULT_PAGE_LIMIT"),
-)
+
+vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
+
 search_service = SearchService(
     embed_service=embed_service, vector_db_service=vector_db_service
 )
@@ -55,6 +53,7 @@ def lambda_handler(event, context):
         "query_type": event.get("query_type"),
         "query_media_url": event.get("query_media_url"),
         "query_modality": event.get("query_modality"),
+        "filter": event.get("filter"),
     }
 
     if search_request["query_type"] == "text":
@@ -72,11 +71,9 @@ def lambda_handler(event, context):
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
         },
-        "body": json.dumps(
-            {
-                "success": True,
-                "data": results,
-                "message": "Search completed successfully",
-            }
-        ),
+        "body": {
+            "success": True,
+            "data": json.dumps(results),
+            "message": "Search completed successfully",
+        },
     }

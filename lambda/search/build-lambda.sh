@@ -13,7 +13,6 @@ mkdir package
 cp lambda_function.py package/
 cp config.json package/
 cp embed_service.py package/
-cp vector_db_service.py package/
 cp search_service.py package/
 
 
