@@ -1,5 +1,5 @@
 [project]
-name = "sqs-embedding-task-consumer"
+name = "SQSEmbeddingTaskConsumer"
 version = "0.1.0"
 description = "SQS Embedding Task Consumer Lambda function"
 readme = ""
@@ -8,6 +8,6 @@ dependencies = ["boto3>=1.39.10", "twelvelabs>=1.0.0b0"]
 
 [tool.pyright]
 extraPaths = [
-  "../../layers/vector_database_layer/",
-  "../../layers/embed_service_layer/",
+  "../layers/vector_database_layer/",
+  "../layers/embed_service_layer/",
 ]
