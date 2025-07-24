@@ -34,8 +34,7 @@ const VideoThumbnail = ({
     if (!curVideo) return;
     curVideo.currentTime = startTime;
   }, [startTime]);
-  // console.log(video["file_name"]);
-  // console.log(video.filename);
+
   return (
     <Card
       style={{ width, height }}
@@ -49,7 +48,7 @@ const VideoThumbnail = ({
             // muted
             // autoPlay
           >
-            {/* <source src={video.url} type="video/mp4" /> */}
+            <source src={video.url} type="video/mp4" />
           </MediaPlayer.Video>
 
           <MediaPlayer.Loading />

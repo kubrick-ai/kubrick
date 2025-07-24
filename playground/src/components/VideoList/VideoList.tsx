@@ -47,11 +47,11 @@ const VideoList = ({ videos }: VideoListProps) => {
               <div className="text-xs text-muted-foreground space-y-1">
                 <div>{video.created_at}</div>
                 <a
-                  // href={video.url}
+                  href={video.url}
                   className="text-blue-600 hover:text-blue-800 underline inline-block max-w-full overflow-hidden whitespace-nowrap text-ellipsis"
                   target="_blank"
                   rel="noopener noreferrer"
-                  // title={video.url}
+                  title={video.url}
                 >
                   source
                 </a>
