@@ -52,6 +52,7 @@ def lambda_handler(event, context):
         "min_similarity": event.get("min_similarity"),
         "query_type": event.get("query_type"),
         "query_media_url": event.get("query_media_url"),
+        "query_media_file": event.get("query_media_file"),
         "query_modality": event.get("query_modality"),
         "filter": event.get("filter"),
     }
