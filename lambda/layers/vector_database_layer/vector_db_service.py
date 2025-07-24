@@ -9,6 +9,7 @@ from psycopg2.extensions import connection
 DEFAULT_PAGE_LIMIT = os.getenv("DEFAULT_PAGE_LIMIT", 10)
 DEFAULT_MIN_SIMILARITY = os.getenv("DEFAULT_MIN_SIMILARITY", 0.2)
 
+
 # TODO: Refactor this class to only handle operations related to vectors
 # TODO: Create a new class to handle video metadata, tasks and query records
 class VectorDBService:
@@ -77,16 +78,15 @@ class VectorDBService:
             raise e
 
     def store(self, video_metadata, video_segments):
-        with self.conn.cursor() as cursor:
-            try:
-                video_id = self._insert_video(video_metadata)
-                self._insert_video_segments(cursor, video_id, video_segments)
-                self.conn.commit()
-                self.logger.info(f"Stored video and {len(video_segments)} embeddings.")
+        try:
+            video_id = self._insert_video(video_metadata)
+            self._insert_video_segments(video_id, video_segments)
+            self.conn.commit()
+            self.logger.info(f"Stored video and {len(video_segments)} embeddings.")
 
-            except Exception as e:
-                self.logger.error("Error storing embedding:", e)
-                self.conn.rollback()
+        except Exception as e:
+            self.logger.error("Error storing embedding:", e)
+            self.conn.rollback()
 
     def _insert_video(self, metadata: dict) -> int:
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -108,21 +108,22 @@ class VectorDBService:
                 raise Exception(f"Error during process of storing video: {metadata}")
             return result["id"]
 
-    def _insert_video_segments(self, cursor, video_id: int, segments: list[dict]):
-        data_to_insert = [
-            (
-                video_id,
-                segment["modality"],
-                segment["scope"],
-                segment["start_time"],
-                segment["end_time"],
-                segment["embedding"],
-            )
-            for segment in segments
-        ]
+    def _insert_video_segments(self, video_id: int, segments: list[dict]):
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            data_to_insert = [
+                (
+                    video_id,
+                    segment["modality"],
+                    segment["scope"],
+                    segment["start_time"],
+                    segment["end_time"],
+                    segment["embedding"],
+                )
+                for segment in segments
+            ]
 
-        cursor.executemany(
-            """
+            cursor.executemany(
+                """
             INSERT INTO video_segments (
                 video_id,
                 modality,
@@ -132,8 +133,8 @@ class VectorDBService:
                 embedding
             ) VALUES (%s, %s, %s, %s, %s, %s)
             """,
-            data_to_insert,
-        )
+                data_to_insert,
+            )
 
     def find_similar(
         self,
@@ -324,3 +325,4 @@ class VectorDBService:
             except Exception as e:
                 self.logger.exception(f"Error updating task: {e}")
                 self.conn.rollback()
+
