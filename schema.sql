@@ -13,7 +13,6 @@ $$ LANGUAGE plpgsql;
 
 CREATE TABLE IF NOT EXISTS videos (
   id SERIAL PRIMARY KEY,
-  url TEXT,
   filename TEXT NOT NULL,
   s3_bucket TEXT NOT NULL,
   s3_key TEXT NOT NULL,
