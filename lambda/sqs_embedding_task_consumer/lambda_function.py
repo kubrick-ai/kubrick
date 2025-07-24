@@ -41,7 +41,6 @@ def normalize_segments(twelvelabs_segments: list[VideoSegment]):
 
 
 def lambda_handler(event, context):
-
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
 
@@ -62,23 +61,18 @@ def lambda_handler(event, context):
     pending_message_ids = []
 
     for record in event["Records"]:
-        message_body = json.loads(record["body"])
-        task_id = message_body.get("twelvelabs_video_embedding_task_id")
-        # use receipt_handle to distinguish between different records representing the same message
-        receipt_handle = record["receiptHandle"]
-        logger.info(f"Record receiptHandle: {receipt_handle}")
-
+        message_id = record["messageId"]
         try:
-            task_status = get_embedding_provider_task_status(tl_client, task_id)
+            message_body = json.loads(record["body"])
+            tl_task_id = message_body.get("twelvelabs_video_embedding_task_id")
+            # use receipt_handle to distinguish between different records representing the same message
+            receipt_handle = record["receiptHandle"]
+            logger.info(f"Record receiptHandle: {receipt_handle}")
+
+            task_status = get_embedding_provider_task_status(tl_client, tl_task_id)
 
             if task_status == "ready":
-                task_id = message_body["twelvelabs_video_embedding_task_id"]
-                if not task_id:
-                    raise ValueError(
-                        "Failed to find twelvelabs_video_embedding_task_id"
-                    )
-
-                tl_response = tl_client.embed.tasks.retrieve(task_id=task_id)
+                tl_response = tl_client.embed.tasks.retrieve(task_id=tl_task_id)
 
                 if (
                     tl_response.video_embedding is None
@@ -97,16 +91,16 @@ def lambda_handler(event, context):
 
             elif task_status == "processing":
                 # If status is "processing", add to pending list for re-queuing
-                pending_message_ids.append({"itemIdentifier": record["messageId"]})
+                pending_message_ids.append({"itemIdentifier": message_id})
                 logger.info(
-                    f"TwelveLabs video embedding task {task_id} is still pending. Re-queueing."
+                    f"TwelveLabs video embedding task {tl_task_id} is still pending. Re-queueing."
                 )
             else:
                 raise Exception(f"Unexpected value for task status {task_status}")
 
         except Exception as e:
-            logger.error(f"Error processing task {task_id}: {e}")
-            pending_message_ids.append({"itemIdentifier": record["messageId"]})
+            logger.error(f"Error processing task {message_id}: {e}")
+            pending_message_ids.append({"itemIdentifier": message_id})
 
     # Return the list of pending message IDs
     if pending_message_ids:
