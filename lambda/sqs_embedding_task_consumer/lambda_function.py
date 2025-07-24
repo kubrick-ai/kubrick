@@ -105,8 +105,6 @@ def lambda_handler(event, context):
                     f"TwelveLabs video embedding task {tl_task_id} is still pending. Re-queueing."
                 )
             else:
-                db.update_task_status(message_id, "failed")
-                logger.info("Successfully updated task status in DB")
                 raise Exception(f"Unexpected value for task status {task_status}")
 
         except Exception as e:
