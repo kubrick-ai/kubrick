@@ -1,6 +1,7 @@
 import json
 import boto3
 import os
+import sys
 import time
 import logging
 import urllib.parse
@@ -36,7 +37,7 @@ def wait_for_file(s3_client, bucket, key, retries=3, delay=2):
     return False
 
 
-def create_embedding_request(config, client, url, start_offset=None, end_offset=None):
+def create_embedding_request(config, client, url):
     try:
         return client.embed.tasks.create(
             model_name=config["model_name"],
@@ -52,9 +53,22 @@ def create_embedding_request(config, client, url, start_offset=None, end_offset=
 def lambda_handler(event, context):
     config = load_config()
     SECRET = get_secret(config)
+    QUEUE_URL = os.environ["QUEUE_URL"]
+    DB_CONFIG = {
+        "host": os.getenv("DB_HOST", "localhost"),
+        "database": os.getenv("DB_NAME", "kubrick"),
+        "user": os.getenv("DB_USER", "postgres"),
+        "password": SECRET["DB_PASSWORD"],
+        "port": 5432,
+    }
+
     tl_client = TwelveLabs(api_key=SECRET["TWELVELABS_API_KEY"])
     logger.info("Established TL client")
-    QUEUE_URL = os.environ["QUEUE_URL"]
+    db = VectorDBService(db_params=DB_CONFIG, logger=logger)
+
+    sqs_message_id = ""
+    bucket = ""
+    key = ""
 
     try:
         records = event.get("Records", [])
@@ -106,7 +120,13 @@ def lambda_handler(event, context):
         logger.info(
             f"Task ID: {task_id} for video: {key} has been added to the queue with message ID: {sqs_message_id}"
         )
-        # TODO: Store in the DB the task with: sqs_message_id, s3_bucket, s3_key, status="processing"
+
+        db.store_task({
+            "sqs_message_id": sqs_message_id,
+            "s3_bucket": bucket,
+            "s3_key": key,
+            "status": "processing",
+        })
 
         return {
             "status": "success",
@@ -118,5 +138,13 @@ def lambda_handler(event, context):
 
     except Exception as e:
         logger.exception("Unhandled error in lambda_handler")
-        # TODO: Store in the DB errors with status "failed"
+        try:
+            db.store_task({
+                "sqs_message_id": sqs_message_id,
+                "s3_bucket": bucket,
+                "s3_key": key,
+                "status": "failed",
+            })
+        except Exception as db_error:
+            logger.error(f"Failed to store failed task to DB: {db_error}")
         return {"status": "error", "message": str(e)}
