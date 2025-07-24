@@ -185,14 +185,12 @@ class VectorDBService:
         query_params.append(page_limit)
 
         try:
-            conn = self.get_connection()
             query = "\n".join(query_parts)
 
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(query, query_params)
                 results = cursor.fetchall()
 
-            conn.close()
             return self._normalize_find_similar_results(results)
 
         except Exception as e:
@@ -206,8 +204,6 @@ class VectorDBService:
         min_similarity = min_similarity or self.default_min_similarity
 
         try:
-            conn = self.get_connection()
-
             query_parts = []
             query_params = []
 
@@ -255,11 +251,10 @@ class VectorDBService:
             """
             query_params.append(page_limit)
 
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(full_query, query_params)
                 results = cursor.fetchall()
 
-            conn.close()
             return self._normalize_find_similar_results(results)
 
         except Exception as e:
@@ -281,8 +276,8 @@ class VectorDBService:
                     "s3_key": raw_result["s3_key"],
                     "filename": raw_result["filename"],
                     "duration": raw_result["duration"],
-                    "created_at": raw_result["created_at"],
-                    "updated_at": raw_result["updated_at"],
+                    "created_at": raw_result["created_at"].isoformat(),
+                    "updated_at": raw_result["updated_at"].isoformat(),
                     "height": raw_result["height"],
                     "width": raw_result["width"],
                 },
