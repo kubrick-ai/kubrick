@@ -295,20 +295,26 @@ class VectorDBService:
 
     def store_task(self, task_data):
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(
-                """
-                INSERT INTO tasks (sqs_message_id, s3_bucket, s3_key, status)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO tasks (sqs_message_id, s3_bucket, s3_key, status)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (
 
-                    task_data["sqs_message_id"],
-                    task_data["s3_bucket"],
-                    task_data["s3_key"],
-                    task_data["status"],
-                ),
-            )
-            result = cursor.fetchone()
-            if result is None:
-                raise Exception(f"Error during process of storing task: {task_data}")
-            return result["id"]
+                        task_data["sqs_message_id"],
+                        task_data["s3_bucket"],
+                        task_data["s3_key"],
+                        task_data["status"],
+                    ),
+                )
+            except Exception as e:
+                self.logger.error("Error storing task:", e)
+                self.conn.rollback()
+            finally:
+                cursor.close()
+
+
+    def update_task_status(self, new_status):
+        pass
