@@ -1,10 +1,8 @@
 #!/bin/bash
 set -e
 
-PACKAGE_NAME="package"
-
 # Clean previous builds
-rm -rf package ${PACKAGE_NAME}.zip ${PACKAGE_NAME}/ *.egg-info/ build/
+rm -rf package.zip package/ *.egg-info/ build/
 
 # Create a temporary directory for packaging
 mkdir package
@@ -18,9 +16,7 @@ cp config.json package/
 uv pip install --target package/ --python-platform x86_64-unknown-linux-gnu --python-version 3.13 .
 
 # Create a zip file containing everything from the package directory at the zip root
-cd package
-zip -r ../${PACKAGE_NAME}.zip .
-cd ..
+zip -r package.zip -C package .
 
 # Clean up the temporary package directory
 rm -rf package
