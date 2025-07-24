@@ -1,0 +1,10 @@
+{
+    "python.analysis.extraPaths": [
+        "./layers/vector_database_layer/",
+        "./layers/embed_service_layer/"
+    ],
+    "python.autoComplete.extraPaths": [
+        "./layers/vector_database_layer/",
+        "./layers/embed_service_layer/"
+    ]
+}
