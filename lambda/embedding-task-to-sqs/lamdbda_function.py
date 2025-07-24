@@ -6,27 +6,13 @@ import logging
 import urllib.parse
 import botocore.exceptions
 from twelvelabs import TwelveLabs
-
-QUEUE_URL = os.environ["QUEUE_URL"]
-with open("config.json") as f:
-    CONFIG = json.load(f)
+from config import load_config, get_secret
 
 s3 = boto3.client("s3")
 sqs = boto3.client("sqs")
-secretsmanager = boto3.client("secretsmanager")
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-
-def get_api_key():
-    secret_name = CONFIG["secret_name"]
-    try:
-        response = secretsmanager.get_secret_value(SecretId=secret_name)
-        secret = json.loads(response["SecretString"])
-        return secret["TWELVELABS_API_KEY"]
-    except Exception as e:
-        logger.error(f"Failed to retrieve secret: {e}")
-        raise
 
 
 def wait_for_file(s3_client, bucket, key, retries=3, delay=2):
@@ -47,19 +33,25 @@ def wait_for_file(s3_client, bucket, key, retries=3, delay=2):
     return False
 
 
-def create_embedding_request(client, url, start_offset=None, end_offset=None):
-    embedding_request = client.embed.task.create(
-        model_name=CONFIG["model_name"],
+def create_embedding_request(config, client, url, start_offset=None, end_offset=None):
+    embedding_request = client.embed.tasks.create(
+        model_name=config["model_name"],
         video_url=url,
-        video_clip_length=CONFIG["clip_length"],
         video_start_offset_sec=start_offset,
         video_end_offset_sec=end_offset,
-        video_embedding_scopes=CONFIG["video_embedding_scopes"],
+        video_clip_length=config["clip_length"],
+        video_embedding_scope=config["video_embedding_scopes"],
     )
+
     return embedding_request.id
 
 
 def lambda_handler(event, context):
+    config = load_config()
+    SECRET = get_secret(config)
+    tl_client = TwelveLabs(api_key=SECRET["TWELVELABS_API_KEY"])
+    logger.info("Established TL client")
+
     try:
         record = event.get("Records", [{}])[0]
         bucket = record.get("s3", {}).get("bucket", {}).get("name")
@@ -70,15 +62,24 @@ def lambda_handler(event, context):
         if not bucket or not key:
             raise ValueError("Missing bucket or key in event")
 
-        if not wait_for_file(s3, bucket, key, CONFIG["file_check_retries"], CONFIG["file_check_delay_sec"]):
+        if not wait_for_file(
+            s3,
+            bucket,
+            key,
+            config["file_check_retries"],
+            config["file_check_delay_sec"],
+        ):
             raise Exception(f"File s3://{bucket}/{key} not found after retries.")
 
         presigned_url = s3.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=CONFIG["presigned_url_expiry"]
+            "get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=config["presigned_url_ttl"],
         )
 
-        twelvelabs_client = TwelveLabs(api_key=get_api_key())
-        task_id = create_embedding_request(client=twelvelabs_client, url=presigned_url)
+        task_id = create_embedding_request(
+            config=config, client=tl_client, url=presigned_url
+        )
 
         message_body = json.dumps(
             {
@@ -88,10 +89,13 @@ def lambda_handler(event, context):
             }
         )
 
-        sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=message_body)
+        response = sqs.send_message(QueueUrl=os.getenv("QUEUE_URL"), MessageBody=message_body)
+        sqs_message_id = response["MessageId"]
+
+        # TODO: Store in the DB the task with: sqs_message_id, s3_bucket, s3_key, status="processing"
 
         logger.info(f"Task ID: {task_id} for video: {key} has been added to the queue")
-        return {"status": "ok"}
+        return {} # Task added to the queue
 
     except Exception as e:
         logger.exception("Unhandled error in lambda_handler")
