@@ -1,11 +1,13 @@
 [project]
 name = "sqs-embedding-task-consumer"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "SQS Embedding Task Consumer Lambda function"
+readme = ""
 requires-python = ">=3.13"
-dependencies = [
-  "boto3>=1.39.10",
-  "psycopg2-binary>=2.9.10",
-  "twelvelabs>=1.0.0b0",
+dependencies = ["boto3>=1.39.10", "twelvelabs>=1.0.0b0"]
+
+[tool.pyright]
+extraPaths = [
+  "../../layers/vector_database_layer/",
+  "../../layers/embed_service_layer/",
 ]
