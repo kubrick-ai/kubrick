@@ -90,9 +90,13 @@ def lambda_handler(event, context):
 
                 db.store(video_metadata, video_segments)
                 logger.info("Successfully stored video and segments in DB")
+                db.update_task_status(message_id, "completed")
+                logger.info("Successfully updated task status in DB")
 
             elif task_status == "failed":
                 logger.error(f"TwelveLabs video embedding task failed: {message_body}")
+                db.update_task_status(message_id, "failed")
+                logger.info("Successfully updated task status in DB")
 
             elif task_status == "processing":
                 # If status is "processing", add to pending list for re-queuing
@@ -101,11 +105,15 @@ def lambda_handler(event, context):
                     f"TwelveLabs video embedding task {tl_task_id} is still pending. Re-queueing."
                 )
             else:
+                db.update_task_status(message_id, "failed")
+                logger.info("Successfully updated task status in DB")
                 raise Exception(f"Unexpected value for task status {task_status}")
 
         except Exception as e:
             logger.error(f"Error processing task {message_id}: {e}")
             pending_message_ids.append({"itemIdentifier": message_id})
+            db.update_task_status(message_id, "retrying")
+            logger.info("Successfully updated task status in DB")
 
     # Return the list of pending message IDs
     if pending_message_ids:
