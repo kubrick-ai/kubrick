@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+lambda/**/lib/
+lambda/**/lib64/
 parts/
 sdist/
 var/
@@ -212,3 +212,71 @@ mise.toml
 
 **/package.zip
 package/
+
+# Playground
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# dependencies inside playground/
+playground/node_modules
+playground/.pnp
+playground/.pnp.*
+playground/.yarn/*
+!playground/.yarn/patches
+!playground/.yarn/plugins
+!playground/.yarn/releases
+!playground/.yarn/versions
+
+# testing
+/coverage
+playground/coverage
+
+# next.js
+/.next/
+/out/
+playground/.next/
+playground/out/
+
+# production
+/build
+playground/build
+
+# misc
+.DS_Store
+*.pem
+playground/.DS_Store
+playground/*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+playground/npm-debug.log*
+playground/yarn-debug.log*
+playground/yarn-error.log*
+playground/.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+/.env*
+playground/.env*
+
+# vercel
+.vercel
+playground/.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+playground/*.tsbuildinfo
+playground/next-env.d.ts
