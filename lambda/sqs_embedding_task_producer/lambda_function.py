@@ -7,6 +7,7 @@ import urllib.parse
 import botocore.exceptions
 from twelvelabs import TwelveLabs
 from config import load_config, get_secret
+from vector_db_service import VectorDBService
 
 s3 = boto3.client("s3")
 sqs = boto3.client("sqs")

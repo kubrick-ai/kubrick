@@ -10,6 +10,7 @@ from psycopg2.extensions import connection
 DEFAULT_PAGE_LIMIT = os.getenv("DEFAULT_PAGE_LIMIT", 10)
 DEFAULT_MIN_SIMILARITY = os.getenv("DEFAULT_MIN_SIMILARITY", 0.2)
 
+
 # TODO: Refactor this class to only handle operations related to vectors
 # TODO: Create a new class to handle video metadata, tasks and query records
 class VectorDBService:
@@ -84,13 +85,9 @@ class VectorDBService:
                 self._insert_video_segments(cursor, video_id, video_segments)
                 self.conn.commit()
                 self.logger.info(f"Stored video and {len(video_segments)} embeddings.")
-
             except Exception as e:
-                self.logger.error("Error storing embedding:", e)
+                self.logger.error(f"Error storing embedding: {e}")
                 self.conn.rollback()
-
-            finally:
-                cursor.close()
 
     def _insert_video(self, metadata: dict) -> int:
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -302,19 +299,34 @@ class VectorDBService:
                     VALUES (%s, %s, %s, %s)
                     """,
                     (
-
                         task_data["sqs_message_id"],
                         task_data["s3_bucket"],
                         task_data["s3_key"],
                         task_data["status"],
                     ),
                 )
+                self.conn.commit()
+                self.logger.info(
+                    f"Task stored for SQS message ID: {task_data['sqs_message_id']}, "
+                    f"s3 bucket: {task_data['s3_bucket']} and s3 key: {task_data['s3_key']}."
+                )
             except Exception as e:
-                self.logger.error("Error storing task:", e)
+                self.logger.error(f"Error storing task: {e}")
                 self.conn.rollback()
-            finally:
-                cursor.close()
 
-
-    def update_task_status(self, new_status):
-        pass
+    def update_task_status(self, sqs_message_id, new_status):
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            try:
+                cursor.execute(
+                    """
+                    UPDATE tasks SET status = %s WHERE sqs_message_id = %s
+                    """,
+                    (new_status, sqs_message_id),
+                )
+                self.conn.commit()
+                self.logger.info(
+                    f"Task for SQS message ID: {sqs_message_id} has been updated with new status: {new_status}."
+                )
+            except Exception as e:
+                self.logger.exception(f"Error updating task: {e}")
+                self.conn.rollback()
