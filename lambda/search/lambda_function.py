@@ -74,19 +74,21 @@ def lambda_handler(event, context):
             "body": json.dumps({}),
         }
 
-    logger.debug(f"event={event}")
+    logger.info(f"event={event}")
 
     try:
         logger.info("Starting multipart parsing...")
         # Decode base64 body
         logger.info("Decoding base64 body...")
-        body_data = base64.b64decode(event["body"])
+        body_data = base64.b64decode(event.get("body"))
         logger.info(f"Decoded body length: {len(body_data)}")
+
+        headers = event.get("headers")
 
         # Extract boundary from content-type header
         logger.info("Extracting boundary...")
         content_type, options = multipart.parse_options_header(
-            event.get("content-type", "")
+            headers.get("content-type")
         )
         logger.info(f"Content-type: {content_type}")
         logger.info(f"Options: {options}")
@@ -192,7 +194,11 @@ def lambda_handler(event, context):
             "Access-Control-Allow-Methods": "POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
-        "data": [add_url(result) for result in results],
+        "body": json.dumps(
+            {
+                "data": [add_url(result) for result in results],
+            }
+        ),
     }
 
 
