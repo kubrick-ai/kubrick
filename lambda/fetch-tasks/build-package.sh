@@ -4,21 +4,25 @@ set -e
 PACKAGE_NAME="package"
 
 # Clean previous builds
-rm -rf python ${PACKAGE_NAME}.zip ${PACKAGE_NAME}/ *.egg-info/ build/
+rm -rf package ${PACKAGE_NAME}.zip ${PACKAGE_NAME}/ *.egg-info/ build/
 
-# Create a temporary python directory for packaging the layer
-mkdir python
+# Create a temporary directory for packaging
+mkdir package
 
 # Install dependencies using uv with pyproject.toml for Linux/AMD64 Python 3.13
-uv pip install --target python/ --python-platform x86_64-unknown-linux-gnu --python-version 3.13 .
+uv pip install --target package/ --python-platform x86_64-unknown-linux-gnu --python-version 3.13 .
 
 # Copy Python source files to package directory
-cp vector_db_service.py python/
+cp lambda_function.py package/
+cp config.py package/
+cp config.json package/
 
 # Create a zip file containing everything from the package directory at the zip root
-zip -r ${PACKAGE_NAME}.zip python/
+cd package
+zip -r ../${PACKAGE_NAME}.zip .
+cd ..
 
 # Clean up the temporary package directory
-rm -rf python
+rm -rf package
 
-echo "Lambda layer deployment package created: ${PACKAGE_NAME}.zip"
+echo "Lambda deployment package created: ${PACKAGE_NAME}.zip"

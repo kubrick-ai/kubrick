@@ -10,7 +10,7 @@ logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):
-    # Handle preflight request (CORS)
+    # # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":
         return {
             "statusCode": 200,

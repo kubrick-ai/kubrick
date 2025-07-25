@@ -65,8 +65,8 @@ class VectorDBService:
                     "s3_key": video["s3_key"],
                     "filename": video["filename"],
                     "duration": video["duration"],
-                    "created_at": video["created_at"],
-                    "updated_at": video["updated_at"],
+                    "created_at": video["created_at"].isoformat(),
+                    "updated_at": video["updated_at"].isoformat(),
                     "height": video["height"],
                     "width": video["width"],
                 }
@@ -345,8 +345,12 @@ class VectorDBService:
                     "sqs_message_id": task["sqs_message_id"],
                     "s3_bucket": task["s3_bucket"],
                     "s3_key": task["s3_key"],
-                    "created_at": task["created_at"],
-                    "updated_at": task["updated_at"],
+                    "created_at": (
+                        task["created_at"].isoformat() if task["created_at"] else None
+                    ),
+                    "updated_at": (
+                        task["updated_at"].isoformat() if task["updated_at"] else None
+                    ),
                     "status": task["status"],
                 }
                 for task in raw_results
