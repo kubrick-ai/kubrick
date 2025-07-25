@@ -73,7 +73,7 @@ def lambda_handler(event, context):
             "body": json.dumps({}),
         }
 
-    logger.info(f"event={event}")
+    logger.debug(f"event={event}")
 
     try:
         logger.info("Starting multipart parsing...")
@@ -84,12 +84,13 @@ def lambda_handler(event, context):
 
         # Extract boundary from content-type header
         logger.info("Extracting boundary...")
-        content_type = event.get("content-type", "")
-        logger.info(f"Content-type: {content_type}")
-        boundary = (
-            content_type.split("boundary=")[1] if "boundary=" in content_type else None
+        content_type, options = multipart.parse_options_header(
+            event.get("content-type", "")
         )
-        logger.info(f"Extracted boundary: {boundary}")
+        logger.info(f"Content-type: {content_type}")
+        logger.info(f"Options: {options}")
+        boundary = options.get("boundary")
+        logger.info(f"Boundary: {boundary}")
 
         if not boundary:
             logger.error("No boundary found in content-type header")
@@ -109,7 +110,7 @@ def lambda_handler(event, context):
         logger.info("Creating BytesIO stream...")
         body_stream = io.BytesIO(body_data)
         logger.info("Creating multipart parser...")
-        parsed = multipart.MultipartParser(body_stream, boundary.encode())
+        parsed = multipart.MultipartParser(body_stream, boundary)
         logger.info("Parser created successfully")
 
         # Extract form fields
@@ -147,6 +148,11 @@ def lambda_handler(event, context):
                     if field_name == "filter":
                         value = json.loads(value)
                     search_request[field_name] = value
+
+        # clean up
+        for part in parsed.parts():
+            if part:
+                part.close()
 
         logger.info("Finished processing all parts")
         logger.info(f"Parsed formdata: {search_request}")
