@@ -51,6 +51,7 @@ embed_service = EmbedService(
     api_key=API_KEY,
     model_name=os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"),
     clip_length=int(os.getenv("DEFAULT_CLIP_LENGTH", 6)),
+    logger=logger,
 )
 
 vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)

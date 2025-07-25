@@ -1,3 +1,4 @@
+import { Video } from "lucide-react";
 import { z } from "zod";
 
 export const MediaTypeSchema = z.enum(["image", "video", "audio", "text"]);
@@ -24,6 +25,13 @@ export const VideoSchema = z.object({
   s3_bucket: z.string().nullable().optional(),
   s3_key: z.string().nullable().optional(),
 });
+
+export const VideoListSchema = z.object({
+  videos: VideoSchema.array(),
+  total: z.number(),
+});
+
+export type VideoList = z.infer<typeof VideoListSchema>;
 
 export type Video = z.infer<typeof VideoSchema>;
 

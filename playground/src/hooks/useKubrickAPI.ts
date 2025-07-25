@@ -7,6 +7,8 @@ import {
   SearchParams,
   SearchResultSchema,
   SearchResult,
+  VideoList,
+  VideoListSchema,
 } from "@/types";
 
 // TODO: Move to config?
@@ -158,8 +160,6 @@ export const useEmbedVideo = () => {
     return () => clearInterval(interval);
   }, [taskId, statusData?.status, refetch]);
 
-  // console.log("isSubmitSuccess" + isSubmitSuccess);
-  // console.log("submitError" + submitError);
   if (statusData && typeof statusData.error === "string") {
     console.log("statusData error: " + statusData.error);
     console.log(statusData.error);
@@ -181,23 +181,20 @@ export const useEmbedVideo = () => {
 
 export const fetchVideos = async (
   page = 0,
-  pageLimit = 12,
-): Promise<Video[]> => {
+  pageLimit = 12
+): Promise<VideoList> => {
   const response = await axios.get(`${API_BASE}/videos`, {
     params: { page, limit: pageLimit },
   });
 
-  // const parsedVideos = VideoSchema.array().parse(response.data.data);
-  const parsedVideos = VideoSchema.array().parse(response.data);
-
-  console.log(parsedVideos);
+  const parsedVideos = VideoListSchema.parse(response.data);
   return parsedVideos;
 };
 
 // React Query hook for videos
 export const useGetVideos = (page = 0, pageLimit = 12) =>
-  useQuery<Video[], Error>({
-    queryKey: ["videos", page, pageLimit],
+  useQuery<VideoList, Error>({
+    queryKey: ["data", page, pageLimit],
     queryFn: () => fetchVideos(page, pageLimit),
     placeholderData: (prev) => prev, // Keeps old data during loading
   });
