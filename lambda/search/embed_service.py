@@ -1,14 +1,21 @@
-from typing import BinaryIO, Optional, List
+from typing import BinaryIO, Optional, List, Union
 from twelvelabs import TwelveLabs
 from twelvelabs.models.embed import EmbeddingsTask
+from logging import getLogger
 
 
 class EmbedService:
-    def __init__(self, api_key: str, model_name: str, clip_length: int):
+    def __init__(
+        self,
+        api_key: str,
+        model_name: str,
+        clip_length: int,
+        logger=getLogger(__name__),
+    ):
         self.clip_length = clip_length
         self.client = TwelveLabs(api_key=api_key)
         self.model_name = model_name
-        self.debug = True
+        self.logger = logger
 
     def extract_text_embedding(self, input_text: str):
         res = self.client.embed.create(
@@ -39,12 +46,13 @@ class EmbedService:
 
     def extract_video_embedding(
         self,
-        filepath: Optional[str] = None,
+        file: Optional[Union[str, BinaryIO, None]] = None,
         url: Optional[str] = None,
         query_modality: List[str] = ["visual-text"],
-        debug=False,
     ):
-        segments = self.extract_video_features(filepath, url, debug)
+        self.logger.info("Extracting video features...")
+        segments = self.extract_video_features(file, url)
+        self.logger.info(f"Extracted video features: {segments}")
 
         return [
             segment["embedding"]
@@ -54,14 +62,14 @@ class EmbedService:
 
     def extract_video_features(
         self,
-        filepath: Optional[str] = None,
+        file: Optional[Union[str, BinaryIO, None]],
         url: Optional[str] = None,
         clip_length: Optional[int] = None,
         start_offset: Optional[float] = None,
         end_offset: Optional[float] = None,
     ):
         embedding_request = self._create_embedding_request(
-            filepath, url, clip_length, start_offset, end_offset
+            file, url, clip_length, start_offset, end_offset
         )
         self._wait_for_request_completion(embedding_request)
         segments = self._retrieve_segments(embedding_request)
@@ -69,7 +77,7 @@ class EmbedService:
 
     def _create_embedding_request(
         self,
-        filepath: Optional[str],
+        file: Optional[Union[str, BinaryIO, None]],
         url: Optional[str],
         clip_length: Optional[int],
         start_offset: Optional[float],
@@ -77,9 +85,10 @@ class EmbedService:
     ):
         clip_length = clip_length or self.clip_length
 
+        self.logger.info("Creating embedding request...")
         embedding_request = self.client.embed.task.create(
             model_name=self.model_name,
-            video_file=filepath,
+            video_file=file,
             video_url=url,
             video_clip_length=clip_length,
             video_start_offset_sec=start_offset,
@@ -87,10 +96,9 @@ class EmbedService:
             video_embedding_scopes=["clip", "video"],
         )
 
-        if self.debug:
-            print(
-                f"Created task: id={embedding_request.id} model_name={embedding_request.model_name} status={embedding_request.status}"
-            )
+        self.logger.info(
+            f"Created embedding request: id={embedding_request.id} model_name={embedding_request.model_name} status={embedding_request.status}"
+        )
 
         return embedding_request
 
@@ -98,11 +106,11 @@ class EmbedService:
         status = embedding_request.wait_for_done(
             sleep_interval=5, callback=self._on_request_update
         )
-        if self.debug:
-            print(f"Embedding done: {status}")
+        self.logger.info(f"Embedding done: {status}")
 
     def _retrieve_segments(self, embedding_request):
         segments = embedding_request.retrieve(embedding_option=["visual-text", "audio"])
+        self.logger.info(f"Retrieved segments: {segments}")
 
         if not segments.video_embedding or not segments.video_embedding.segments:
             raise Exception("Embedding failed")
@@ -124,4 +132,4 @@ class EmbedService:
         return result
 
     def _on_request_update(self, task: EmbeddingsTask):
-        print(f"  Status={task.status}")
+        self.logger.info(f"  Status={task.status}")

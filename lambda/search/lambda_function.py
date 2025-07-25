@@ -51,6 +51,7 @@ embed_service = EmbedService(
     api_key=API_KEY,
     model_name=os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"),
     clip_length=int(os.getenv("DEFAULT_CLIP_LENGTH", 6)),
+    logger=logger,
 )
 
 vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
@@ -61,7 +62,19 @@ search_service = SearchService(
 
 
 def lambda_handler(event, context):
-    logger.info(f"event={event}")
+    # Handle preflight request (CORS)
+    if event.get("httpMethod") == "OPTIONS":
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "GET,OPTIONS",
+            },
+            "body": json.dumps({}),
+        }
+
+    logger.debug(f"event={event}")
 
     try:
         logger.info("Starting multipart parsing...")
@@ -72,12 +85,13 @@ def lambda_handler(event, context):
 
         # Extract boundary from content-type header
         logger.info("Extracting boundary...")
-        content_type = event.get("content-type", "")
-        logger.info(f"Content-type: {content_type}")
-        boundary = (
-            content_type.split("boundary=")[1] if "boundary=" in content_type else None
+        content_type, options = multipart.parse_options_header(
+            event.get("content-type", "")
         )
-        logger.info(f"Extracted boundary: {boundary}")
+        logger.info(f"Content-type: {content_type}")
+        logger.info(f"Options: {options}")
+        boundary = options.get("boundary")
+        logger.info(f"Boundary: {boundary}")
 
         if not boundary:
             logger.error("No boundary found in content-type header")
@@ -97,7 +111,7 @@ def lambda_handler(event, context):
         logger.info("Creating BytesIO stream...")
         body_stream = io.BytesIO(body_data)
         logger.info("Creating multipart parser...")
-        parsed = multipart.MultipartParser(body_stream, boundary.encode())
+        parsed = multipart.MultipartParser(body_stream, boundary)
         logger.info("Parser created successfully")
 
         # Extract form fields
@@ -111,7 +125,7 @@ def lambda_handler(event, context):
             "query_type": None,
             "query_media_url": None,
             "query_media_file": None,
-            "query_modality": None,
+            "query_modality": ["visual-text"],
             "filter": None,
         }
 
@@ -135,6 +149,11 @@ def lambda_handler(event, context):
                     if field_name == "filter":
                         value = json.loads(value)
                     search_request[field_name] = value
+
+        # clean up
+        for part in parsed.parts():
+            if part:
+                part.close()
 
         logger.info("Finished processing all parts")
         logger.info(f"Parsed formdata: {search_request}")
@@ -170,10 +189,29 @@ def lambda_handler(event, context):
         "headers": {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
-        "body": {
-            "success": True,
-            "data": results,
-            "message": "Search completed successfully",
-        },
+        "data": [add_url(result) for result in results],
     }
+
+
+def generate_presigned_url(bucket: str, key: str, expires_in: int = 3600) -> str:
+    s3 = boto3.client("s3")
+    try:
+        url = s3.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=expires_in,
+        )
+        return url
+    except Exception as e:
+        logger.error(f"Error generating presigned URL: {e}")
+        raise
+
+
+def add_url(result):
+    result["video"]["url"] = generate_presigned_url(
+        result["video"]["s3_bucket"], result["video"]["s3_key"]
+    )
+    return result

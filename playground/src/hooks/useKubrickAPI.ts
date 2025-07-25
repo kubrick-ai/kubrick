@@ -20,8 +20,8 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
     formData.append("query_text", params.query_text);
   }
 
-  if (params.query_media_type) {
-    formData.append("query_media_type", params.query_media_type);
+  if (params.query_type) {
+    formData.append("query_type", params.query_type);
     if (params.query_media_url) {
       formData.append("query_media_url", params.query_media_url);
     } else if (params.query_media_file) {
@@ -45,6 +45,7 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
   }
 
   const response = await axios.post(`${API_BASE}/search`, formData);
+  console.log(response);
   const parsedVideos = SearchResultSchema.array().parse(response.data.data);
   return parsedVideos;
 };
@@ -54,7 +55,7 @@ export const useSearchVideos = (params: SearchParams) => {
     queryKey: [
       "searchVideos",
       params.query_text,
-      params.query_media_type,
+      params.query_type,
       params.query_media_url,
       params.query_media_file,
       params.query_modality,
@@ -63,7 +64,7 @@ export const useSearchVideos = (params: SearchParams) => {
       params.filter,
     ], // Unique key for this query
     queryFn: () => search(params), // Your async function to fetch data
-    enabled: !!params.query_text || !!params.query_media_type, // Only run when there's something to search
+    enabled: !!params.query_type, // Only run when there's something to search
   });
 };
 

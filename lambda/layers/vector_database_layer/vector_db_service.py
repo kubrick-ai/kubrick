@@ -44,38 +44,37 @@ class VectorDBService:
                 )
                 time.sleep(2**attempt)
 
-def fetch_videos(self, page, limit):
-    # Assumes page is 0-indexed
-    try:
-        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            offset = page * limit
+    def fetch_videos(self, page, limit):
+        # Assumes page is 0-indexed
+        try:
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                offset = page * limit
 
-            video_query = """
-                SELECT *
-                FROM videos
-                LIMIT %s
-                OFFSET %s
-                """
-            cursor.execute(video_query, (limit, offset))
-            raw_videos = cursor.fetchall()
+                video_query = """
+                    SELECT *
+                    FROM videos
+                    LIMIT %s
+                    OFFSET %s
+                    """
+                cursor.execute(video_query, (limit, offset))
+                raw_videos = cursor.fetchall()
 
-            # Query to get the total count of videos
-            count_query = """
-                SELECT COUNT(*) AS total_count
-                FROM videos
-                """
-            cursor.execute(count_query)
-            total_count_result = cursor.fetchone()
-            total_videos = total_count_result['total_count'] if total_count_result else 0
+                # Query to get the total count of videos
+                count_query = """
+                    SELECT COUNT(*) AS total_count
+                    FROM videos
+                    """
+                cursor.execute(count_query)
+                total_count_result = cursor.fetchone()
+                total_videos = (
+                    total_count_result["total_count"] if total_count_result else 0
+                )
 
-        return {
-            "videos": raw_videos,
-            "total": total_videos
-        }
+            return {"videos": raw_videos, "total": total_videos}
 
-    except Exception as e:
-        self.logger.error(f"Error searching video in database: {e}")
-        raise e
+        except Exception as e:
+            self.logger.error(f"Error searching video in database: {e}")
+            raise e
 
     def store(self, video_metadata, video_segments):
         try:

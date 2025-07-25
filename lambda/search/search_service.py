@@ -1,6 +1,5 @@
 from embed_service import EmbedService
 from vector_db_service import VectorDBService
-import tempfile
 from logging import getLogger
 
 
@@ -100,12 +99,10 @@ class SearchService:
             self.logger.info(
                 f"Extracting video embedding from file (size: {len(search_request['query_media_file']) if search_request['query_media_file'] else 'None'} bytes) with modality: {search_request['query_modality']}"
             )
-            with tempfile.NamedTemporaryFile() as temp_file:
-                search_request["query_media_file"].save(temp_file.name)
-                embeddings = self.embed_service.extract_video_embedding(
-                    filepath=temp_file.name,
-                    query_modality=search_request["query_modality"],
-                )
+            embeddings = self.embed_service.extract_video_embedding(
+                file=search_request["query_media_file"],
+                query_modality=search_request["query_modality"],
+            )
         else:
             self.logger.error(
                 "Video search failed: No query_media_url or query_media_file provided"
