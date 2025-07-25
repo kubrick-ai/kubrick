@@ -34,7 +34,7 @@ def lambda_handler(event, context):
 
     db = VectorDBService(db_params=DB_CONFIG, logger=logger)
     query_params = event.get("queryStringParameters") or {}
-
+    logger.info(f"Received query params: {event.get('queryStringParameters')}")
     try:
         limit = max(
             1,
