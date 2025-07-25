@@ -61,6 +61,18 @@ search_service = SearchService(
 
 
 def lambda_handler(event, context):
+    # Handle preflight request (CORS)
+    if event.get("httpMethod") == "OPTIONS":
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "GET,OPTIONS",
+            },
+            "body": json.dumps({}),
+        }
+
     logger.info(f"event={event}")
 
     try:
@@ -170,10 +182,29 @@ def lambda_handler(event, context):
         "headers": {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
-        "body": {
-            "success": True,
-            "data": results,
-            "message": "Search completed successfully",
-        },
+        "data": [add_url(result) for result in results],
     }
+
+
+def generate_presigned_url(bucket: str, key: str, expires_in: int = 3600) -> str:
+    s3 = boto3.client("s3")
+    try:
+        url = s3.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=expires_in,
+        )
+        return url
+    except Exception as e:
+        logger.error(f"Error generating presigned URL: {e}")
+        raise
+
+
+def add_url(result):
+    result["video"]["url"] = generate_presigned_url(
+        result["video"]["s3_bucket"], result["video"]["s3_key"]
+    )
+    return result

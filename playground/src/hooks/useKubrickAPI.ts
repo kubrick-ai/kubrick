@@ -43,6 +43,7 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
   }
 
   const response = await axios.post(`${API_BASE}/search`, formData);
+  console.log(response);
   const parsedVideos = SearchResultSchema.array().parse(response.data.data);
   return parsedVideos;
 };

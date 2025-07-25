@@ -74,7 +74,7 @@ const VideoThumbnail = ({
         </MediaPlayer.Root>
       </CardContent>
       <CardFooter>
-        {video.title && <CardTitle>{video.title}</CardTitle>}
+        {video.filename && <CardTitle>{video.filename}</CardTitle>}
         <CardDescription>{children}</CardDescription>
       </CardFooter>
     </Card>

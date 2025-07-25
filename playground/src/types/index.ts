@@ -14,7 +14,6 @@ export type EmbeddingModality = z.infer<typeof EmbeddingModalitySchema>;
 
 export const VideoSchema = z.object({
   id: z.number(),
-  title: z.string().nullable().optional().default(undefined),
   url: z.string(),
   filename: z.string().nullable().optional(),
   duration: z.number().nullable().optional(),
