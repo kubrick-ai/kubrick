@@ -1,3 +1,4 @@
 {
-    "secret_name": "KubrickEmbeddingTaskConsumerSecret"
-}  
+  "secret_name": "KubrickEmbeddingTaskConsumerSecret"
+}
+
