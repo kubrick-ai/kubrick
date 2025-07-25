@@ -34,16 +34,16 @@ def lambda_handler(event, context):
     }
 
     query_params = event.get("queryStringParameters") or {}
-    limit = int(query_params.get("limit", 50))
+    limit = int(query_params.get("limit", 12))
     page = int(query_params.get("page", 0))
 
     try:
         vector_db = VectorDBService(DB_CONFIG)
 
-        raw_videos = vector_db.fetch_videos(page=page, limit=limit)
+        result = vector_db.fetch_videos(page=page, limit=limit)
 
         videos = []
-        for video in raw_videos:
+        for video in result["videos"]:
             video_data = {
                 "id": video["id"],
                 "filename": video["filename"],
@@ -65,6 +65,11 @@ def lambda_handler(event, context):
 
             videos.append(video_data)
 
+        response_body = {
+            "videos": videos,
+            "total": result["total"],
+        }
+
         return {
             "statusCode": 200,
             "headers": {
@@ -72,7 +77,7 @@ def lambda_handler(event, context):
                 "Access-Control-Allow-Headers": "Content-Type",
                 "Access-Control-Allow-Methods": "GET,OPTIONS",
             },
-            "body": json.dumps(videos),
+            "body": json.dumps(response_body),
         }
 
     except Exception as e:
