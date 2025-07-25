@@ -11,7 +11,6 @@ const Library = () => {
   const { data, isLoading, error } = useGetVideos(page - 1, PAGE_LIMIT);
   const videos = data?.videos ?? [];
   const totalVideos = data?.total ?? 0;
-  console.log(videos);
 
   return (
     <div className="p-4">

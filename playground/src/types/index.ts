@@ -27,12 +27,12 @@ export const VideoSchema = z.object({
   s3_key: z.string().nullable().optional(),
 });
 
-export const VideoCollectionSchema = z.object({
+export const VideoListSchema = z.object({
   videos: VideoSchema.array(),
   total: z.number(),
 });
 
-export type VideoCollection = z.infer<typeof VideoCollectionSchema>;
+export type VideoList = z.infer<typeof VideoListSchema>;
 
 export type Video = z.infer<typeof VideoSchema>;
 

@@ -7,8 +7,8 @@ import {
   SearchParams,
   SearchResultSchema,
   SearchResult,
-  VideoCollection,
-  VideoCollectionSchema,
+  VideoList,
+  VideoListSchema,
 } from "@/types";
 
 // TODO: Move to config?
@@ -181,19 +181,18 @@ export const useEmbedVideo = () => {
 export const fetchVideos = async (
   page = 0,
   pageLimit = 12
-): Promise<VideoCollection> => {
+): Promise<VideoList> => {
   const response = await axios.get(`${API_BASE}/videos`, {
     params: { page, limit: pageLimit },
   });
 
-
-  const parsedVideos = VideoCollectionSchema.parse(response.data);
+  const parsedVideos = VideoListSchema.parse(response.data);
   return parsedVideos;
 };
 
 // React Query hook for videos
 export const useGetVideos = (page = 0, pageLimit = 12) =>
-  useQuery<VideoCollection, Error>({
+  useQuery<VideoList, Error>({
     queryKey: ["data", page, pageLimit],
     queryFn: () => fetchVideos(page, pageLimit),
     placeholderData: (prev) => prev, // Keeps old data during loading

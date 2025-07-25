@@ -45,7 +45,7 @@ class VectorDBService:
                 time.sleep(2**attempt)
 
 def fetch_videos(self, page, limit):
-        # Assumes page is 0-indexed
+    # Assumes page is 0-indexed
     try:
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
             offset = page * limit
@@ -69,20 +69,7 @@ def fetch_videos(self, page, limit):
             total_videos = total_count_result['total_count'] if total_count_result else 0
 
         return {
-            "videos": [
-                {
-                    "id": video["id"],
-                    "s3_bucket": video["s3_bucket"],
-                    "s3_key": video["s3_key"],
-                    "filename": video["filename"],
-                    "duration": video["duration"],
-                    "created_at": video["created_at"].isoformat(),
-                    "updated_at": video["updated_at"].isoformat(),
-                    "height": video["height"],
-                    "width": video["width"],
-                }
-                for video in raw_videos
-            ],
+            "videos": raw_videos,
             "total": total_videos
         }
 
