@@ -44,38 +44,38 @@ class VectorDBService:
                 )
                 time.sleep(2**attempt)
 
-    def fetch_videos(self, page, limit):
-        # Assumes page is 0-indexed
-        try:
-            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                offset = page * limit
-                query = """
-                    SELECT *
-                    FROM videos
-                    LIMIT %s
-                    OFFSET %s
-                    """
-                cursor.execute(query, (limit, offset))
-                raw_results = cursor.fetchall()
+def fetch_videos(self, page, limit):
+    # Assumes page is 0-indexed
+    try:
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            offset = page * limit
 
-            return [
-                {
-                    "id": video["id"],
-                    "s3_bucket": video["s3_bucket"],
-                    "s3_key": video["s3_key"],
-                    "filename": video["filename"],
-                    "duration": video["duration"],
-                    "created_at": video["created_at"].isoformat(),
-                    "updated_at": video["updated_at"].isoformat(),
-                    "height": video["height"],
-                    "width": video["width"],
-                }
-                for video in raw_results
-            ]
+            video_query = """
+                SELECT *
+                FROM videos
+                LIMIT %s
+                OFFSET %s
+                """
+            cursor.execute(video_query, (limit, offset))
+            raw_videos = cursor.fetchall()
 
-        except Exception as e:
-            self.logger.error(f"Error searching video in database: {e}")
-            raise e
+            # Query to get the total count of videos
+            count_query = """
+                SELECT COUNT(*) AS total_count
+                FROM videos
+                """
+            cursor.execute(count_query)
+            total_count_result = cursor.fetchone()
+            total_videos = total_count_result['total_count'] if total_count_result else 0
+
+        return {
+            "videos": raw_videos,
+            "total": total_videos
+        }
+
+    except Exception as e:
+        self.logger.error(f"Error searching video in database: {e}")
+        raise e
 
     def store(self, video_metadata, video_segments):
         try:
