@@ -1,0 +1,13 @@
+[project]
+name = "fetchTasks"
+version = "0.1.0"
+description = "Lambda Function to Handle GET /tasks"
+readme = ""
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.pyright]
+extraPaths = [
+  "../layers/vector_database_layer/",
+  "../layers/embed_service_layer/",
+]

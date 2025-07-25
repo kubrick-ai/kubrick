@@ -65,8 +65,8 @@ class VectorDBService:
                     "s3_key": video["s3_key"],
                     "filename": video["filename"],
                     "duration": video["duration"],
-                    "created_at": video["created_at"],
-                    "updated_at": video["updated_at"],
+                    "created_at": video["created_at"].isoformat(),
+                    "updated_at": video["updated_at"].isoformat(),
                     "height": video["height"],
                     "width": video["width"],
                 }
@@ -326,3 +326,36 @@ class VectorDBService:
                 self.logger.exception(f"Error updating task: {e}")
                 self.conn.rollback()
 
+    def fetch_tasks(self, page, limit):
+        try:
+            offset = page * limit
+            query = """
+                SELECT id, sqs_message_id, s3_bucket, s3_key, created_at, updated_at, status
+                FROM tasks
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+            """
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (limit, offset))
+                raw_results = cursor.fetchall()
+
+            return [
+                {
+                    "id": task["id"],
+                    "sqs_message_id": task["sqs_message_id"],
+                    "s3_bucket": task["s3_bucket"],
+                    "s3_key": task["s3_key"],
+                    "created_at": (
+                        task["created_at"].isoformat() if task["created_at"] else None
+                    ),
+                    "updated_at": (
+                        task["updated_at"].isoformat() if task["updated_at"] else None
+                    ),
+                    "status": task["status"],
+                }
+                for task in raw_results
+            ]
+
+        except Exception as e:
+            self.logger.error(f"Error fetching tasks from database: {e}")
+            raise
