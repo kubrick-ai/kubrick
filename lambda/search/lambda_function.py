@@ -125,7 +125,7 @@ def lambda_handler(event, context):
             "query_type": None,
             "query_media_url": None,
             "query_media_file": None,
-            "query_modality": None,
+            "query_modality": ["visual-text"],
             "filter": None,
         }
 

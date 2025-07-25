@@ -1,6 +1,5 @@
 from embed_service import EmbedService
 from vector_db_service import VectorDBService
-import tempfile
 from logging import getLogger
 
 

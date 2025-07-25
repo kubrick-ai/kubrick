@@ -52,6 +52,7 @@ class EmbedService:
     ):
         self.logger.info("Extracting video features...")
         segments = self.extract_video_features(file, url)
+        self.logger.info(f"Extracted video features: {segments}")
 
         return [
             segment["embedding"]
