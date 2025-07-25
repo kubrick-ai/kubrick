@@ -43,13 +43,6 @@ def lambda_handler(event, context):
                 config["max_limit"],
             ),
         )
-        limit = max(
-            1,
-            min(
-                int(query_params.get("limit", config["default_limit"])),
-                config["max_limit"],
-            ),
-        )
         page = max(0, int(query_params.get("page", config["default_page"])))
     except ValueError:
         return {
