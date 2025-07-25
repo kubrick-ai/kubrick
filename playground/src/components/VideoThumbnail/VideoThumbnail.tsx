@@ -34,22 +34,24 @@ const VideoThumbnail = ({
     if (!curVideo) return;
     curVideo.currentTime = startTime;
   }, [startTime]);
-  // console.log(video["file_name"]);
-  // console.log(video.filename);
+
   return (
     <Card
       style={{ width, height }}
       className="relative overflow-hidden rounded-xl shadow-sm pt-0"
     >
       <CardContent className="p-0 w-full h-full">
-        <MediaPlayer.Root autoHide={false} className="w-full h-full">
+        <MediaPlayer.Root
+          autoHide={false}
+          className="w-full h-full aspect-video"
+        >
           <MediaPlayer.Video
             ref={videoRef}
             className="w-full h-full object-cover rounded-md"
             // muted
             // autoPlay
           >
-            {/* <source src={video.url} type="video/mp4" /> */}
+            <source src={video.url} type="video/mp4" />
           </MediaPlayer.Video>
 
           <MediaPlayer.Loading />

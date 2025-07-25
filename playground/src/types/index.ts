@@ -1,3 +1,4 @@
+import { Video } from "lucide-react";
 import { z } from "zod";
 
 export const MediaTypeSchema = z.enum(["image", "video", "audio"]);
@@ -15,7 +16,7 @@ export type EmbeddingModality = z.infer<typeof EmbeddingModalitySchema>;
 export const VideoSchema = z.object({
   id: z.number(),
   title: z.string().nullable().optional().default(undefined),
-  // url: z.string(),
+  url: z.string(),
   filename: z.string().nullable().optional(),
   duration: z.number().nullable().optional(),
   created_at: z.string(),
@@ -25,6 +26,13 @@ export const VideoSchema = z.object({
   s3_bucket: z.string().nullable().optional(),
   s3_key: z.string().nullable().optional(),
 });
+
+export const VideoCollectionSchema = z.object({
+  videos: VideoSchema.array(),
+  total: z.number(),
+});
+
+export type VideoCollection = z.infer<typeof VideoCollectionSchema>;
 
 export type Video = z.infer<typeof VideoSchema>;
 
