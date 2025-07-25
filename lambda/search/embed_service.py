@@ -4,7 +4,7 @@ from twelvelabs.models.embed import EmbeddingsTask
 
 
 class EmbedService:
-    def __init__(self, api_key: str, model_name: str, clip_length: str):
+    def __init__(self, api_key: str, model_name: str, clip_length: int):
         self.clip_length = clip_length
         self.client = TwelveLabs(api_key=api_key)
         self.model_name = model_name

@@ -188,6 +188,8 @@ export const fetchVideos = async (
 
   // const parsedVideos = VideoSchema.array().parse(response.data.data);
   const parsedVideos = VideoSchema.array().parse(response.data);
+
+  console.log(parsedVideos);
   return parsedVideos;
 };
 
