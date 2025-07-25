@@ -36,7 +36,7 @@ def lambda_handler(event, context):
     query_params = event.get("queryStringParameters") or {}
 
     try:
-        limit = max(1, min(int(query_params.get("limit", 50)), 50))
+        limit = max(1, min(int(query_params.get("limit", 50)), 10))
         page = max(0, int(query_params.get("page", 0)))
     except ValueError:
         return {
