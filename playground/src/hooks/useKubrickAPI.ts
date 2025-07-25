@@ -186,6 +186,7 @@ export const fetchVideos = async (
     params: { page, limit: pageLimit },
   });
 
+
   const parsedVideos = VideoCollectionSchema.parse(response.data);
   return parsedVideos;
 };

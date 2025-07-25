@@ -1,7 +1,6 @@
 import json
 import boto3
 import os
-import sys
 import time
 import logging
 import urllib.parse
@@ -121,12 +120,14 @@ def lambda_handler(event, context):
             f"Task ID: {task_id} for video: {key} has been added to the queue with message ID: {sqs_message_id}"
         )
 
-        db.store_task({
-            "sqs_message_id": sqs_message_id,
-            "s3_bucket": bucket,
-            "s3_key": key,
-            "status": "processing",
-        })
+        db.store_task(
+            {
+                "sqs_message_id": sqs_message_id,
+                "s3_bucket": bucket,
+                "s3_key": key,
+                "status": "processing",
+            }
+        )
 
         return {
             "status": "success",
@@ -139,12 +140,14 @@ def lambda_handler(event, context):
     except Exception as e:
         logger.exception("Unhandled error in lambda_handler")
         try:
-            db.store_task({
-                "sqs_message_id": sqs_message_id,
-                "s3_bucket": bucket,
-                "s3_key": key,
-                "status": "failed",
-            })
+            db.store_task(
+                {
+                    "sqs_message_id": sqs_message_id,
+                    "s3_bucket": bucket,
+                    "s3_key": key,
+                    "status": "failed",
+                }
+            )
         except Exception as db_error:
             logger.error(f"Failed to store failed task to DB: {db_error}")
         return {"status": "error", "message": str(e)}
