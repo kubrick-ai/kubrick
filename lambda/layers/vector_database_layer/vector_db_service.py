@@ -359,6 +359,24 @@ class VectorDBService:
             self.logger.error(f"Error fetching tasks from database: {e}")
             raise
 
+    def fetch_tasks_total(self):
+        try:
+            query = """
+                SELECT COUNT(*) AS total_count
+                FROM tasks
+            """
+
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query)
+                result = cursor.fetchone()
+                tasks_total = result["total_count"] if result else 0
+
+            return tasks_total
+
+        except Exception as e:
+            self.logger.error(f"Error fetching task total from database: {e}")
+            raise
+
     def fetch_video(self, bucket, key):
         query = """
             SELECT * FROM videos
