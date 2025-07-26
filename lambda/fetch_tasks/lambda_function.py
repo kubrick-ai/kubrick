@@ -1,5 +1,4 @@
 import json
-import os
 from vector_db_service import VectorDBService
 from config import load_config, get_secret, setup_logging, get_db_config
 
