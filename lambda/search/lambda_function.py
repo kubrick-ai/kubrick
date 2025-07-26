@@ -8,7 +8,8 @@ import io
 from embed_service import EmbedService
 from vector_db_service import VectorDBService
 from search_service import SearchService
-from typing import TypedDict, Optional, Literal
+from typing import Optional, Literal, List, Dict, Any
+from pydantic import BaseModel, Field, field_validator, ValidationError
 from config import load_config, get_secret, setup_logging, get_db_config
 from response_utils import (
     build_success_response,
@@ -18,18 +19,42 @@ from response_utils import (
 )
 
 
-class SearchFormData(TypedDict):
-    query_text: Optional[str]
-    page_limit: Optional[int]
-    min_similarity: Optional[float]
-    query_type: Optional[Literal["text", "image", "video", "audio"]]
-    query_media_url: Optional[str]
-    query_media_file: Optional[bytes]
-    query_modality: Optional[list[Literal["visual-text", "audio"]]]
-    filter: Optional[str]
+class SearchFormData(BaseModel):
+    query_text: Optional[str] = None
+    page_limit: Optional[int] = Field(None, gt=0, description="Must be positive")
+    min_similarity: Optional[float] = Field(
+        None, ge=0, le=1, description="Must be between 0 and 1"
+    )
+    query_type: Literal["text", "image", "video", "audio"] = "text"
+    query_media_file: Optional[bytes] = None
+    query_media_url: Optional[str] = None
+    query_modality: List[Literal["visual-text", "audio"]] = ["visual-text"]
+    filter: Optional[str] = None
+
+    @field_validator("query_text")
+    @classmethod
+    def validate_text_query(cls, value, info):
+        query_type = info.data.get("query_type")
+        if query_type == "text" and not value:
+            raise ValueError("query_text is required for text search")
+        return value
+
+    @field_validator("query_media_url")
+    @classmethod
+    def validate_media_query(cls, value, info):
+        query_type = info.data.get("query_type")
+        if query_type in ["image", "video", "audio"]:
+            query_media_file = info.data.get("query_media_file")
+            print(f"v: {value}")
+            print(f"query_media_file: {query_media_file}")
+            if value is None and query_media_file is None:
+                raise ValueError(
+                    f"query_media_url or query_media_file required for {query_type} search"
+                )
+        return value
 
 
-def parse_form_data(event, logger=logging.getLogger()):
+def parse_form_data(event, logger=logging.getLogger()) -> SearchFormData:
     logger.info("Starting multipart parsing...")
     # Decode base64 body
     logger.info("Decoding base64 body...")
@@ -60,8 +85,8 @@ def parse_form_data(event, logger=logging.getLogger()):
     # Extract form fields
     logger.info("Initializing search_request dictionary...")
 
-    # Initialize search request
-    search_request: SearchFormData = {
+    # Initialize search request as dict for parsing
+    search_request: Dict[str, Any] = {
         "query_text": None,
         "page_limit": None,
         "min_similarity": None,
@@ -101,7 +126,14 @@ def parse_form_data(event, logger=logging.getLogger()):
     logger.info("Finished processing all parts")
     logger.info(f"Parsed formdata: {search_request}")
 
-    return search_request
+    # Validate with Pydantic
+    try:
+        validated_request = SearchFormData(**search_request)
+        logger.info("Search request validation passed")
+        return validated_request
+    except ValidationError as e:
+        logger.error(f"Validation error: {e}")
+        raise ValueError(f"Invalid request: {e}")
 
 
 def generate_presigned_url(
@@ -139,9 +171,7 @@ def lambda_handler(event, context):
         clip_length=int(os.getenv("DEFAULT_CLIP_LENGTH", 6)),
         logger=logger,
     )
-
     vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
-
     search_service = SearchService(
         embed_service=embed_service, vector_db_service=vector_db_service, logger=logger
     )
@@ -150,17 +180,24 @@ def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return build_options_response()
 
-    logger.info(f"event={event}")
+    logger.debug(f"event={event}")
 
     try:
         search_request = parse_form_data(event)
-        match query_type := search_request["query_type"]:
+        # Convert Pydantic model to dict for search services
+        search_request_dict = search_request.model_dump()
+
+        match query_type := search_request.query_type:
             case "text":
-                results = search_service.text_search(search_request=search_request)
+                results = search_service.text_search(search_request=search_request_dict)
             case "image":
-                results = search_service.image_search(search_request=search_request)
+                results = search_service.image_search(
+                    search_request=search_request_dict
+                )
             case "video":
-                results = search_service.video_search(search_request=search_request)
+                results = search_service.video_search(
+                    search_request=search_request_dict
+                )
             # TODO: case "audio"
             case _:
                 return build_error_response(
@@ -169,6 +206,11 @@ def lambda_handler(event, context):
                     ErrorCode.UNSUPPORTED_QUERY_TYPE,
                 )
 
+    except ValidationError as e:
+        logger.error(f"Pydantic validation error: {e}")
+        return build_error_response(
+            400, f"Invalid request: {e}", ErrorCode.VALIDATION_ERROR
+        )
     except ValueError as e:
         logger.error(f"Validation error: {e}")
         return build_error_response(400, str(e), ErrorCode.VALIDATION_ERROR)
