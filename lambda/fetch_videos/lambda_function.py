@@ -1,11 +1,12 @@
 import json
 import boto3
+import logging
 from config import load_config, get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 
 
 def generate_presigned_url(
-    logger, bucket: str, key: str, expires_in: int = 3600
+    bucket: str, key: str, expires_in: int = 3600, logger=logging.getLogger()
 ) -> str:
     s3 = boto3.client("s3")
     try:
@@ -55,10 +56,10 @@ def lambda_handler(event, context):
 
             if video["s3_bucket"] and video["s3_key"]:
                 video_data["url"] = generate_presigned_url(
-                    logger,
                     video["s3_bucket"],
                     video["s3_key"],
                     config["presigned_url_expiry"],
+                    logger,
                 )
 
             videos.append(video_data)
