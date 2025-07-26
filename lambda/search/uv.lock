@@ -199,6 +199,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "boto3" },
     { name = "multipart" },
+    { name = "pydantic" },
     { name = "twelvelabs" },
 ]
 
@@ -206,6 +207,7 @@ dependencies = [
 requires-dist = [
     { name = "boto3", specifier = ">=1.39.10" },
     { name = "multipart", specifier = ">=1.2.1" },
+    { name = "pydantic", specifier = ">=2.11.7" },
     { name = "twelvelabs", specifier = ">=0.4.11" },
 ]
 

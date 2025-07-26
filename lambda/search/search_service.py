@@ -8,7 +8,7 @@ class SearchService:
         self,
         embed_service: EmbedService,
         vector_db_service: VectorDBService,
-        logger=getLogger(__name__),
+        logger=getLogger(),
     ):
         self.embed_service = embed_service
         self.vector_db_service = vector_db_service

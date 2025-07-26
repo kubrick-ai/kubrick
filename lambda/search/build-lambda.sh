@@ -10,11 +10,10 @@ rm -rf package ${PACKAGE_NAME}.zip ${PACKAGE_NAME}/ *.egg-info/ build/
 mkdir package
 
 # Copy Python source files to package directory
-cp lambda_function.py package/
-cp config.json package/
-cp embed_service.py package/
-cp search_service.py package/
+cp *.py package/
 
+# Copy config JSON to package directory
+cp config.json package/
 
 # Install dependencies using uv with pyproject.toml for Linux/AMD64 Python 3.13
 uv pip install --target package/ --python-platform x86_64-unknown-linux-gnu --python-version 3.13 .
@@ -28,4 +27,3 @@ cd ..
 rm -rf package
 
 echo "Lambda deployment package created: ${PACKAGE_NAME}.zip"
-
