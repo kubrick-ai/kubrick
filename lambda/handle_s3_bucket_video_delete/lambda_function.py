@@ -9,8 +9,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
-    logger.info("Lambda handler invoked")
-
     config = load_config()
     SECRET = get_secret(config)
 
@@ -23,4 +21,17 @@ def lambda_handler(event, context):
     }
 
     db = VectorDBService(db_params=DB_CONFIG, logger=logger)
-    
+
+    try:
+        for record in event.get("Records", []):
+            s3_info = record["s3"]
+            bucket = s3_info["bucket"]["name"]
+            key = s3_info["object"]["key"]
+
+            if db.fetch_video(bucket=bucket, key=key):
+                db.delete_video(bucket=bucket, key=key)
+            else:
+                logger.info(f"S3 key: {key} from bucket: {bucket} doesn't exist in the database")
+
+    except Exception as e:
+        logger.exception("Unhandled exception occurred")
