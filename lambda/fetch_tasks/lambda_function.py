@@ -3,6 +3,12 @@ import os
 import logging
 from config import load_config, get_secret
 from vector_db_service import VectorDBService
+from response_utils import (
+    ErrorCode,
+    build_error_response,
+    build_options_response,
+    build_success_response,
+)
 
 
 logger = logging.getLogger()
@@ -12,15 +18,7 @@ logger.setLevel(logging.INFO)
 def lambda_handler(event, context):
     # # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Allow-Methods": "GET,OPTIONS",
-            },
-            "body": json.dumps({}),
-        }
+        return build_options_response
 
     config = load_config()
     SECRET = get_secret(config)
@@ -35,6 +33,7 @@ def lambda_handler(event, context):
     db = VectorDBService(db_params=DB_CONFIG, logger=logger)
     query_params = event.get("queryStringParameters") or {}
     logger.info(f"Received query params: {event.get('queryStringParameters')}")
+
     try:
         limit = max(
             1,
@@ -45,47 +44,22 @@ def lambda_handler(event, context):
         )
         page = max(0, int(query_params.get("page", config["default_page"])))
     except ValueError:
-        return {
-            "statusCode": 400,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Allow-Methods": "GET,OPTIONS",
-            },
-            "body": json.dumps({"error": "Invalid 'limit' or 'page' parameter"}),
-        }
+        return build_error_response(
+            status_code=400,
+            message="Invalid 'limit' or 'page' parameter",
+            error_code=ErrorCode.VALIDATION_ERROR,
+        )
 
     try:
         tasks = db.fetch_tasks(page=page, limit=limit)
+        tasks_total = db.fetch_tasks_total()
         logger.info(f"{len(tasks)} tasks successfully fetched")
 
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Allow-Methods": "GET,OPTIONS",
-            },
-            "body": json.dumps(
-                {
-                    "data": tasks,
-                    "metadata": {
-                        "limit": limit,
-                        "page": page,
-                        "total": len(tasks),
-                    },
-                }
-            ),
-        }
+        return build_success_response(
+            tasks,
+            metadata={"limit": limit, "page": page, "total": tasks_total},
+        )
 
     except Exception as e:
-        logger.exception(f"Unhandled error in lambda_handler")
-        return {
-            "statusCode": 500,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Allow-Methods": "GET,OPTIONS",
-            },
-            "body": json.dumps({"error": str(e)}),
-        }
+        logger.exception(f"Unhandled error in lambda_handler: {e}")
+        return build_error_response(500, "Internal server error")
