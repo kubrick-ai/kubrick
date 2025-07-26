@@ -3,7 +3,7 @@ import logging
 import os
 from twelvelabs import TwelveLabs, VideoSegment
 from twelvelabs.embed import TasksStatusResponse
-from config import load_config, get_secret
+from config import load_config, get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 
 
@@ -40,22 +40,13 @@ def normalize_segments(twelvelabs_segments: list[VideoSegment]):
 
 
 def lambda_handler(event, context):
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-
+    logger = setup_logging()
     config = load_config()
     SECRET = get_secret(config)
-
-    DB_CONFIG = {
-        "host": os.getenv("DB_HOST", "localhost"),
-        "database": os.getenv("DB_NAME", "kubrick"),
-        "user": os.getenv("DB_USER", "postgres"),
-        "password": SECRET["DB_PASSWORD"],
-        "port": 5432,
-    }
+    DB_CONFIG = get_db_config(SECRET)
 
     tl_client = TwelveLabs(api_key=SECRET["TWELVELABS_API_KEY"])
-    db = VectorDBService(db_params=DB_CONFIG, logger=logger)
+    vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
 
     pending_message_ids = []
 
@@ -88,14 +79,14 @@ def lambda_handler(event, context):
                     tl_response.video_embedding.segments
                 )
 
-                db.store(video_metadata, video_segments)
+                vector_db_service.store(video_metadata, video_segments)
                 logger.info("Successfully stored video and segments in DB")
-                db.update_task_status(message_id, "completed")
+                vector_db_service.update_task_status(message_id, "completed")
                 logger.info("Successfully updated task status in DB")
 
             elif task_status == "failed":
                 logger.error(f"TwelveLabs video embedding task failed: {message_body}")
-                db.update_task_status(message_id, "failed")
+                vector_db_service.update_task_status(message_id, "failed")
                 logger.info("Successfully updated task status in DB")
 
             elif task_status == "processing":
@@ -110,7 +101,7 @@ def lambda_handler(event, context):
         except Exception as e:
             logger.error(f"Error processing task {message_id}: {e}")
             pending_message_ids.append({"itemIdentifier": message_id})
-            db.update_task_status(message_id, "retrying")
+            vector_db_service.update_task_status(message_id, "retrying")
             logger.info("Successfully updated task status in DB")
 
     # Return the list of pending message IDs
