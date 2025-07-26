@@ -358,3 +358,53 @@ class VectorDBService:
         except Exception as e:
             self.logger.error(f"Error fetching tasks from database: {e}")
             raise
+
+    def fetch_video(self, bucket, key):
+        query = """
+            SELECT * FROM videos
+            WHERE s3_bucket = %s AND s3_key = %s
+        """
+        try:
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (bucket, key))
+                results = cursor.fetchall()
+
+                if results:
+                    self.logger.info(
+                        f"Fetched {len(results)} row(s) for video [bucket: {bucket}, key: {key}]"
+                    )
+                else:
+                    self.logger.warning(
+                        f"No video found for [bucket: {bucket}, key: {key}]"
+                    )
+
+                return results
+        except Exception as e:
+            self.logger.exception(
+                f"Database error while fetching video [bucket: {bucket}, key: {key}]"
+            )
+            raise
+
+    def delete_video(self, bucket, key):
+        query = """
+            DELETE FROM videos
+            WHERE s3_bucket = %s AND s3_key = %s
+        """
+        try:
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (bucket, key))
+                if cursor.rowcount > 0:
+                    self.logger.info(
+                        f"Deleted {cursor.rowcount} row(s) for video [bucket: {bucket}, key: {key}]"
+                    )
+                    return True
+                else:
+                    self.logger.warning(
+                        f"No matching video found for deletion [bucket: {bucket}, key: {key}]"
+                    )
+                    return False
+        except Exception as e:
+            self.logger.exception(
+                f"Failed to delete video from database [bucket: {bucket}, key: {key}]"
+            )
+            raise
