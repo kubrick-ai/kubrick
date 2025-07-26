@@ -46,8 +46,11 @@ def setup_logging() -> logging.Logger:
 
     logger = logging.getLogger()
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    print(f"Setting log level: {log_level}")
-    logger.setLevel(log_level)
+    try:
+        logger.setLevel(log_level)
+    except ValueError:
+        logger.setLevel(logging.INFO)
+
     return logger
 
 
