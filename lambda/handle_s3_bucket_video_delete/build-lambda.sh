@@ -15,6 +15,7 @@ uv pip install --target package/ --python-platform x86_64-unknown-linux-gnu --py
 # Copy Python source files to package directory
 cp lambda_function.py package/
 cp config.py package/
+cp utils.py package/
 cp config.json package/
 
 # Create a zip file containing everything from the package directory at the zip root

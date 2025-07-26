@@ -1,6 +1,7 @@
 import os
 import boto3
 import logging
+import urllib.parse
 from config import load_config, get_secret
 from vector_db_service import VectorDBService
 from utils import is_valid_video_file
@@ -27,9 +28,10 @@ def lambda_handler(event, context):
 
         for record in event.get("Records", []):
             event_name = record.get("eventName", "")
-            s3_info = record.get("s3", {})
-            bucket = s3_info.get("bucket", {}).get("name")
-            key = s3_info.get("object", {}).get("key")
+            bucket = record.get("s3", {}).get("bucket", {}).get("name")
+            key = urllib.parse.unquote_plus(
+                record.get("s3", {}).get("object", {}).get("key", "")
+            ).strip()
 
             if not bucket or not key:
                 logger.warning("Missing bucket or key in S3 event record")

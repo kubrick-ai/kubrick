@@ -12,13 +12,7 @@ def load_config(config_path="config.json"):
         with open(config_path) as f:
             config = json.load(f)
         required_keys = [
-            "model_name",
-            "video_embedding_scopes",
             "secret_name",
-            "clip_length",
-            "presigned_url_ttl",
-            "file_check_retries",
-            "file_check_delay_sec",
         ]
         missing_keys = [key for key in required_keys if key not in config]
         if missing_keys:

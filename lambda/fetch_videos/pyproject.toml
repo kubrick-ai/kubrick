@@ -1,5 +1,5 @@
 [project]
-name = "fetch-videos"
+name = "fetch_videos"
 version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.13"
