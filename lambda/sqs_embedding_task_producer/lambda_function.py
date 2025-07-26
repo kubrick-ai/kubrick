@@ -32,10 +32,6 @@ def lambda_handler(event, context):
     tl_client = TwelveLabs(api_key=SECRET["TWELVELABS_API_KEY"])
     db = VectorDBService(db_params=DB_CONFIG, logger=logger)
 
-    if "ObjectCreated:Copy" in event:
-        logger.info(f"Ignoring file copy event for key: {key}")
-        return {"status": "ignored", "reason": "File copy event"}
-
     try:
         bucket, key = utils.extract_s3_info(event)
         logger.info(f"Extracted S3 bucket: {bucket}, key: {key}")
