@@ -13,9 +13,9 @@ mkdir package
 uv pip install --target package/ --python-platform x86_64-unknown-linux-gnu --python-version 3.13 .
 
 # Copy Python source files to package directory
-cp lambda_function.py package/
-cp config.py package/
-cp utils.py package/
+cp *.py package/
+
+# Copy config JSON to package directory
 cp config.json package/
 
 # Create a zip file containing everything from the package directory at the zip root
