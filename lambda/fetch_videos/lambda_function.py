@@ -1,26 +1,15 @@
-import json
 import logging
-import boto3
 import os
 from config import load_config
 from vector_db_service import VectorDBService
+from response_utils import (
+    build_error_response,
+    build_success_response,
+    generate_presigned_url,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-
-def generate_presigned_url(bucket: str, key: str, expires_in: int = 3600) -> str:
-    s3 = boto3.client("s3")
-    try:
-        url = s3.generate_presigned_url(
-            ClientMethod='get_object',
-            Params={'Bucket': bucket, 'Key': key},
-            ExpiresIn=expires_in
-        )
-        return url
-    except Exception as e:
-        logger.error(f"Error generating presigned URL: {e}")
-        return None
 
 
 def lambda_handler(event, context):
@@ -39,55 +28,14 @@ def lambda_handler(event, context):
 
     try:
         vector_db = VectorDBService(DB_CONFIG)
-
-        result = vector_db.fetch_videos(page=page, limit=limit)
-
-        videos = []
-        for video in result["videos"]:
-            video_data = {
-                "id": video["id"],
-                "filename": video["filename"],
-                "duration": video["duration"],
-                "created_at": video["created_at"].isoformat() if video["created_at"] else None,
-                "updated_at": video["updated_at"].isoformat() if video["updated_at"] else None,
-                "height": video["height"],
-                "width": video["width"],
-                "s3_bucket": video["s3_bucket"],
-                "s3_key": video["s3_key"],
-            }
-
-            if video["s3_bucket"] and video["s3_key"]:
-                video_data["url"] = generate_presigned_url(
-                    video["s3_bucket"],
-                    video["s3_key"],
-                    config["presigned_url_expiry"]
+        videos_data, total = vector_db.fetch_videos(page=page, limit=limit)
+        for video in videos_data:
+            if video.get("s3_bucket") and video.get("s3_key"):
+                video["url"] = generate_presigned_url(
+                    video["s3_bucket"], video["s3_key"], config["presigned_url_expiry"]
                 )
-
-            videos.append(video_data)
-
-        response_body = {
-            "videos": videos,
-            "total": result["total"],
-        }
-
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Allow-Methods": "GET,OPTIONS",
-            },
-            "body": json.dumps(response_body),
-        }
+        build_success_response(data=videos_data, metadata={"total": total})
 
     except Exception as e:
         logger.error(f"Error in lambda: {e}")
-        return {
-            "statusCode": 500,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Allow-Methods": "GET,OPTIONS",
-            },
-            "body": json.dumps({"error": str(e)}),
-        }
+        return build_error_response(500, "Internal server error")
