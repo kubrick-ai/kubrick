@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Dict, Any, Union, List, TypedDict
 
 
+CORS_ALLOWED_ORIGIN = os.getenv("CORS_ALLOWED_ORIGIN", "*")
 logger = logging.getLogger()
 
 
@@ -47,9 +48,7 @@ def build_options_response(
     }
 
 
-def build_cors_headers(
-    allowed_origin=os.getenv("CORS_ALLOWED_ORIGIN", "*"), **kwargs
-) -> Dict[str, str]:
+def build_cors_headers(allowed_origin=CORS_ALLOWED_ORIGIN, **kwargs) -> Dict[str, str]:
     """Build standard CORS headers for Lambda proxy API responses."""
     headers = {
         "Content-Type": "application/json",
@@ -62,12 +61,14 @@ def build_cors_headers(
 
 def build_success_response(
     data: Union[List[Any], Dict[str, Any], Any],
+    metadata: Dict[str, Any] = {},
+    allowed_origin=CORS_ALLOWED_ORIGIN,
 ) -> LambdaProxyResponse:
     """Build a successful Lambda response with data."""
     return {
         "statusCode": 200,
-        "headers": build_cors_headers(),
-        "body": json.dumps({"data": data}),
+        "headers": build_cors_headers(allowed_origin),
+        "body": json.dumps({"data": data, "metadata": metadata}),
     }
 
 
