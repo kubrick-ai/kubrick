@@ -29,7 +29,7 @@ class SearchFormData(BaseModel):
     query_media_file: Optional[bytes] = None
     query_media_url: Optional[str] = None
     query_modality: List[Literal["visual-text", "audio"]] = ["visual-text"]
-    filter: Optional[str] = None
+    filter: Optional[dict[str, Any]] = None
 
     @field_validator("query_text")
     @classmethod
