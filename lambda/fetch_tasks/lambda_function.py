@@ -1,15 +1,14 @@
 import json
-import os
-import logging
-from config import load_config, get_secret
 from vector_db_service import VectorDBService
-
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+from config import load_config, get_secret, setup_logging, get_db_config
 
 
 def lambda_handler(event, context):
+    logger = setup_logging()
+    config = load_config()
+    SECRET = get_secret(config)
+    DB_CONFIG = get_db_config(SECRET)
+
     # # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":
         return {
@@ -22,17 +21,7 @@ def lambda_handler(event, context):
             "body": json.dumps({}),
         }
 
-    config = load_config()
-    SECRET = get_secret(config)
-    DB_CONFIG = {
-        "host": os.getenv("DB_HOST", "localhost"),
-        "database": os.getenv("DB_NAME", "kubrick"),
-        "user": os.getenv("DB_USER", "postgres"),
-        "password": SECRET["DB_PASSWORD"],
-        "port": 5432,
-    }
-
-    db = VectorDBService(db_params=DB_CONFIG, logger=logger)
+    vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
     query_params = event.get("queryStringParameters") or {}
     logger.info(f"Received query params: {event.get('queryStringParameters')}")
     try:
@@ -56,7 +45,7 @@ def lambda_handler(event, context):
         }
 
     try:
-        tasks = db.fetch_tasks(page=page, limit=limit)
+        tasks = vector_db_service.fetch_tasks(page=page, limit=limit)
         logger.info(f"{len(tasks)} tasks successfully fetched")
 
         return {

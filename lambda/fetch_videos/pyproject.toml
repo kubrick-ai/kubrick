@@ -8,3 +8,10 @@ dependencies = [
     "twelvelabs>=0.4.11",
     "psycopg2-binary>=2.9.10",
 ]
+
+[tool.pyright]
+extraPaths = [
+  "../layers/vector_database_layer/",
+  "../layers/embed_service_layer/",
+  "../layers/configlayer/",
+]
