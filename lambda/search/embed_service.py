@@ -10,7 +10,7 @@ class EmbedService:
         api_key: str,
         model_name: str,
         clip_length: int,
-        logger=getLogger(__name__),
+        logger=getLogger(),
     ):
         self.clip_length = clip_length
         self.client = TwelveLabs(api_key=api_key)
