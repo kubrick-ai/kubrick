@@ -1,4 +1,3 @@
-import json
 import os
 import logging
 from config import load_config, get_secret
