@@ -1,8 +1,8 @@
 [project]
 name = "search"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "Handle POST requests to `/search` endpoint"
+readme = ""
 requires-python = ">=3.13"
 dependencies = ["multipart>=1.2.1", "pydantic>=2.11.7", "twelvelabs>=0.4.11"]
 
@@ -11,5 +11,5 @@ extraPaths = [
   "../layers/vector_database_layer/",
   "../layers/embed_service_layer/",
   "../layers/response_utils_layer/",
-  "../layers/configlayer/",
+  "../layers/config_layer/",
 ]
