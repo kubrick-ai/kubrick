@@ -50,13 +50,12 @@ def lambda_handler(event, context):
         )
 
     try:
-        tasks = db.fetch_tasks(page=page, limit=limit)
-        tasks_total = db.fetch_tasks_total()
+        tasks, total = db.fetch_tasks(page=page, limit=limit)
         logger.info(f"{len(tasks)} tasks successfully fetched")
 
         return build_success_response(
             tasks,
-            metadata={"limit": limit, "page": page, "total": tasks_total},
+            metadata={"limit": limit, "page": page, "total": total},
         )
 
     except Exception as e:
