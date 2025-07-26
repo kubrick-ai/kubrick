@@ -1,5 +1,5 @@
 import json
-from logging import getLogger, INFO
+import logging
 import os
 import boto3
 import base64
@@ -9,7 +9,7 @@ from embed_service import EmbedService
 from vector_db_service import VectorDBService
 from search_service import SearchService
 from typing import TypedDict, Optional, Literal
-from config import load_config, get_secret
+from config import load_config, get_secret, setup_logging, get_db_config
 from response_utils import (
     build_success_response,
     build_error_response,
@@ -29,7 +29,7 @@ class SearchFormData(TypedDict):
     filter: Optional[str]
 
 
-def parse_form_data(event, logger=getLogger(__name__)):
+def parse_form_data(event, logger=logging.getLogger()):
     logger.info("Starting multipart parsing...")
     # Decode base64 body
     logger.info("Decoding base64 body...")
@@ -105,7 +105,7 @@ def parse_form_data(event, logger=getLogger(__name__)):
 
 
 def generate_presigned_url(
-    bucket: str, key: str, expires_in: int = 3600, logger=getLogger(__name__)
+    bucket: str, key: str, expires_in: int = 3600, logger=logging.getLogger()
 ) -> str:
     s3 = boto3.client("s3")
     try:
@@ -128,20 +128,10 @@ def add_url(result):
 
 
 def lambda_handler(event, context):
-    logger = getLogger()
-    # TODO: Don't hard code logging level
-    logger.setLevel(INFO)
-
+    logger = setup_logging()
     config = load_config()
     SECRET = get_secret(config)
-
-    DB_CONFIG = {
-        "host": os.getenv("DB_HOST", "localhost"),
-        "database": os.getenv("DB_NAME", "kubrick"),
-        "user": os.getenv("DB_USER", "postgres"),
-        "password": SECRET["DB_PASSWORD"],
-        "port": int(os.getenv("DB_PORT", 5432)),
-    }
+    DB_CONFIG = get_db_config(SECRET)
 
     embed_service = EmbedService(
         api_key=SECRET["TWELVELABS_API_KEY"],
