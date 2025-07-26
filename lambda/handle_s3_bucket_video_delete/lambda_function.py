@@ -8,30 +8,52 @@ s3 = boto3.client("s3")
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
 def lambda_handler(event, context):
-    config = load_config()
-    SECRET = get_secret(config)
-
-    DB_CONFIG = {
-        "host": os.getenv("DB_HOST", "localhost"),
-        "database": os.getenv("DB_NAME", "kubrick"),
-        "user": os.getenv("DB_USER", "postgres"),
-        "password": SECRET["DB_PASSWORD"],
-        "port": 5432,
-    }
-
-    db = VectorDBService(db_params=DB_CONFIG, logger=logger)
-
     try:
-        for record in event.get("Records", []):
-            s3_info = record["s3"]
-            bucket = s3_info["bucket"]["name"]
-            key = s3_info["object"]["key"]
+        config = load_config()
+        secret = get_secret(config)
 
-            if db.fetch_video(bucket=bucket, key=key):
-                db.delete_video(bucket=bucket, key=key)
+        db_config = {
+            "host": os.getenv("DB_HOST", "localhost"),
+            "database": os.getenv("DB_NAME", "kubrick"),
+            "user": os.getenv("DB_USER", "postgres"),
+            "password": secret["DB_PASSWORD"],
+            "port": int(os.getenv("DB_PORT", 5432)),
+        }
+
+        db = VectorDBService(db_params=db_config, logger=logger)
+
+        for record in event.get("Records", []):
+            event_name = record.get("eventName", "")
+            s3_info = record.get("s3", {})
+            bucket = s3_info.get("bucket", {}).get("name")
+            key = s3_info.get("object", {}).get("key")
+
+            if not bucket or not key:
+                logger.warning("Missing bucket or key in S3 event record")
+                continue
+
+            logger.info(
+                f"Processing event: {event_name}, s3 bucket: {bucket}, s3 key: {key}"
+            )
+
+            results = db.fetch_video(bucket=bucket, key=key)
+
+            if results:
+                deleted = db.delete_video(bucket=bucket, key=key)
+                if deleted:
+                    logger.info(
+                        f"Deleted data for s3 key:{key} from s3 bucket: {bucket} from database."
+                    )
+                else:
+                    logger.warning(
+                        f"Failed to delete data for s3 key:{key} from s3 bucket: {bucket}. It might have been already removed."
+                    )
             else:
-                logger.info(f"S3 key: {key} from bucket: {bucket} doesn't exist in the database")
+                logger.info(
+                    f"No data found in DB for deleted S3 object [bucket: {bucket}, key: {key}]"
+                )
 
     except Exception as e:
-        logger.exception("Unhandled exception occurred")
+        logger.exception("Unhandled exception in Lambda handler")
