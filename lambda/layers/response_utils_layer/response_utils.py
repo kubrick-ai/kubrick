@@ -1,12 +1,15 @@
+import os
 import boto3
 import logging
 import json
 from enum import Enum
 from typing import Dict, Any, Union, List, TypedDict
 
-# API Gateway should be set up with Lambda proxy
+
+logger = logging.getLogger()
 
 
+# Note: AWS API Gateway should be set up with Lambda proxy for this response type to be returned properly
 class LambdaProxyResponse(TypedDict):
     """Type definition for AWS Lambda proxy integration response."""
 
@@ -27,27 +30,34 @@ class ErrorCode(Enum):
     SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
 
 
-def build_options_response() -> LambdaProxyResponse:
+def build_options_response(
+    allowed_methods=["GET", "OPTIONS"],
+    allowed_headers=["Content-Type", "Authorization"],
+) -> LambdaProxyResponse:
     """Build a CORS preflight OPTIONS response."""
     return {
         "statusCode": 200,
         "headers": {
+            "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Allow-Methods": "GET,OPTIONS",
+            "Access-Control-Allow-Methods": ", ".join(allowed_methods),
+            "Access-Control-Allow-Headers": ", ".join(allowed_headers),
         },
-        "body": json.dumps({}),
+        "body": "",
     }
 
 
-def build_cors_headers() -> Dict[str, str]:
-    """Build standard CORS headers for Lambda responses."""
-    return {
+def build_cors_headers(
+    allowed_origin=os.getenv("CORS_ALLOWED_ORIGIN", "*"), **kwargs
+) -> Dict[str, str]:
+    """Build standard CORS headers for Lambda proxy API responses."""
+    headers = {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Origin": allowed_origin,
     }
+    for k, v in kwargs:
+        headers[k] = v
+    return headers
 
 
 def build_success_response(
@@ -72,9 +82,7 @@ def build_error_response(
     }
 
 
-def generate_presigned_url(
-    bucket: str, key: str, expires_in: int = 3600, logger=logging.getLogger()
-) -> str:
+def generate_presigned_url(bucket: str, key: str, expires_in: int = 3600) -> str:
     s3 = boto3.client("s3")
     try:
         url = s3.generate_presigned_url(

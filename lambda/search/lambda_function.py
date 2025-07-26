@@ -134,9 +134,9 @@ def parse_form_data(event, logger=logging.getLogger()) -> SearchFormData:
         raise ValueError(f"Invalid request: {e}")
 
 
-def add_url(result, logger):
+def add_url(result):
     result["video"]["url"] = generate_presigned_url(
-        result["video"]["s3_bucket"], result["video"]["s3_key"], logger=logger
+        bucket=result["video"]["s3_bucket"], key=result["video"]["s3_key"]
     )
     return result
 
@@ -160,7 +160,7 @@ def lambda_handler(event, context):
 
     # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":
-        return build_options_response()
+        return build_options_response(allowed_methods=["POST", "OPTIONS"])
 
     logger.debug(f"event={event}")
 
@@ -202,4 +202,4 @@ def lambda_handler(event, context):
             500, f"Error processing request: {e}", ErrorCode.INTERNAL_ERROR
         )
 
-    return build_success_response([add_url(result, logger) for result in results])
+    return build_success_response([add_url(result) for result in results])
