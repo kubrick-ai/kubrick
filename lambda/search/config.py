@@ -46,7 +46,8 @@ def setup_logging() -> logging.Logger:
 
     logger = logging.getLogger()
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    logger.setLevel(getattr(logging, log_level, logging.INFO))
+    print(f"Setting log level: {log_level}")
+    logger.setLevel(log_level)
     return logger
 
 
