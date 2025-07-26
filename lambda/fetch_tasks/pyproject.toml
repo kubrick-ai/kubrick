@@ -10,4 +10,6 @@ dependencies = []
 extraPaths = [
   "../layers/vector_database_layer/",
   "../layers/embed_service_layer/",
+  "../layers/response_utils_layer/",
 ]
+
