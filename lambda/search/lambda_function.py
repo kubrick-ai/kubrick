@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import boto3
 import base64
 import multipart
 import io
@@ -16,16 +15,17 @@ from response_utils import (
     build_error_response,
     build_options_response,
     ErrorCode,
+    generate_presigned_url,
 )
 
 
 class SearchFormData(BaseModel):
+    query_type: Literal["text", "image", "video", "audio"] = "text"
     query_text: Optional[str] = None
     page_limit: Optional[int] = Field(None, gt=0, description="Must be positive")
     min_similarity: Optional[float] = Field(
         None, ge=0, le=1, description="Must be between 0 and 1"
     )
-    query_type: Literal["text", "image", "video", "audio"] = "text"
     query_media_file: Optional[bytes] = None
     query_media_url: Optional[str] = None
     query_modality: List[Literal["visual-text", "audio"]] = ["visual-text"]
@@ -45,8 +45,6 @@ class SearchFormData(BaseModel):
         query_type = info.data.get("query_type")
         if query_type in ["image", "video", "audio"]:
             query_media_file = info.data.get("query_media_file")
-            print(f"v: {value}")
-            print(f"query_media_file: {query_media_file}")
             if value is None and query_media_file is None:
                 raise ValueError(
                     f"query_media_url or query_media_file required for {query_type} search"
@@ -136,25 +134,9 @@ def parse_form_data(event, logger=logging.getLogger()) -> SearchFormData:
         raise ValueError(f"Invalid request: {e}")
 
 
-def generate_presigned_url(
-    bucket: str, key: str, expires_in: int = 3600, logger=logging.getLogger()
-) -> str:
-    s3 = boto3.client("s3")
-    try:
-        url = s3.generate_presigned_url(
-            ClientMethod="get_object",
-            Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=expires_in,
-        )
-        return url
-    except Exception as e:
-        logger.error(f"Error generating presigned URL: {e}")
-        raise
-
-
-def add_url(result):
+def add_url(result, logger):
     result["video"]["url"] = generate_presigned_url(
-        result["video"]["s3_bucket"], result["video"]["s3_key"]
+        result["video"]["s3_bucket"], result["video"]["s3_key"], logger=logger
     )
     return result
 
@@ -220,4 +202,4 @@ def lambda_handler(event, context):
             500, f"Error processing request: {e}", ErrorCode.INTERNAL_ERROR
         )
 
-    return build_success_response([add_url(result) for result in results])
+    return build_success_response([add_url(result, logger) for result in results])

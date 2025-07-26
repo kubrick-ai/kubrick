@@ -1,3 +1,5 @@
+import boto3
+import logging
 import json
 from enum import Enum
 from typing import Dict, Any, Union, List, TypedDict
@@ -7,6 +9,7 @@ from typing import Dict, Any, Union, List, TypedDict
 
 class LambdaProxyResponse(TypedDict):
     """Type definition for AWS Lambda proxy integration response."""
+
     statusCode: int
     headers: Dict[str, str]
     body: str
@@ -22,6 +25,19 @@ class ErrorCode(Enum):
     PARSING_ERROR = "PARSING_ERROR"
     VALIDATION_ERROR = "VALIDATION_ERROR"
     SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
+
+
+def build_options_response() -> LambdaProxyResponse:
+    """Build a CORS preflight OPTIONS response."""
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "GET,OPTIONS",
+        },
+        "body": json.dumps({}),
+    }
 
 
 def build_cors_headers() -> Dict[str, str]:
@@ -56,14 +72,17 @@ def build_error_response(
     }
 
 
-def build_options_response() -> LambdaProxyResponse:
-    """Build a CORS preflight OPTIONS response."""
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Allow-Methods": "GET,OPTIONS",
-        },
-        "body": json.dumps({}),
-    }
+def generate_presigned_url(
+    bucket: str, key: str, expires_in: int = 3600, logger=logging.getLogger()
+) -> str:
+    s3 = boto3.client("s3")
+    try:
+        url = s3.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=expires_in,
+        )
+        return url
+    except Exception as e:
+        logger.error(f"Error generating presigned URL: {e}")
+        raise
