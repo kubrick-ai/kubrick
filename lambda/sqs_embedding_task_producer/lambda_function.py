@@ -1,10 +1,8 @@
 import json
 import boto3
 import os
-import time
 import logging
-import urllib.parse
-import botocore.exceptions
+import utils
 from twelvelabs import TwelveLabs
 from config import load_config, get_secret
 from vector_db_service import VectorDBService
@@ -16,42 +14,12 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def wait_for_file(s3_client, bucket, key, retries=3, delay=2):
-    for attempt in range(retries):
-        try:
-            logger.info(f"Checking file existence attempt {attempt + 1}/{retries}")
-            s3_client.head_object(Bucket=bucket, Key=key)
-            return True
-        except botocore.exceptions.ClientError as e:
-            code = e.response.get("Error", {}).get("Code")
-            if code == "404":
-                logger.warning(f"Attempt {attempt + 1}: File not found")
-                time.sleep(delay)
-            else:
-                logger.error(
-                    f"Unexpected error while checking file (Code: {code}): {e}"
-                )
-                raise
-    logger.warning("File still not found after retries")
-    return False
-
-
-def create_embedding_request(config, client, url):
-    try:
-        return client.embed.tasks.create(
-            model_name=config["model_name"],
-            video_url=url,
-            video_clip_length=config["clip_length"],
-            video_embedding_scope=config["video_embedding_scopes"],
-        ).id
-    except Exception as e:
-        logger.error(f"Failed to create embedding request: {e}")
-        raise
-
-
 def lambda_handler(event, context):
+    logger.info("Lambda handler invoked")
+
     config = load_config()
     SECRET = get_secret(config)
+
     QUEUE_URL = os.environ["QUEUE_URL"]
     DB_CONFIG = {
         "host": os.getenv("DB_HOST", "localhost"),
@@ -62,46 +30,43 @@ def lambda_handler(event, context):
     }
 
     tl_client = TwelveLabs(api_key=SECRET["TWELVELABS_API_KEY"])
-    logger.info("Established TL client")
     db = VectorDBService(db_params=DB_CONFIG, logger=logger)
 
-    sqs_message_id = ""
-    bucket = ""
-    key = ""
+    if "ObjectCreated:Copy" in event:
+        logger.info(f"Ignoring file copy event for key: {key}")
+        return {"status": "ignored", "reason": "File copy event"}
 
     try:
-        records = event.get("Records", [])
-        if not records:
-            raise ValueError("No Records found in event")
-        record = records[0]
-        bucket = record.get("s3", {}).get("bucket", {}).get("name")
-        key = urllib.parse.unquote_plus(
-            record.get("s3", {}).get("object", {}).get("key", "")
-        ).strip()
+        bucket, key = utils.extract_s3_info(event)
+        logger.info(f"Extracted S3 bucket: {bucket}, key: {key}")
 
-        if not bucket or not key:
-            raise ValueError("Missing bucket or key in event")
+        if key.endswith("/"):
+            logger.info(f"Ignoring folder creation event for key: {key}")
+            return {"status": "ignored", "reason": "S3 event is a folder creation"}
 
-        if not wait_for_file(
+        if not utils.is_valid_video_file(key):
+            raise ValueError("File is not a video or the video format is not supported")
+        logger.info("Validated video file type")
+
+        if not utils.wait_for_file(
             s3,
             bucket,
             key,
             config["file_check_retries"],
             config["file_check_delay_sec"],
         ):
-            raise Exception(f"File s3://{bucket}/{key} not found after retries.")
+            raise FileNotFoundError(f"File s3://{bucket}/{key} not found after retries")
 
         presigned_url = s3.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket, "Key": key},
             ExpiresIn=config["presigned_url_ttl"],
         )
-
         logger.info(
-            f"Generated presigned URL for s3://{bucket}/{key}, available for {config['presigned_url_ttl']} seconds"
+            f"Presigned URL generated (expires in {config['presigned_url_ttl']} seconds)"
         )
 
-        task_id = create_embedding_request(
+        task_id = utils.create_embedding_request(
             config=config, client=tl_client, url=presigned_url
         )
 
@@ -112,23 +77,20 @@ def lambda_handler(event, context):
                 "s3_key": key,
             }
         )
+        sqs_response = sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=message_body)
+        sqs_message_id = sqs_response["MessageId"]
+        logger.info(f"SQS message sent with ID: {sqs_message_id}")
 
-        response = sqs.send_message(QueueUrl=QUEUE_URL, MessageBody=message_body)
-        sqs_message_id = response["MessageId"]
+        metadata = {
+            "sqs_message_id": sqs_message_id,
+            "s3_bucket": bucket,
+            "s3_key": key,
+            "status": "processing",
+            "twelvelabs_task_id": task_id,
+        }
+        utils.persist_task_metadata(db, metadata)
 
-        logger.info(
-            f"Task ID: {task_id} for video: {key} has been added to the queue with message ID: {sqs_message_id}"
-        )
-
-        db.store_task(
-            {
-                "sqs_message_id": sqs_message_id,
-                "s3_bucket": bucket,
-                "s3_key": key,
-                "status": "processing",
-            }
-        )
-
+        logger.info("Lambda execution completed successfully")
         return {
             "status": "success",
             "task_id": task_id,
@@ -138,16 +100,14 @@ def lambda_handler(event, context):
         }
 
     except Exception as e:
-        logger.exception("Unhandled error in lambda_handler")
-        try:
-            db.store_task(
-                {
-                    "sqs_message_id": sqs_message_id,
-                    "s3_bucket": bucket,
-                    "s3_key": key,
-                    "status": "failed",
-                }
-            )
-        except Exception as db_error:
-            logger.error(f"Failed to store failed task to DB: {db_error}")
+        logger.exception("Unhandled exception occurred")
+
+        metadata = {
+            "sqs_message_id": locals().get("sqs_message_id"),
+            "s3_bucket": locals().get("bucket"),
+            "s3_key": locals().get("key"),
+            "status": "failed",
+        }
+        utils.persist_task_metadata(db, metadata, fallback_status="failed")
+
         return {"status": "error", "message": str(e)}
