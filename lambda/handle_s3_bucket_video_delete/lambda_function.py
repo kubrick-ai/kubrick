@@ -3,6 +3,7 @@ import boto3
 import logging
 from config import load_config, get_secret
 from vector_db_service import VectorDBService
+from utils import is_valid_video_file
 
 s3 = boto3.client("s3")
 logger = logging.getLogger()
@@ -35,8 +36,12 @@ def lambda_handler(event, context):
                 continue
 
             logger.info(
-                f"Processing event: {event_name}, s3 bucket: {bucket}, s3 key: {key}"
+                f"Processing event: {event_name}, S3 bucket: {bucket}, S3 key: {key}"
             )
+
+            if not is_valid_video_file(key):
+                logger.info(f"Ignoring non-video object S3 key: {key}")
+                continue
 
             results = db.fetch_video(bucket=bucket, key=key)
 
@@ -44,11 +49,11 @@ def lambda_handler(event, context):
                 deleted = db.delete_video(bucket=bucket, key=key)
                 if deleted:
                     logger.info(
-                        f"Deleted data for s3 key:{key} from s3 bucket: {bucket} from database."
+                        f"Deleted data for S3 key:{key} from S3 bucket: {bucket} from database."
                     )
                 else:
                     logger.warning(
-                        f"Failed to delete data for s3 key:{key} from s3 bucket: {bucket}. It might have been already removed."
+                        f"Failed to delete data for S3 key:{key} from S3 bucket: {bucket}. It might have been already removed."
                     )
             else:
                 logger.info(
