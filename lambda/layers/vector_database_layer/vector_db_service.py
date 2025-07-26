@@ -2,9 +2,15 @@ import os
 import time
 import psycopg2
 from logging import getLogger
-from typing import Any
+from typing import Any, NamedTuple
 from psycopg2.extras import RealDictCursor
 from psycopg2.extensions import connection
+
+
+class PaginatedResult(NamedTuple):
+    items: list[dict[str, Any]]
+    total: int
+
 
 DEFAULT_PAGE_LIMIT = os.getenv("DEFAULT_PAGE_LIMIT", 10)
 DEFAULT_MIN_SIMILARITY = os.getenv("DEFAULT_MIN_SIMILARITY", 0.2)
@@ -44,7 +50,7 @@ class VectorDBService:
                 )
                 time.sleep(2**attempt)
 
-    def fetch_videos(self, page, limit):
+    def fetch_videos(self, page, limit) -> PaginatedResult:
         # Assumes page is 0-indexed
         try:
             with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -57,7 +63,28 @@ class VectorDBService:
                     OFFSET %s
                     """
                 cursor.execute(video_query, (limit, offset))
-                raw_videos = cursor.fetchall()
+                rows = cursor.fetchall()
+
+                videos_data = [
+                    {
+                        "id": video.get("id"),
+                        "filename": video.get("filename"),
+                        "s3_bucket": video.get("s3_bucket"),
+                        "s3_key": video.get("s3_key"),
+                        "duration": video.get("duration"),
+                        "created_at": (
+                            (created_at := video.get("created_at"))
+                            and created_at.isoformat()
+                        ),
+                        "updated_at": (
+                            (updated_at := video.get("updated_at"))
+                            and updated_at.isoformat()
+                        ),
+                        "height": video.get("height"),
+                        "width": video.get("width"),
+                    }
+                    for video in rows
+                ]
 
                 # Query to get the total count of videos
                 count_query = """
@@ -70,7 +97,7 @@ class VectorDBService:
                     total_count_result["total_count"] if total_count_result else 0
                 )
 
-            return {"videos": raw_videos, "total": total_videos}
+            return PaginatedResult(items=videos_data, total=total_videos)
 
         except Exception as e:
             self.logger.error(f"Error searching video in database: {e}")
@@ -325,35 +352,51 @@ class VectorDBService:
                 self.logger.exception(f"Error updating task: {e}")
                 self.conn.rollback()
 
-    def fetch_tasks(self, page, limit):
+    def fetch_tasks(self, page, limit) -> PaginatedResult:
         try:
-            offset = page * limit
-            query = """
-                SELECT id, sqs_message_id, s3_bucket, s3_key, created_at, updated_at, status
-                FROM tasks
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s
-            """
             with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (limit, offset))
+                offset = page * limit
+
+                # Query to get tasks with pagination
+                tasks_query = """
+                    SELECT id, sqs_message_id, s3_bucket, s3_key, created_at, updated_at, status
+                    FROM tasks
+                    ORDER BY created_at DESC
+                    LIMIT %s OFFSET %s
+                """
+                cursor.execute(tasks_query, (limit, offset))
                 raw_results = cursor.fetchall()
 
-            return [
+                # Query to get the total count of tasks
+                count_query = """
+                    SELECT COUNT(*) AS total_count
+                    FROM tasks
+                """
+                cursor.execute(count_query)
+                total_count_result = cursor.fetchone()
+                total_tasks = (
+                    total_count_result["total_count"] if total_count_result else 0
+                )
+
+            tasks_data = [
                 {
-                    "id": task["id"],
-                    "sqs_message_id": task["sqs_message_id"],
-                    "s3_bucket": task["s3_bucket"],
-                    "s3_key": task["s3_key"],
+                    "id": task.get("id"),
+                    "sqs_message_id": task.get("sqs_message_id"),
+                    "s3_bucket": task.get("s3_bucket"),
+                    "s3_key": task.get("s3_key"),
                     "created_at": (
-                        task["created_at"].isoformat() if task["created_at"] else None
+                        (created_at := task.get("created_at"))
+                        and created_at.isoformat()
                     ),
                     "updated_at": (
-                        task["updated_at"].isoformat() if task["updated_at"] else None
+                        (updated_at := task.get("updated_at"))
+                        and updated_at.isoformat()
                     ),
-                    "status": task["status"],
+                    "status": task.get("status"),
                 }
                 for task in raw_results
             ]
+            return PaginatedResult(items=tasks_data, total=total_tasks)
 
         except Exception as e:
             self.logger.error(f"Error fetching tasks from database: {e}")

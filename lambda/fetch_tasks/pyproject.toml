@@ -9,6 +9,6 @@ dependencies = []
 [tool.pyright]
 extraPaths = [
   "../layers/vector_database_layer/",
-  "../layers/embed_service_layer/",
-  "../layers/configlayer/",
+  "../layers/response_utils_layer/",
+  "../layers/config_layer/",
 ]

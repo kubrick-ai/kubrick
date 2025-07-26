@@ -1,17 +1,13 @@
 [project]
 name = "fetch_videos"
 version = "0.1.0"
-description = "Add your description here"
+description = "Lambda Function to Handle GET /videos"
 requires-python = ">=3.13"
-dependencies = [
-    "boto3>=1.39.11",
-    "twelvelabs>=0.4.11",
-    "psycopg2-binary>=2.9.10",
-]
+dependencies = []
 
 [tool.pyright]
 extraPaths = [
   "../layers/vector_database_layer/",
-  "../layers/embed_service_layer/",
-  "../layers/configlayer/",
+  "../layers/response_utils_layer/",
+  "../layers/config_layer/",
 ]
