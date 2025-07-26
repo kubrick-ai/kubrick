@@ -27,4 +27,3 @@ cd ..
 rm -rf package
 
 echo "Lambda deployment package created: ${PACKAGE_NAME}.zip"
-

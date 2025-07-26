@@ -1,6 +1,4 @@
-import os
-import logging
-from config import load_config, get_secret
+from config import load_config, get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 from response_utils import (
     ErrorCode,
@@ -10,26 +8,17 @@ from response_utils import (
 )
 
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-
 def lambda_handler(event, context):
+    logger = setup_logging()
+    config = load_config()
+    SECRET = get_secret(config)
+    DB_CONFIG = get_db_config(SECRET)
+
     # # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":
         return build_options_response
 
-    config = load_config()
-    SECRET = get_secret(config)
-    DB_CONFIG = {
-        "host": os.getenv("DB_HOST", "localhost"),
-        "database": os.getenv("DB_NAME", "kubrick"),
-        "user": os.getenv("DB_USER", "postgres"),
-        "password": SECRET["DB_PASSWORD"],
-        "port": 5432,
-    }
-
-    db = VectorDBService(db_params=DB_CONFIG, logger=logger)
+    vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
     query_params = event.get("queryStringParameters") or {}
     logger.info(f"Received query params: {event.get('queryStringParameters')}")
 
@@ -50,7 +39,7 @@ def lambda_handler(event, context):
         )
 
     try:
-        tasks, total = db.fetch_tasks(page=page, limit=limit)
+        tasks, total = vector_db_service.fetch_tasks(page=page, limit=limit)
         logger.info(f"{len(tasks)} tasks successfully fetched")
 
         return build_success_response(

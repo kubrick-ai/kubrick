@@ -1,6 +1,4 @@
-import logging
-import os
-from config import load_config
+from config import load_config, get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 from response_utils import (
     build_error_response,
@@ -8,25 +6,17 @@ from response_utils import (
     generate_presigned_url,
 )
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
 
 def lambda_handler(event, context):
-    config = load_config()
-    DB_CONFIG = {
-        "host": os.getenv("DB_HOST"),
-        "database": "kubrick",
-        "user": "postgres",
-        "password": os.getenv("DB_PASSWORD"),
-        "port": 5432,
-    }
-
-    query_params = event.get("queryStringParameters") or {}
-    limit = int(query_params.get("limit", 12))
-    page = int(query_params.get("page", 0))
-
+    logger = setup_logging()
     try:
+        config = load_config()
+        SECRET = get_secret(config)
+        DB_CONFIG = get_db_config(SECRET)
+        query_params = event.get("queryStringParameters") or {}
+        limit = int(query_params.get("limit", 12))
+        page = int(query_params.get("page", 0))
+
         vector_db = VectorDBService(DB_CONFIG)
         videos_data, total = vector_db.fetch_videos(page=page, limit=limit)
         for video in videos_data:

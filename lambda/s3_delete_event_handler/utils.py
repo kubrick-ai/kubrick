@@ -1,9 +1,5 @@
 import os
 import logging
-import time
-import botocore.exceptions
-import urllib.parse
-import json
 
 VIDEO_EXTENSIONS = {
     ".mp4",

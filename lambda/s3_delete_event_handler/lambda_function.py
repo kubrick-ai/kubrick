@@ -1,31 +1,17 @@
-import os
-import boto3
-import logging
 import urllib.parse
-from config import load_config, get_secret
+from config import load_config, get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 from utils import is_valid_video_file
 
-s3 = boto3.client("s3")
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
 
 def lambda_handler(event, context):
+    logger = setup_logging()
+    config = load_config()
+    SECRET = get_secret(config)
+    DB_CONFIG = get_db_config(SECRET)
+
+    vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
     try:
-        config = load_config()
-        secret = get_secret(config)
-
-        db_config = {
-            "host": os.getenv("DB_HOST", "localhost"),
-            "database": os.getenv("DB_NAME", "kubrick"),
-            "user": os.getenv("DB_USER", "postgres"),
-            "password": secret["DB_PASSWORD"],
-            "port": int(os.getenv("DB_PORT", 5432)),
-        }
-
-        db = VectorDBService(db_params=db_config, logger=logger)
-
         for record in event.get("Records", []):
             event_name = record.get("eventName", "")
             bucket = record.get("s3", {}).get("bucket", {}).get("name")
@@ -45,10 +31,10 @@ def lambda_handler(event, context):
                 logger.info(f"Ignoring non-video object S3 key: {key}")
                 continue
 
-            results = db.fetch_video(bucket=bucket, key=key)
+            results = vector_db_service.fetch_video(bucket=bucket, key=key)
 
             if results:
-                deleted = db.delete_video(bucket=bucket, key=key)
+                deleted = vector_db_service.delete_video(bucket=bucket, key=key)
                 if deleted:
                     logger.info(
                         f"Deleted data for S3 key:{key} from S3 bucket: {bucket} from database."
