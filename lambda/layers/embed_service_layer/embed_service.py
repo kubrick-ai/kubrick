@@ -31,13 +31,9 @@ class EmbedService:
         url: Optional[str] = None,
     ):
         if url:
-            res = self.client.embed.create(
-                model_name="Marengo-retrieval-2.7", image_url=url
-            )
+            res = self.client.embed.create(model_name=self.model_name, image_url=url)
         elif file:
-            res = self.client.embed.create(
-                model_name="Marengo-retrieval-2.7", image_file=file
-            )
+            res = self.client.embed.create(model_name=self.model_name, image_file=file)
         else:
             raise Exception("Expected image file or url as argument")
 
@@ -67,7 +63,7 @@ class EmbedService:
         clip_length: Optional[int] = None,
     ):
         embedding_request = self.create_embedding_request(file, url, clip_length)
-        self._wait_for_request_completion(embedding_request.id)
+        self._wait_for_request_completion(embedding_request)
         segments = self._retrieve_segments(embedding_request)
         return self._normalize_segments(segments)
 
@@ -93,7 +89,7 @@ class EmbedService:
 
         return embedding_request
 
-    def _wait_for_request_completion(self, embedding_request):
+    def _wait_for_request_completion(self, embedding_request: VideoEmbeddingTask):
         status = self.client.embed.tasks.wait_for_done(
             task_id=embedding_request.id, callback=self._on_request_update
         )
@@ -112,7 +108,7 @@ class EmbedService:
         segments = task.video_embedding.segments
         self.logger.info(f"Retrieved segments: {segments}")
 
-        return segments.video_embedding.segments
+        return segments
 
     def _normalize_segments(self, segments: List[VideoSegment]):
         result = []
