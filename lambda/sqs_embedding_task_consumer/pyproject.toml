@@ -10,4 +10,5 @@ dependencies = ["boto3>=1.39.10", "twelvelabs>=1.0.0b0"]
 extraPaths = [
   "../layers/vector_database_layer/",
   "../layers/embed_service_layer/",
+  "../layers/config_layer/",
 ]
