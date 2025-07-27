@@ -440,6 +440,7 @@ class VectorDBService:
                     self.logger.info(
                         f"Deleted {cursor.rowcount} row(s) for video [bucket: {bucket}, key: {key}]"
                     )
+                    self.conn.commit()
                     return True
                 else:
                     self.logger.warning(
