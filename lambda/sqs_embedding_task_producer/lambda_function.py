@@ -113,7 +113,7 @@ def lambda_handler(event, context):
             f"Presigned URL generated (expires in {config['presigned_url_ttl']} seconds)"
         )
 
-        task_id = embed_service.create_embedding_request(url=presigned_url)
+        task_id = embed_service.create_embedding_request(url=presigned_url).id
 
         message_body = json.dumps(
             {

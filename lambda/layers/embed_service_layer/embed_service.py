@@ -1,7 +1,6 @@
 from typing import BinaryIO, Optional, List, Union
 from twelvelabs import TwelveLabs
-from twelvelabs.embed import TasksCreateResponse
-from twelvelabs.types import VideoSegment, VideoEmbeddingTask, EmbeddingResponse
+from twelvelabs.types import VideoSegment, VideoEmbeddingTask
 from logging import getLogger
 
 
@@ -66,22 +65,19 @@ class EmbedService:
         file: Optional[Union[str, BinaryIO, None]],
         url: Optional[str] = None,
         clip_length: Optional[int] = None,
-        start_offset: Optional[float] = None,
-        end_offset: Optional[float] = None,
     ):
-        embedding_request = self.create_embedding_request(
-            file, url, clip_length, start_offset, end_offset
-        )
+        embedding_request = self.create_embedding_request(file, url, clip_length)
         self._wait_for_request_completion(embedding_request.id)
         segments = self._retrieve_segments(embedding_request)
         return self._normalize_segments(segments)
 
     def create_embedding_request(
         self,
-        file: Optional[Union[str, BinaryIO, None]],
-        url: Optional[str],
-        clip_length: Optional[int],
-    ) -> TasksCreateResponse:
+        *,
+        file: Optional[Union[str, BinaryIO, None]] = None,
+        url: Optional[str] = None,
+        clip_length: Optional[int] = None,
+    ) -> VideoEmbeddingTask:
         clip_length = clip_length or self.clip_length
 
         self.logger.info("Creating embedding request...")
@@ -93,9 +89,7 @@ class EmbedService:
             video_embedding_scope=["clip", "video"],
         )
 
-        self.logger.info(
-            f"Created embedding request: id={embedding_request.id} model_name={embedding_request.model_name} status={embedding_request.status}"
-        )
+        self.logger.info(f"Created embedding request: id={embedding_request.id}")
 
         return embedding_request
 
@@ -135,4 +129,4 @@ class EmbedService:
         return result
 
     def _on_request_update(self, task: VideoEmbeddingTask):
-        self.logger.info(f"  Status={task.status}")
+        self.logger.info(f"Status={task.status}")
