@@ -6,7 +6,7 @@ import os
 import logging
 import utils
 import urllib.parse
-from twelvelabs import TwelveLabs
+from embed_service import EmbedService
 from config import load_config, get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 
@@ -74,7 +74,12 @@ def lambda_handler(event, context):
 
     logger.info("Lambda handler invoked")
 
-    tl_client = TwelveLabs(api_key=SECRET["TWELVELABS_API_KEY"])
+    embed_service = EmbedService(
+        api_key=SECRET["TWELVELABS_API_KEY"],
+        model_name=os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"),
+        clip_length=int(os.getenv("DEFAULT_CLIP_LENGTH", 6)),
+        logger=logger,
+    )
     vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
 
     try:
@@ -108,9 +113,7 @@ def lambda_handler(event, context):
             f"Presigned URL generated (expires in {config['presigned_url_ttl']} seconds)"
         )
 
-        task_id = utils.create_embedding_request(
-            config=config, client=tl_client, url=presigned_url
-        )
+        task_id = embed_service.create_embedding_request(url=presigned_url)
 
         message_body = json.dumps(
             {

@@ -37,20 +37,3 @@ def has_valid_file_extension(s3_key):
     _, ext = os.path.splitext(s3_key.lower())
     logger.debug(f"Checking file extension: '{ext}'")
     return ext in VIDEO_EXTENSIONS
-
-
-# TODO: This will eventually have to be moved to the embed service layer
-def create_embedding_request(config, client, url):
-    logger.info(f"Creating embedding task using model: {config['model_name']}")
-    try:
-        task = client.embed.tasks.create(
-            model_name=config["model_name"],
-            video_url=url,
-            video_clip_length=config["clip_length"],
-            video_embedding_scope=config["video_embedding_scopes"],
-        )
-        logger.info(f"Embedding task created with ID: {task.id}")
-        return task.id
-    except Exception as e:
-        logger.error(f"Failed to create embedding request: {e}")
-        raise
