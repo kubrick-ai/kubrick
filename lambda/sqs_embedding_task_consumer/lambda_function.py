@@ -48,7 +48,9 @@ def lambda_handler(event, context):
                 tl_response = embed_service.retrieve_embed_response(task_id=tl_task_id)
                 logger.info("Extracting video metadata...")
                 tl_metadata = get_video_metadata(response=tl_response)
-                video_metadata = get_video_metadata(tl_metadata, message_body)
+                video_metadata = embed_service.get_video_metadata(
+                    tl_metadata, message_body
+                )
                 logger.info(f"Successfully extracted video metadata: {video_metadata}")
 
                 logger.info("Normalizing segments...")
