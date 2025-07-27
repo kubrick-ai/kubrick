@@ -1,42 +1,20 @@
 import json
-import logging
 import os
-from twelvelabs import TwelveLabs, VideoSegment
-from twelvelabs.embed import TasksStatusResponse
+from embed_service import EmbedService
 from config import load_config, get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 
 
-def get_embedding_provider_task_status(tl_client, task_id):
-    response: TasksStatusResponse = tl_client.embed.tasks.status(task_id=task_id)
-    return response.status
-
-
-def get_video_metadata(response, message_body):
+def get_video_metadata(tl_metadata, message_body):
     metadata = {"filename": os.path.basename(message_body["s3_key"])}
 
-    if response.video_embedding and response.video_embedding.metadata:
-        md = response.video_embedding.metadata
-        metadata["duration"] = md.duration
+    if tl_metadata:
+        metadata["duration"] = tl_metadata.duration
 
     metadata["s3_bucket"] = message_body["s3_bucket"]
     metadata["s3_key"] = message_body["s3_key"]
 
     return metadata
-
-
-def normalize_segments(twelvelabs_segments: list[VideoSegment]):
-    # Normalise segment data structure from TwelveLabs v1.0.0b0 VideoSegment type
-    return [
-        {
-            "start_time": segment.start_offset_sec,
-            "end_time": segment.end_offset_sec,
-            "scope": segment.embedding_scope,  # "clip" or "video"
-            "modality": segment.embedding_option,  # "text-visual" or "audio"
-            "embedding": segment.float_,
-        }
-        for segment in twelvelabs_segments
-    ]
 
 
 def lambda_handler(event, context):
@@ -45,7 +23,12 @@ def lambda_handler(event, context):
     SECRET = get_secret(config)
     DB_CONFIG = get_db_config(SECRET)
 
-    tl_client = TwelveLabs(api_key=SECRET["TWELVELABS_API_KEY"])
+    embed_service = EmbedService(
+        api_key=SECRET["TWELVELABS_API_KEY"],
+        model_name=os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"),
+        clip_length=int(os.getenv("DEFAULT_CLIP_LENGTH", 6)),
+        logger=logger,
+    )
     vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
 
     pending_message_ids = []
@@ -59,23 +42,17 @@ def lambda_handler(event, context):
             receipt_handle = record["receiptHandle"]
             logger.info(f"Record receiptHandle: {receipt_handle}")
 
-            task_status = get_embedding_provider_task_status(tl_client, tl_task_id)
+            task_status = embed_service.get_embedding_request_status(tl_task_id)
 
             if task_status == "ready":
-                tl_response = tl_client.embed.tasks.retrieve(task_id=tl_task_id)
-
-                if (
-                    tl_response.video_embedding is None
-                    or tl_response.video_embedding.segments is None
-                ):
-                    raise ValueError("No embedding returned from TwelveLabs API")
-
+                tl_response = embed_service.retrieve_embed_response(task_id=tl_task_id)
                 logger.info("Extracting video metadata...")
-                video_metadata = get_video_metadata(tl_response, message_body)
+                tl_metadata = get_video_metadata(response=tl_response)
+                video_metadata = get_video_metadata(tl_metadata, message_body)
                 logger.info(f"Successfully extracted video metadata: {video_metadata}")
 
                 logger.info("Normalizing segments...")
-                video_segments = normalize_segments(
+                video_segments = embed_service.normalize_segments(
                     tl_response.video_embedding.segments
                 )
 

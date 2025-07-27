@@ -1,8 +1,8 @@
 from typing import BinaryIO, Optional, List, Union
 from twelvelabs import TwelveLabs
 from twelvelabs.types import VideoSegment, VideoEmbeddingTask
+from twelvelabs.embed import TasksStatusResponse, TasksRetrieveResponse
 from logging import getLogger
-
 
 class EmbedService:
     def __init__(
@@ -76,8 +76,7 @@ class EmbedService:
     ):
         embedding_request = self.create_embedding_request(file, url, clip_length)
         self._wait_for_request_completion(embedding_request)
-        segments = self._retrieve_segments(embedding_request)
-        return self._normalize_segments(segments)
+        return self.retrieve_segments(embedding_request.id)
 
     def create_embedding_request(
         self,
@@ -107,34 +106,45 @@ class EmbedService:
         )
         self.logger.info(f"Embedding done: {status}")
 
-    def _retrieve_segments(
-        self, embedding_request: VideoEmbeddingTask
-    ) -> List[VideoSegment]:
-        task = self.client.embed.tasks.retrieve(
-            task_id=embedding_request.id, embedding_option=["visual-text", "audio"]
+    def retrieve_embed_response(self, task_id:int) -> TasksRetrieveResponse:
+        return self.client.embed.tasks.retrieve(
+            task_id=task_id, embedding_option=["visual-text", "audio"]
         )
 
-        if not task.video_embedding or not task.video_embedding.segments:
-            raise Exception("Embedding failed")
+    def retrieve_segments(self, task_id: int) -> List[VideoSegment]:
+        res = self.retrieve_embed_response(task_id=task_id)
 
-        segments = task.video_embedding.segments
+        if not (
+            res.video_embedding
+            and res.video_embedding.segments
+            and res.video_embedding.segments[0].float_
+        ):
+            raise Exception("Could not extract embedding")
+
+        segments = res.video_embedding.segments
         self.logger.info(f"Retrieved segments: {segments}")
 
-        return segments
+        return self.normalize_segments(segments)
 
-    def _normalize_segments(self, segments: List[VideoSegment]):
-        result = []
-        for segment in segments:
-            result.append(
-                {
-                    "start_time": segment.start_offset_sec,
-                    "end_time": segment.end_offset_sec,
-                    "scope": segment.embedding_scope,  # "clip" or "video"
-                    "modality": segment.embedding_option,  # "text-visual" or "audio"
-                    "embedding": segment.float_,
-                }
-            )
-        return result
+    def normalize_segments(self, segments: List[VideoSegment]):
+        return [
+            {
+                "start_time": segment.start_offset_sec,
+                "end_time": segment.end_offset_sec,
+                "scope": segment.embedding_scope,  # "clip" or "video"
+                "modality": segment.embedding_option,  # "text-visual" or "audio"
+                "embedding": segment.float_,
+            }
+            for segment in segments
+        ]
 
     def _on_request_update(self, task: VideoEmbeddingTask):
         self.logger.info(f"Status={task.status}")
+
+    def get_embedding_request_status(self, task_id):
+        response: TasksStatusResponse = self.client.embed.tasks.status(task_id=task_id)
+        return response.status
+
+    def get_video_metadata(self, response: TasksRetrieveResponse):
+        if response.video_embedding and response.video_embedding.metadata:
+            return response.video_embedding.metadata
