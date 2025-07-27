@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Handle POST requests to `/search` endpoint"
 readme = ""
 requires-python = ">=3.13"
-dependencies = ["multipart>=1.2.1", "pydantic>=2.11.7", "twelvelabs>=0.4.11"]
+dependencies = ["multipart>=1.2.1", "pydantic>=2.11.7",]
 
 [tool.pyright]
 extraPaths = [
