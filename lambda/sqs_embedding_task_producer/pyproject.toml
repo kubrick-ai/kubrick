@@ -6,7 +6,6 @@ readme = ""
 requires-python = ">=3.13"
 dependencies = [
   "boto3>=1.39.11",
- "twelvelabs>=1.0.0b0",
 ]
 
 [tool.pyright]

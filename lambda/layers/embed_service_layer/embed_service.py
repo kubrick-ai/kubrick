@@ -17,19 +17,25 @@ class EmbedService:
         self.model_name = model_name
         self.logger = logger
 
-    def extract_text_embedding(self, input_text: str):
+    def extract_text_embedding(self, input_text: str) -> list[float]:
         res = self.client.embed.create(
             model_name=self.model_name, text_truncate="start", text=input_text
         )
 
-        if res.text_embedding is not None and res.text_embedding.segments is not None:
-            return res.text_embedding.segments[0].float_
+        if not (
+            res.text_embedding
+            and res.text_embedding.segments
+            and res.text_embedding.segments[0].float_
+        ):
+            raise Exception("Could not extract embedding")
+
+        return res.text_embedding.segments[0].float_
 
     def extract_image_embedding(
         self,
         file: Optional[BinaryIO] = None,
         url: Optional[str] = None,
-    ):
+    ) -> list[float]:
         if url:
             res = self.client.embed.create(model_name=self.model_name, image_url=url)
         elif file:
@@ -37,8 +43,14 @@ class EmbedService:
         else:
             raise Exception("Expected image file or url as argument")
 
-        if res.image_embedding is not None and res.image_embedding.segments is not None:
-            return res.image_embedding.segments[0].float_
+        if not (
+            res.image_embedding
+            and res.image_embedding.segments
+            and res.image_embedding.segments[0].float_
+        ):
+            raise Exception("Could not extract embedding")
+
+        return res.image_embedding.segments[0].float_
 
     def extract_video_embedding(
         self,
