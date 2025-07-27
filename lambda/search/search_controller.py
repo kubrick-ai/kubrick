@@ -1,7 +1,11 @@
+import json
+import base64
+import multipart
+import io
 from embed_service import EmbedService
 from vector_db_service import VectorDBService
 from logging import getLogger, Logger
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, Union, Literal
 from response_utils import generate_presigned_url
 from search_errors import (
     SearchError,
@@ -10,6 +14,40 @@ from search_errors import (
     DatabaseError,
     MediaProcessingError,
 )
+from pydantic import BaseModel, Field, field_validator, ValidationError
+
+
+class SearchFormData(BaseModel):
+    query_type: Literal["text", "image", "video", "audio"] = "text"
+    query_text: Optional[str] = None
+    page_limit: Optional[int] = Field(None, gt=0, description="Must be positive")
+    min_similarity: Optional[float] = Field(
+        None, ge=0, le=1, description="Must be between 0 and 1"
+    )
+    query_media_file: Optional[bytes] = None
+    query_media_url: Optional[str] = None
+    query_modality: List[Literal["visual-text", "audio"]] = ["visual-text"]
+    filter: Optional[dict[str, Any]] = None
+
+    @field_validator("query_text")
+    @classmethod
+    def validate_text_query(cls, value, info):
+        query_type = info.data.get("query_type")
+        if query_type == "text" and not value:
+            raise ValueError("query_text is required for text search")
+        return value
+
+    @field_validator("query_media_url")
+    @classmethod
+    def validate_media_query(cls, value, info):
+        query_type = info.data.get("query_type")
+        if query_type in ["image", "video", "audio"]:
+            query_media_file = info.data.get("query_media_file")
+            if value is None and query_media_file is None:
+                raise ValueError(
+                    f"query_media_url or query_media_file required for {query_type} search"
+                )
+        return value
 
 
 class SearchController:
@@ -17,11 +55,131 @@ class SearchController:
         self,
         embed_service: EmbedService,
         vector_db_service: VectorDBService,
+        config: Dict[str, Any],
         logger: Logger = getLogger(),
     ):
         self.embed_service = embed_service
         self.vector_db_service = vector_db_service
+        self.config = config
         self.logger = logger
+
+    def parse_form_data(self, event) -> SearchFormData:
+        try:
+            self.logger.info("Starting multipart parsing")
+
+            if not event.get("body"):
+                raise SearchRequestError("Request body is empty")
+
+            try:
+                byte_string = base64.b64decode(event.get("body"))
+                self.logger.debug(f"Decoded body length: {len(byte_string)}")
+            except Exception as e:
+                raise SearchRequestError(f"Failed to decode base64 body: {str(e)}")
+
+            headers = event.get("headers", {})
+            content_type_header = headers.get("content-type")
+
+            if not content_type_header:
+                raise SearchRequestError("Missing content-type header")
+
+            try:
+                content_type, options = multipart.parse_options_header(
+                    content_type_header
+                )
+
+                if content_type != "multipart/form-data":
+                    raise SearchRequestError(
+                        f"Expected content-type 'multipart/form-data', got '{content_type}'"
+                    )
+
+                boundary = options.get("boundary")
+                if not boundary:
+                    raise SearchRequestError("Missing boundary in content-type header")
+
+            except SearchRequestError:
+                raise
+            except Exception as e:
+                raise SearchRequestError(f"Invalid content-type header: {str(e)}")
+
+            try:
+                body_stream = io.BytesIO(byte_string)
+                parsed = multipart.MultipartParser(body_stream, boundary)
+            except Exception as e:
+                raise SearchRequestError(f"Failed to parse multipart data: {str(e)}")
+
+            # Get valid field names from the SearchFormData model
+            valid_fields = set(SearchFormData.model_fields.keys())
+            search_request: Dict[str, Any] = {}
+
+            # Extract form fields
+            try:
+                for part in parsed:
+                    if not part or (field_name := part.name) not in valid_fields:
+                        continue
+
+                    if part.filename:  # File field
+                        file_size = part.size
+                        size_limit = self.config.get(
+                            "query_media_file_size_limit", 6000000
+                        )
+                        if file_size > size_limit:
+                            raise SearchRequestError(
+                                f"Query media file size too large. Limit: {size_limit/1000} KB"
+                            )
+                        search_request[field_name] = part.raw
+                        self.logger.debug(
+                            f"Processed file field: {field_name}, size: {file_size/1000} KB"
+                        )
+                    else:  # Text field
+                        try:
+                            value = part.value
+                            if field_name == "filter" and value:
+                                value = json.loads(value)
+                            search_request[field_name] = value
+                            self.logger.debug(f"Processed text field: {field_name}")
+                        except json.JSONDecodeError as e:
+                            raise SearchRequestError(
+                                f"Invalid JSON in filter field: {str(e)}"
+                            )
+                        except UnicodeDecodeError as e:
+                            raise SearchRequestError(
+                                f"Invalid encoding in field {field_name}: {str(e)}"
+                            )
+
+                # Cleanup
+                for part in parsed.parts():
+                    if part:
+                        part.close()
+
+            except SearchRequestError:
+                raise
+            except Exception as e:
+                raise SearchRequestError(f"Error processing form fields: {str(e)}")
+
+            # Validate with Pydantic
+            try:
+                validated_request = SearchFormData(**search_request)
+                self.logger.info("Search request validation passed")
+                return validated_request
+            except ValidationError as e:
+                error_details = {
+                    "validation_errors": [
+                        {"field": err["loc"], "message": err["msg"]}
+                        for err in e.errors()
+                    ]
+                }
+                self.logger.error(
+                    f"Request validation failed: {str(e)}: {error_details}"
+                )
+                raise SearchRequestError(
+                    f"Request validation failed: {str(e)}",
+                )
+
+        except SearchRequestError:
+            raise
+        except Exception as e:
+            self.logger.error(f"Unexpected error in parse_form_data: {str(e)}")
+            raise SearchRequestError(f"Failed to parse request: {str(e)}")
 
     def _add_url(self, result):
         """Add presigned URL to search result"""
@@ -43,11 +201,12 @@ class SearchController:
                 case "video":
                     results = self.video_search(search_request=search_request_dict)
                 case "audio":
-                    raise SearchRequestError("Audio search is not yet implemented")
+                    # TODO: Implement audio search
+                    raise SearchRequestError("Audio search is not yet supported")
                 case _:
                     raise SearchRequestError(f"Unsupported query_type: {query_type}")
 
-            # Add URLs to results
+            # Add presigned url to each result
             try:
                 results_with_urls = [self._add_url(result) for result in results]
                 self.logger.info(
@@ -65,7 +224,7 @@ class SearchController:
             raise SearchError(f"Search request processing failed: {str(e)}")
 
     def _extract_search_params(self, search_request: Dict[str, Any]) -> Dict[str, Any]:
-        """Extract common search parameters with defaults"""
+        """Extract search parameters with defaults"""
         return {
             "filter": search_request.get("filter", None),
             "page_limit": search_request.get(
@@ -117,51 +276,15 @@ class SearchController:
         except DatabaseError:
             raise
         except Exception as e:
-            self.logger.error(f"Unexpected error during vector search: {str(e)}")
             details = {
                 "search_type": "batch" if use_batch else "single",
                 "embedding_count": len(embedding) if use_batch else 1,
                 "search_params": search_params,
             }
-            raise DatabaseError(f"Vector database search failed: {str(e)}", details)
-
-    def _validate_text_request(self, search_request: Dict[str, Any]) -> None:
-        """Validate text search request"""
-        query_text = search_request.get("query_text")
-        if not query_text:
-            raise SearchRequestError("query_text is required for text search")
-        if not isinstance(query_text, str):
-            raise SearchRequestError("query_text must be a string")
-        if len(query_text.strip()) == 0:
-            raise SearchRequestError("query_text cannot be empty")
-
-    def _validate_media_request(self, search_request: Dict[str, Any]) -> None:
-        """Validate media search request"""
-        media_url = search_request.get("query_media_url")
-        media_file = search_request.get("query_media_file")
-
-        if not media_url and not media_file:
-            raise SearchRequestError(
-                "Either query_media_url or query_media_file is required"
+            self.logger.exception(
+                f"Unexpected error during vector search: {str(e)}\n{details}"
             )
-
-        if media_url and not isinstance(media_url, str):
-            raise SearchRequestError("query_media_url must be a string")
-
-        if media_file and not isinstance(media_file, bytes):
-            raise SearchRequestError("query_media_file must be bytes")
-
-    def _validate_video_request(self, search_request: Dict[str, Any]) -> None:
-        """Validate video search request"""
-        self._validate_media_request(search_request)
-
-        query_modality = search_request.get("query_modality")
-        if not query_modality:
-            raise SearchRequestError("query_modality is required for video search")
-        if not isinstance(query_modality, list):
-            raise SearchRequestError("query_modality must be a list")
-        if not all(isinstance(mod, str) for mod in query_modality):
-            raise SearchRequestError("All query_modality values must be strings")
+            raise DatabaseError(f"Vector database search failed: {str(e)}")
 
     def _extract_text_embedding(self, query_text: str) -> List[float]:
         """Extract text embedding with error handling"""
@@ -303,7 +426,6 @@ class SearchController:
         try:
             self.logger.info("Starting text search")
 
-            self._validate_text_request(search_request)
             embedding = self._extract_text_embedding(search_request["query_text"])
             search_params = self._extract_search_params(search_request)
             results = self._perform_vector_search(embedding, search_params)
@@ -321,7 +443,6 @@ class SearchController:
         try:
             self.logger.info("Starting image search")
 
-            self._validate_media_request(search_request)
             embedding = self._extract_image_embedding(search_request)
             search_params = self._extract_search_params(search_request)
             results = self._perform_vector_search(embedding, search_params)
@@ -344,7 +465,6 @@ class SearchController:
         try:
             self.logger.info("Starting video search")
 
-            self._validate_video_request(search_request)
             embeddings = self._extract_video_embeddings(search_request)
 
             if not embeddings:
