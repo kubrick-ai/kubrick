@@ -1,14 +1,15 @@
 [project]
-name = "SQSEmbeddingTaskConsumer"
+name = "search"
 version = "0.1.0"
-description = "SQS Embedding Task Consumer Lambda function"
+description = "Handle POST requests to `/search` endpoint"
 readme = ""
 requires-python = ">=3.13"
-dependencies = ["boto3>=1.39.10"]
+dependencies = ["multipart>=1.2.1", "pydantic>=2.11.7",]
 
 [tool.pyright]
 extraPaths = [
   "../layers/vector_database_layer/",
   "../layers/embed_service_layer/",
+  "../layers/response_utils_layer/",
   "../layers/config_layer/",
 ]

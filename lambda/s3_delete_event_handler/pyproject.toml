@@ -1,10 +1,10 @@
 [project]
-name = "SQSEmbeddingTaskConsumer"
+name = "handle_s3_bucket_video_delete"
 version = "0.1.0"
-description = "SQS Embedding Task Consumer Lambda function"
+description = "Handles Video Delete in S3 Bucket"
 readme = ""
 requires-python = ">=3.13"
-dependencies = ["boto3>=1.39.10"]
+dependencies = ["boto3>=1.39.11"]
 
 [tool.pyright]
 extraPaths = [

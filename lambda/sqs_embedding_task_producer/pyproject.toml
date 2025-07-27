@@ -1,10 +1,12 @@
 [project]
-name = "SQSEmbeddingTaskConsumer"
+name = "SQSEmbeddingTaskProducer"
 version = "0.1.0"
-description = "SQS Embedding Task Consumer Lambda function"
+description = "SQS Embedding Task Producer Lambda function"
 readme = ""
 requires-python = ">=3.13"
-dependencies = ["boto3>=1.39.10"]
+dependencies = [
+  "boto3>=1.39.11",
+]
 
 [tool.pyright]
 extraPaths = [

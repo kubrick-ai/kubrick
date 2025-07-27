@@ -1,0 +1,13 @@
+[project]
+name = "fetch_videos"
+version = "0.1.0"
+description = "Lambda Function to Handle GET /videos"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.pyright]
+extraPaths = [
+  "../layers/vector_database_layer/",
+  "../layers/response_utils_layer/",
+  "../layers/config_layer/",
+]
