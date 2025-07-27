@@ -16,17 +16,23 @@ from search_errors import (
 )
 from pydantic import BaseModel, Field, field_validator, ValidationError
 
+DEFAULT_PAGE_LIMIT = 10
+DEFAULT_QUERY_MODALITY: List[Literal["visual-text", "audio"]] = ["visual-text"]
+DEFAULT_MIN_SIMILARITY = 0.2
 
-class SearchFormData(BaseModel):
+
+class SearchRequest(BaseModel):
     query_type: Literal["text", "image", "video", "audio"] = "text"
     query_text: Optional[str] = None
-    page_limit: Optional[int] = Field(None, gt=0, description="Must be positive")
-    min_similarity: Optional[float] = Field(
-        None, ge=0, le=1, description="Must be between 0 and 1"
+    page_limit: Optional[int] = Field(
+        DEFAULT_PAGE_LIMIT, gt=0, description="Must be positive"
     )
-    query_media_file: Optional[bytes] = None
+    min_similarity: Optional[float] = Field(
+        DEFAULT_MIN_SIMILARITY, ge=0, le=1, description="Must be between 0 and 1"
+    )
+    query_media_file: Optional[io.BytesIO] = None
     query_media_url: Optional[str] = None
-    query_modality: List[Literal["visual-text", "audio"]] = ["visual-text"]
+    query_modality: List[Literal["visual-text", "audio"]] = DEFAULT_QUERY_MODALITY
     filter: Optional[dict[str, Any]] = None
 
     @field_validator("query_text")
@@ -49,6 +55,14 @@ class SearchFormData(BaseModel):
                 )
         return value
 
+    def get_search_params(self) -> Dict[str, Any]:
+        """Extract search parameters for vector database"""
+        return {
+            "filter": self.filter,
+            "page_limit": self.page_limit,
+            "min_similarity": self.min_similarity,
+        }
+
 
 class SearchController:
     def __init__(
@@ -63,7 +77,7 @@ class SearchController:
         self.config = config
         self.logger = logger
 
-    def parse_form_data(self, event) -> SearchFormData:
+    def parse_lambda_event(self, event) -> SearchRequest:
         try:
             self.logger.info("Starting multipart parsing")
 
@@ -108,7 +122,7 @@ class SearchController:
                 raise SearchRequestError(f"Failed to parse multipart data: {str(e)}")
 
             # Get valid field names from the SearchFormData model
-            valid_fields = set(SearchFormData.model_fields.keys())
+            valid_fields = set(SearchRequest.model_fields.keys())
             search_request: Dict[str, Any] = {}
 
             # Extract form fields
@@ -126,7 +140,7 @@ class SearchController:
                             raise SearchRequestError(
                                 f"Query media file size too large. Limit: {size_limit/1000} KB"
                             )
-                        search_request[field_name] = part.raw
+                        search_request[field_name] = io.BytesIO(part.raw)
                         self.logger.debug(
                             f"Processed file field: {field_name}, size: {file_size/1000} KB"
                         )
@@ -158,7 +172,7 @@ class SearchController:
 
             # Validate with Pydantic
             try:
-                validated_request = SearchFormData(**search_request)
+                validated_request = SearchRequest(**search_request)
                 self.logger.info("Search request validation passed")
                 return validated_request
             except ValidationError as e:
@@ -188,23 +202,26 @@ class SearchController:
         )
         return result
 
-    def process_search_request(self, search_request_dict: Dict[str, Any]) -> List[Any]:
-        """Process search request from parsed data to results with URLs"""
+    def process_search_request(self, event) -> List[Any]:
+        """Parse event to SearchRequest and execute the search request"""
         try:
             self.logger.info("Processing search request")
+            search_request = self.parse_lambda_event(event)
 
-            match query_type := search_request_dict.get("query_type"):
+            match search_request.query_type:
                 case "text":
-                    results = self.text_search(search_request=search_request_dict)
+                    results = self.text_search(search_request=search_request)
                 case "image":
-                    results = self.image_search(search_request=search_request_dict)
+                    results = self.image_search(search_request=search_request)
                 case "video":
-                    results = self.video_search(search_request=search_request_dict)
+                    results = self.video_search(search_request=search_request)
                 case "audio":
                     # TODO: Implement audio search
                     raise SearchRequestError("Audio search is not yet supported")
                 case _:
-                    raise SearchRequestError(f"Unsupported query_type: {query_type}")
+                    raise SearchRequestError(
+                        f"Unsupported query_type: {search_request.query_type}"
+                    )
 
             # Add presigned url to each result
             try:
@@ -214,26 +231,16 @@ class SearchController:
                 )
                 return results_with_urls
             except Exception as e:
-                self.logger.error(f"Error adding URLs to results: {str(e)}")
+                self.logger.exception(f"Error adding URLs to results: {str(e)}")
                 raise SearchError(f"Failed to process search results: {str(e)}")
 
         except SearchError:
             raise
         except Exception as e:
-            self.logger.error(f"Unexpected error processing search request: {str(e)}")
+            self.logger.exception(
+                f"Unexpected error processing search request: {str(e)}"
+            )
             raise SearchError(f"Search request processing failed: {str(e)}")
-
-    def _extract_search_params(self, search_request: Dict[str, Any]) -> Dict[str, Any]:
-        """Extract search parameters with defaults"""
-        return {
-            "filter": search_request.get("filter", None),
-            "page_limit": search_request.get(
-                "page_limit", self.vector_db_service.default_page_limit
-            ),
-            "min_similarity": search_request.get(
-                "min_similarity", self.vector_db_service.default_min_similarity
-            ),
-        }
 
     def _perform_vector_search(
         self,
@@ -308,32 +315,31 @@ class SearchController:
         except EmbeddingError:
             raise
         except Exception as e:
-            self.logger.error(
+            self.logger.exception(
                 f"Unexpected error during text embedding extraction: {str(e)}"
             )
-            raise EmbeddingError(
-                f"Failed to extract text embedding: {str(e)}",
-                {"query_length": len(query_text)},
-            )
+            raise EmbeddingError(f"Failed to extract text embedding: {str(e)}")
 
-    def _extract_image_embedding(self, search_request: Dict[str, Any]) -> List[float]:
+    def _extract_image_embedding(self, search_request: SearchRequest) -> List[float]:
         """Extract image embedding from URL or file"""
         try:
-            media_url = search_request.get("query_media_url")
-            media_file = search_request.get("query_media_file")
+            media_url = search_request.query_media_url
+            media_file = search_request.query_media_file
 
             if media_url:
-                self.logger.info(f"Extracting image embedding from URL")
+                self.logger.info("Extracting image embedding from URL")
                 self.logger.debug(f"Image URL: {media_url}")
                 embedding = self.embed_service.extract_image_embedding(url=media_url)
-            else:
-                file_size = len(media_file) if media_file else 0
-                self.logger.info(
-                    f"Extracting image embedding from file (size: {file_size} bytes)"
-                )
-                if file_size == 0:
-                    raise MediaProcessingError("Image file is empty")
+            elif media_file:
+                self.logger.info("Extracting image embedding from file")
                 embedding = self.embed_service.extract_image_embedding(file=media_file)
+            else:
+                self.logger.exception(
+                    f"Could not extract media_url or media_file from search_request: {search_request}"
+                )
+                raise MediaProcessingError(
+                    "Could not extract media_url or media_file from search_request"
+                )
 
             if not embedding:
                 raise EmbeddingError("Image embedding extraction returned empty result")
@@ -350,26 +356,19 @@ class SearchController:
         except (EmbeddingError, MediaProcessingError):
             raise
         except Exception as e:
-            self.logger.error(
+            self.logger.exception(
                 f"Unexpected error during image embedding extraction: {str(e)}"
             )
-            details = {"source": "url" if media_url else "file"}
-            if media_url:
-                details["url_length"] = len(media_url)
-            else:
-                details["file_size"] = len(media_file) if media_file else 0
-            raise EmbeddingError(
-                f"Failed to extract image embedding: {str(e)}", details
-            )
+            raise EmbeddingError(f"Failed to extract image embedding: {str(e)}")
 
     def _extract_video_embeddings(
-        self, search_request: Dict[str, Any]
+        self, search_request: SearchRequest
     ) -> List[List[float]]:
         """Extract video embeddings from URL or file"""
         try:
-            media_url = search_request.get("query_media_url")
-            media_file = search_request.get("query_media_file")
-            query_modality = search_request["query_modality"]
+            media_url = search_request.query_media_url
+            media_file = search_request.query_media_file
+            query_modality = search_request.query_modality
 
             if media_url:
                 self.logger.info(
@@ -379,15 +378,19 @@ class SearchController:
                 embeddings = self.embed_service.extract_video_embedding(
                     url=media_url, query_modality=query_modality
                 )
-            else:
-                file_size = len(media_file) if media_file else 0
+            elif media_file:
                 self.logger.info(
-                    f"Extracting video embedding from file (size: {file_size} bytes) with modality: {query_modality}"
+                    f"Extracting video embedding from file with modality: {query_modality}"
                 )
-                if file_size == 0:
-                    raise MediaProcessingError("Video file is empty")
                 embeddings = self.embed_service.extract_video_embedding(
                     file=media_file, query_modality=query_modality
+                )
+            else:
+                self.logger.exception(
+                    f"Could not extract media_url or media_file from search_request: {search_request}"
+                )
+                raise MediaProcessingError(
+                    "Could not extract media_url or media_file from search_request"
                 )
 
             if not embeddings:
@@ -407,27 +410,19 @@ class SearchController:
         except (EmbeddingError, MediaProcessingError):
             raise
         except Exception as e:
-            self.logger.error(
+            self.logger.exception(
                 f"Unexpected error during video embedding extraction: {str(e)}"
             )
-            details = {
-                "source": "url" if media_url else "file",
-                "modality": query_modality,
-            }
-            if media_url:
-                details["url_length"] = len(media_url)
-            else:
-                details["file_size"] = len(media_file) if media_file else 0
-            raise EmbeddingError(
-                f"Failed to extract video embeddings: {str(e)}", details
-            )
+            raise EmbeddingError(f"Failed to extract video embeddings: {str(e)}")
 
-    def text_search(self, search_request: Dict[str, Any]) -> List[Any]:
+    def text_search(self, search_request: SearchRequest) -> List[Any]:
         try:
             self.logger.info("Starting text search")
 
-            embedding = self._extract_text_embedding(search_request["query_text"])
-            search_params = self._extract_search_params(search_request)
+            if not search_request.query_text:
+                raise SearchRequestError("query_text is required for text search")
+            embedding = self._extract_text_embedding(search_request.query_text)
+            search_params = search_request.get_search_params()
             results = self._perform_vector_search(embedding, search_params)
 
             self.logger.info(f"Text search completed, found {len(results)} results")
@@ -436,15 +431,15 @@ class SearchController:
         except (SearchRequestError, EmbeddingError, DatabaseError):
             raise
         except Exception as e:
-            self.logger.error(f"Unexpected error in text search: {str(e)}")
+            self.logger.exception(f"Unexpected error in text search: {str(e)}")
             raise SearchError(f"Text search failed: {str(e)}")
 
-    def image_search(self, search_request: Dict[str, Any]) -> List[Any]:
+    def image_search(self, search_request: SearchRequest) -> List[Any]:
         try:
             self.logger.info("Starting image search")
 
             embedding = self._extract_image_embedding(search_request)
-            search_params = self._extract_search_params(search_request)
+            search_params = search_request.get_search_params()
             results = self._perform_vector_search(embedding, search_params)
 
             self.logger.info(f"Image search completed, found {len(results)} results")
@@ -458,10 +453,10 @@ class SearchController:
         ):
             raise
         except Exception as e:
-            self.logger.error(f"Unexpected error in image search: {str(e)}")
+            self.logger.exception(f"Unexpected error in image search: {str(e)}")
             raise SearchError(f"Image search failed: {str(e)}")
 
-    def video_search(self, search_request: Dict[str, Any]) -> List[Any]:
+    def video_search(self, search_request: SearchRequest) -> List[Any]:
         try:
             self.logger.info("Starting video search")
 
@@ -470,7 +465,7 @@ class SearchController:
             if not embeddings:
                 raise EmbeddingError("Could not extract video embeddings")
 
-            search_params = self._extract_search_params(search_request)
+            search_params = search_request.get_search_params()
 
             if len(embeddings) > 1:
                 self.logger.debug("Using batch search for multiple embeddings")
@@ -492,5 +487,5 @@ class SearchController:
         ):
             raise
         except Exception as e:
-            self.logger.error(f"Unexpected error in video search: {str(e)}")
+            self.logger.exception(f"Unexpected error in video search: {str(e)}")
             raise SearchError(f"Video search failed: {str(e)}")

@@ -47,12 +47,7 @@ def lambda_handler(event, context):
     )
 
     try:
-        # Parse form data from Lambda event
-        search_request = search_controller.parse_form_data(event)
-        search_request_dict = search_request.model_dump()
-
-        # Process search request
-        results = search_controller.process_search_request(search_request_dict)
+        results = search_controller.process_search_request(event)
         return build_success_response(results)
 
     except SearchRequestError as e:
