@@ -29,6 +29,9 @@ class ErrorCode(Enum):
     PARSING_ERROR = "PARSING_ERROR"
     VALIDATION_ERROR = "VALIDATION_ERROR"
     SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
+    EMBEDDING_ERROR = "EMBEDDING_ERROR"
+    DATABASE_ERROR = "DATABASE_ERROR"
+    MEDIA_PROCESSING_ERROR = "MEDIA_PROCESSING_ERROR"
 
 
 def build_options_response(
@@ -73,7 +76,9 @@ def build_success_response(
 
 
 def build_error_response(
-    status_code: int, message: str, error_code: ErrorCode = ErrorCode.INTERNAL_ERROR
+    status_code: int,
+    message: str,
+    error_code: ErrorCode = ErrorCode.INTERNAL_ERROR,
 ) -> LambdaProxyResponse:
     """Build an error Lambda response with status code and message."""
     return {
