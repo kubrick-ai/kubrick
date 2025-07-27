@@ -7,7 +7,7 @@ output "public_subnet_ids" {
 }
 
 output "private_subnet_ids" {
-  value = [for s in aws_subnet.private : s.id]
+  value = aws_subnet.private[*].id
 }
 
 output "nat_gateway_id" {
