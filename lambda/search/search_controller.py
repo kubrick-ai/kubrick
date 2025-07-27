@@ -30,7 +30,7 @@ class SearchRequest(BaseModel):
     min_similarity: Optional[float] = Field(
         DEFAULT_MIN_SIMILARITY, ge=0, le=1, description="Must be between 0 and 1"
     )
-    query_media_file: Optional[io.BytesIO] = None
+    query_media_file: Optional[bytes] = None
     query_media_url: Optional[str] = None
     query_modality: List[Literal["visual-text", "audio"]] = DEFAULT_QUERY_MODALITY
     filter: Optional[dict[str, Any]] = None
@@ -62,6 +62,11 @@ class SearchRequest(BaseModel):
             "page_limit": self.page_limit,
             "min_similarity": self.min_similarity,
         }
+
+    def get_query_media_file_bytestream(self):
+        if not self.query_media_file:
+            raise ValueError("Cannot get bytestream for query_media_file: None")
+        return io.BytesIO(self.query_media_file)
 
 
 class SearchController:
@@ -140,7 +145,7 @@ class SearchController:
                             raise SearchRequestError(
                                 f"Query media file size too large. Limit: {size_limit/1000} KB"
                             )
-                        search_request[field_name] = io.BytesIO(part.raw)
+                        search_request[field_name] = part.raw
                         self.logger.debug(
                             f"Processed file field: {field_name}, size: {file_size/1000} KB"
                         )
@@ -324,7 +329,7 @@ class SearchController:
         """Extract image embedding from URL or file"""
         try:
             media_url = search_request.query_media_url
-            media_file = search_request.query_media_file
+            media_file = search_request.get_query_media_file_bytestream()
 
             if media_url:
                 self.logger.info("Extracting image embedding from URL")
@@ -367,7 +372,7 @@ class SearchController:
         """Extract video embeddings from URL or file"""
         try:
             media_url = search_request.query_media_url
-            media_file = search_request.query_media_file
+            media_file = search_request.get_query_media_file_bytestream()
             query_modality = search_request.query_modality
 
             if media_url:
