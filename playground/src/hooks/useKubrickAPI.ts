@@ -2,8 +2,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import {
-  VideoSchema,
-  Video,
   SearchParams,
   SearchResultSchema,
   SearchResult,
@@ -45,7 +43,6 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
   }
 
   const response = await axios.post(`${API_BASE}/search`, formData);
-  console.log(response);
   const parsedVideos = SearchResultSchema.array().parse(response.data.data);
   return parsedVideos;
 };
@@ -162,7 +159,6 @@ export const useEmbedVideo = () => {
 
   if (statusData && typeof statusData.error === "string") {
     console.log("statusData error: " + statusData.error);
-    console.log(statusData.error);
   }
 
   return {
@@ -181,7 +177,7 @@ export const useEmbedVideo = () => {
 
 export const fetchVideos = async (
   page = 0,
-  pageLimit = 12
+  pageLimit = 12,
 ): Promise<VideoList> => {
   const response = await axios.get(`${API_BASE}/videos`, {
     params: { page, limit: pageLimit },

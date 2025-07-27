@@ -5,7 +5,6 @@ import VideoThumbnail from "@/components/VideoThumbnail";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
 
 interface VideoListProps {
   videos: Array<Video>;
