@@ -1,4 +1,4 @@
 {
-  "secret_name": "KubrickEmbeddingTaskConsumerSecret"
+  "secret_name": "KubrickEmbeddingTaskConsumerSecret",
+  "query_media_file_size_limit": 6000000
 }
-
