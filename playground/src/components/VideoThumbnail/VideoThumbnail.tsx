@@ -10,7 +10,6 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Video } from "@/types";
-import Link from "next/link";
 
 interface VideoThumbnailProps {
   video: Video;
