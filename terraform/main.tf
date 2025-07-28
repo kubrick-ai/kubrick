@@ -4,6 +4,19 @@ module "vpc_network" {
   region = local.region
 }
 
+module "iam" {
+  source = "./modules/iam"
+
+  s3_bucket_arn = module.s3.bucket_arn
+  environment   = local.env
+
+  depends_on = [module.s3]
+}
+
+module "s3" {
+  source = "./modules/s3"
+}
+
 module "rds" {
   source               = "./modules/rds"
   db_username          = local.secrets.database.username
@@ -13,3 +26,4 @@ module "rds" {
   public_subnet_cidrs  = module.vpc_network.public_subnets_cidrs
   private_subnet_cidrs = module.vpc_network.private_subnets_cidrs
 }
+
