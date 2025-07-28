@@ -4,6 +4,7 @@ from twelvelabs.types import VideoSegment, VideoEmbeddingTask, VideoEmbeddingMet
 from twelvelabs.embed import TasksStatusResponse, TasksRetrieveResponse
 from logging import getLogger
 
+
 class EmbedService:
     def __init__(
         self,
@@ -78,9 +79,17 @@ class EmbedService:
         file: Optional[Union[str, BinaryIO, None]] = None,
         url: Optional[str] = None,
         query_modality: List[str] = ["visual-text"],
+        clip_length: Optional[int] = None,
     ):
         self.logger.info("Extracting video features...")
-        segments = self.extract_video_features(file, url)
+
+        embedding_request = self.create_embedding_request(
+            url=url, file=file, clip_length=clip_length
+        )
+
+        self._wait_for_request_completion(embedding_request)
+        segments = self.retrieve_segments(embedding_request.id)
+
         self.logger.info(f"Extracted video features: {segments}")
 
         return [
@@ -89,33 +98,32 @@ class EmbedService:
             if segment["scope"] == "video" and segment["modality"] in query_modality
         ]
 
-    def extract_video_features(
-        self,
-        file: Optional[Union[str, BinaryIO, None]],
-        url: Optional[str] = None,
-        clip_length: Optional[int] = None,
-    ):
-        embedding_request = self.create_embedding_request(file, url, clip_length)
-        self._wait_for_request_completion(embedding_request)
-        return self.retrieve_segments(embedding_request.id)
-
     def create_embedding_request(
         self,
         *,
-        file: Optional[Union[str, BinaryIO, None]] = None,
         url: Optional[str] = None,
+        file: Optional[Union[str, BinaryIO, None]] = None,
         clip_length: Optional[int] = None,
     ) -> VideoEmbeddingTask:
         clip_length = clip_length or self.clip_length
 
         self.logger.info("Creating embedding request...")
-        embedding_request = self.client.embed.tasks.create(
-            model_name=self.model_name,
-            video_file=file,
-            video_url=url,
-            video_clip_length=clip_length,
-            video_embedding_scope=["clip", "video"],
-        )
+        if url:
+            embedding_request = self.client.embed.tasks.create(
+                model_name=self.model_name,
+                video_url=url,
+                video_clip_length=clip_length,
+                video_embedding_scope=["clip", "video"],
+            )
+        elif file:
+            embedding_request = self.client.embed.tasks.create(
+                model_name=self.model_name,
+                video_file=file,
+                video_clip_length=clip_length,
+                video_embedding_scope=["clip", "video"],
+            )
+        else:
+            raise Exception("Either file or url must be provided")
 
         self.logger.info(f"Created embedding request: id={embedding_request.id}")
 
@@ -127,7 +135,7 @@ class EmbedService:
         )
         self.logger.info(f"Embedding done: {status}")
 
-    def retrieve_embed_response(self, task_id:int) -> TasksRetrieveResponse:
+    def retrieve_embed_response(self, task_id: int) -> TasksRetrieveResponse:
         return self.client.embed.tasks.retrieve(
             task_id=task_id, embedding_option=["visual-text", "audio"]
         )
@@ -166,6 +174,8 @@ class EmbedService:
         response: TasksStatusResponse = self.client.embed.tasks.status(task_id=task_id)
         return response.status
 
-    def get_video_metadata(self, response: TasksRetrieveResponse) -> VideoEmbeddingMetadata | None:
+    def get_video_metadata(
+        self, response: TasksRetrieveResponse
+    ) -> VideoEmbeddingMetadata | None:
         if response.video_embedding and response.video_embedding.metadata:
             return response.video_embedding.metadata

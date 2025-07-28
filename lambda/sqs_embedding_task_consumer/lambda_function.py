@@ -1,11 +1,11 @@
 import json
 import os
-from embed_service import EmbedService
+from embed_service import EmbedService, VideoEmbeddingMetadata
 from config import load_config, get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 
 
-def get_video_metadata(tl_metadata, message_body):
+def get_video_metadata(tl_metadata: VideoEmbeddingMetadata | None, message_body):
     metadata = {"filename": os.path.basename(message_body["s3_key"])}
 
     if tl_metadata:
@@ -47,10 +47,8 @@ def lambda_handler(event, context):
             if task_status == "ready":
                 tl_response = embed_service.retrieve_embed_response(task_id=tl_task_id)
                 logger.info("Extracting video metadata...")
-                tl_metadata = get_video_metadata(response=tl_response)
-                video_metadata = embed_service.get_video_metadata(
-                    tl_metadata, message_body
-                )
+                tl_metadata = embed_service.get_video_metadata(response=tl_response)
+                video_metadata = get_video_metadata(tl_metadata, message_body)
                 logger.info(f"Successfully extracted video metadata: {video_metadata}")
 
                 logger.info("Normalizing segments...")
