@@ -368,6 +368,47 @@ class SearchController:
             )
             raise EmbeddingError(f"Failed to extract image embedding: {str(e)}")
 
+    def _extract_audio_embedding(self, search_request: SearchRequest) -> List[float]:
+        """Extract audio embedding from URL or file"""
+        try:
+            media_url = search_request.query_media_url
+            media_file = search_request.get_query_media_file_bytestream()
+
+            if media_url:
+                self.logger.info("Extracting audio embedding from URL")
+                self.logger.debug(f"Audio URL: {media_url}")
+                embedding = self.embed_service.extract_audio_embedding(url=media_url)
+            elif media_file:
+                self.logger.info("Extracting audio embedding from file")
+                embedding = self.embed_service.extract_audio_embedding(file=media_file)
+            else:
+                self.logger.exception(
+                    f"Could not extract media_url or media_file from search_request: {search_request}"
+                )
+                raise MediaProcessingError(
+                    "Could not extract media_url or media_file from search_request"
+                )
+
+            if not embedding:
+                raise EmbeddingError("Audio embedding extraction returned empty result")
+            if not isinstance(embedding, list):
+                raise EmbeddingError(
+                    "Audio embedding extraction returned invalid format"
+                )
+
+            self.logger.debug(
+                f"Successfully extracted audio embedding with {len(embedding)} dimensions"
+            )
+            return embedding
+
+        except (EmbeddingError, MediaProcessingError):
+            raise
+        except Exception as e:
+            self.logger.exception(
+                f"Unexpected error during image embedding extraction: {str(e)}"
+            )
+            raise EmbeddingError(f"Failed to extract image embedding: {str(e)}")
+
     def _extract_video_embeddings(
         self, search_request: SearchRequest
     ) -> List[List[float]]:
@@ -467,11 +508,11 @@ class SearchController:
         try:
             self.logger.info("Starting audio search")
 
-            embedding = self._extract_image_embedding(search_request)
+            embedding = self._extract_audio_embedding(search_request)
             search_params = search_request.get_search_params()
             results = self._perform_vector_search(embedding, search_params)
 
-            self.logger.info(f"Image search completed, found {len(results)} results")
+            self.logger.info(f"Audio search completed, found {len(results)} results")
             return results
 
         except (
@@ -482,8 +523,8 @@ class SearchController:
         ):
             raise
         except Exception as e:
-            self.logger.exception(f"Unexpected error in image search: {str(e)}")
-            raise SearchError(f"Image search failed: {str(e)}")
+            self.logger.exception(f"Unexpected error in audio search: {str(e)}")
+            raise SearchError(f"Audio search failed: {str(e)}")
 
     def video_search(self, search_request: SearchRequest) -> List[Any]:
         try:
