@@ -10,6 +10,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Video } from "@/types";
+import Link from "next/link";
 
 interface VideoThumbnailProps {
   video: Video;
@@ -77,7 +78,11 @@ const VideoThumbnail = ({
         </MediaPlayer.Root>
       </CardContent>
       <CardFooter className="flex-col items-start gap-2 px-4">
-        {video.filename && <CardTitle>{video.filename}</CardTitle>}
+        <a href={video.url} target="_blank" rel="noopener">
+          <CardTitle className="hover:underline cursor-pointer">
+            {video.filename}
+          </CardTitle>
+        </a>
         <CardDescription>{children}</CardDescription>
       </CardFooter>
     </Card>
