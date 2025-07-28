@@ -96,7 +96,8 @@ class SearchController:
                 raise SearchRequestError(f"Failed to decode base64 body: {str(e)}")
 
             headers = event.get("headers", {})
-            content_type_header = headers.get("content-type")
+            normalized_headers = {k.lower(): v for k, v in headers.items()}
+            content_type_header = normalized_headers.get("content-type")
 
             if not content_type_header:
                 raise SearchRequestError("Missing content-type header")
@@ -212,23 +213,17 @@ class SearchController:
         try:
             self.logger.info("Processing search request")
             search_request = self.parse_lambda_event(event)
+            query_type = search_request.query_type
 
-            match search_request.query_type:
+            match query_type:
                 case "text":
                     results = self.text_search(search_request=search_request)
-                case "image":
-                    results = self.image_search(search_request=search_request)
-                case "audio":
-                    results = self.audio_search(search_request=search_request)
-                case "video":
-                    results = self.video_search(search_request=search_request)
-                case "audio":
-                    # TODO: Implement audio search
-                    raise SearchRequestError("Audio search is not yet supported")
-                case _:
-                    raise SearchRequestError(
-                        f"Unsupported query_type: {search_request.query_type}"
+                case "image" | "audio" | "video":
+                    results = self.media_search(
+                        search_request=search_request, media_type=query_type
                     )
+                case _:
+                    raise SearchRequestError(f"Unsupported query_type: {query_type}")
 
             # Add presigned url to each result
             try:
@@ -327,141 +322,79 @@ class SearchController:
             )
             raise EmbeddingError(f"Failed to extract text embedding: {str(e)}")
 
-    def _extract_image_embedding(self, search_request: SearchRequest) -> List[float]:
-        """Extract image embedding from URL or file"""
+    def _extract_media_embedding(
+        self,
+        search_request: SearchRequest,
+        media_type: Literal["image", "audio", "video"],
+    ) -> Union[List[float], List[List[float]]]:
+        """Extract embedding from either file or URL"""
         try:
             media_url = search_request.query_media_url
             media_file = search_request.get_query_media_file_bytestream()
+            query_modality = getattr(search_request, "query_modality", None)
 
-            if media_url:
-                self.logger.info("Extracting image embedding from URL")
-                self.logger.debug(f"Image URL: {media_url}")
-                embedding = self.embed_service.extract_image_embedding(url=media_url)
-            elif media_file:
-                self.logger.info("Extracting image embedding from file")
-                embedding = self.embed_service.extract_image_embedding(file=media_file)
-            else:
-                self.logger.exception(
-                    f"Could not extract media_url or media_file from search_request: {search_request}"
-                )
-                raise MediaProcessingError(
-                    "Could not extract media_url or media_file from search_request"
-                )
+            extract_fn = {
+                "image": self.embed_service.extract_image_embedding,
+                "audio": self.embed_service.extract_audio_embedding,
+                "video": self.embed_service.extract_video_embedding,
+            }.get(media_type)
 
-            if not embedding:
-                raise EmbeddingError("Image embedding extraction returned empty result")
-            if not isinstance(embedding, list):
-                raise EmbeddingError(
-                    "Image embedding extraction returned invalid format"
-                )
-
-            self.logger.debug(
-                f"Successfully extracted image embedding with {len(embedding)} dimensions"
-            )
-            return embedding
-
-        except (EmbeddingError, MediaProcessingError):
-            raise
-        except Exception as e:
-            self.logger.exception(
-                f"Unexpected error during image embedding extraction: {str(e)}"
-            )
-            raise EmbeddingError(f"Failed to extract image embedding: {str(e)}")
-
-    def _extract_audio_embedding(self, search_request: SearchRequest) -> List[float]:
-        """Extract audio embedding from URL or file"""
-        try:
-            media_url = search_request.query_media_url
-            media_file = search_request.get_query_media_file_bytestream()
-
-            if media_url:
-                self.logger.info("Extracting audio embedding from URL")
-                self.logger.debug(f"Audio URL: {media_url}")
-                embedding = self.embed_service.extract_audio_embedding(url=media_url)
-            elif media_file:
-                self.logger.info("Extracting audio embedding from file")
-                embedding = self.embed_service.extract_audio_embedding(file=media_file)
-            else:
-                self.logger.exception(
-                    f"Could not extract media_url or media_file from search_request: {search_request}"
-                )
-                raise MediaProcessingError(
-                    "Could not extract media_url or media_file from search_request"
-                )
-
-            if not embedding:
-                raise EmbeddingError("Audio embedding extraction returned empty result")
-            if not isinstance(embedding, list):
-                raise EmbeddingError(
-                    "Audio embedding extraction returned invalid format"
-                )
-
-            self.logger.debug(
-                f"Successfully extracted audio embedding with {len(embedding)} dimensions"
-            )
-            return embedding
-
-        except (EmbeddingError, MediaProcessingError):
-            raise
-        except Exception as e:
-            self.logger.exception(
-                f"Unexpected error during image embedding extraction: {str(e)}"
-            )
-            raise EmbeddingError(f"Failed to extract image embedding: {str(e)}")
-
-    def _extract_video_embeddings(
-        self, search_request: SearchRequest
-    ) -> List[List[float]]:
-        """Extract video embeddings from URL or file"""
-        try:
-            media_url = search_request.query_media_url
-            media_file = search_request.get_query_media_file_bytestream()
-            query_modality = search_request.query_modality
+            if not extract_fn:
+                raise MediaProcessingError(f"Unsupported media type: {media_type}")
 
             if media_url:
                 self.logger.info(
-                    f"Extracting video embedding from URL with modality: {query_modality}"
+                    f"Extracting {media_type} embedding from URL"
+                    + (f" with modality: {query_modality}" if media_type == "video" else "")
                 )
-                self.logger.debug(f"Video URL: {media_url}")
-                embeddings = self.embed_service.extract_video_embedding(
-                    url=media_url, query_modality=query_modality
-                )
+                self.logger.debug(f"{media_type.title()} URL: {media_url}")
+                if media_type == "video":
+                    embeddings = extract_fn(url=media_url, query_modality=query_modality)
+                else:
+                    embeddings = extract_fn(url=media_url)
             elif media_file:
                 self.logger.info(
-                    f"Extracting video embedding from file with modality: {query_modality}"
+                    f"Extracting {media_type} embedding from file"
+                    + (f" with modality: {query_modality}" if media_type == "video" else "")
                 )
-                embeddings = self.embed_service.extract_video_embedding(
-                    file=media_file, query_modality=query_modality
-                )
+                if media_type == "video":
+                    embeddings = extract_fn(file=media_file, query_modality=query_modality)
+                else:
+                    embeddings = extract_fn(file=media_file)
             else:
                 self.logger.exception(
                     f"Could not extract media_url or media_file from search_request: {search_request}"
                 )
                 raise MediaProcessingError(
-                    "Could not extract media_url or media_file from search_request"
+                    f"Missing media input for {media_type} embedding extraction"
                 )
 
             if not embeddings:
-                raise EmbeddingError("Video embedding extraction returned empty result")
-            if not isinstance(embeddings, list):
                 raise EmbeddingError(
-                    "Video embedding extraction returned invalid format"
+                    f"{media_type.title()} embedding extraction returned empty result"
                 )
-            if not all(isinstance(emb, list) for emb in embeddings):
-                raise EmbeddingError("Video embeddings must be a list of lists")
 
-            self.logger.debug(
-                f"Successfully extracted {len(embeddings)} video embeddings"
-            )
+            # Validate format
+            if media_type == "video":
+                if not isinstance(embeddings, list) or not all(
+                    isinstance(emb, list) for emb in embeddings
+                ):
+                    raise EmbeddingError("Video embedding must be list of lists")
+            else:
+                if not isinstance(embeddings, list) or any(
+                    isinstance(emb, list) for emb in embeddings
+                ):
+                    raise EmbeddingError(
+                        f"{media_type.title()} embedding format is invalid"
+                    )
+
             return embeddings
 
         except (EmbeddingError, MediaProcessingError):
             raise
         except Exception as e:
-            self.logger.exception(
-                f"Unexpected error during video embedding extraction: {str(e)}"
-            )
-            raise EmbeddingError(f"Failed to extract video embeddings: {str(e)}")
+            self.logger.exception(f"Error extracting {media_type} embedding: {str(e)}")
+            raise EmbeddingError(f"{media_type.title()} embedding failed: {str(e)}")
 
     def text_search(self, search_request: SearchRequest) -> List[Any]:
         try:
@@ -482,71 +415,29 @@ class SearchController:
             self.logger.exception(f"Unexpected error in text search: {str(e)}")
             raise SearchError(f"Text search failed: {str(e)}")
 
-    def image_search(self, search_request: SearchRequest) -> List[Any]:
+    def media_search(self, search_request: SearchRequest, media_type: str) -> List[Any]:
         try:
-            self.logger.info("Starting image search")
-
-            embedding = self._extract_image_embedding(search_request)
-            search_params = search_request.get_search_params()
-            results = self._perform_vector_search(embedding, search_params)
-
-            self.logger.info(f"Image search completed, found {len(results)} results")
-            return results
-
-        except (
-            SearchRequestError,
-            EmbeddingError,
-            MediaProcessingError,
-            DatabaseError,
-        ):
-            raise
-        except Exception as e:
-            self.logger.exception(f"Unexpected error in image search: {str(e)}")
-            raise SearchError(f"Image search failed: {str(e)}")
-
-    def audio_search(self, search_request: SearchRequest) -> List[Any]:
-        try:
-            self.logger.info("Starting audio search")
-
-            embedding = self._extract_audio_embedding(search_request)
-            search_params = search_request.get_search_params()
-            results = self._perform_vector_search(embedding, search_params)
-
-            self.logger.info(f"Audio search completed, found {len(results)} results")
-            return results
-
-        except (
-            SearchRequestError,
-            EmbeddingError,
-            MediaProcessingError,
-            DatabaseError,
-        ):
-            raise
-        except Exception as e:
-            self.logger.exception(f"Unexpected error in audio search: {str(e)}")
-            raise SearchError(f"Audio search failed: {str(e)}")
-
-    def video_search(self, search_request: SearchRequest) -> List[Any]:
-        try:
-            self.logger.info("Starting video search")
-
-            embeddings = self._extract_video_embeddings(search_request)
-
-            if not embeddings:
-                raise EmbeddingError("Could not extract video embeddings")
-
+            self.logger.info(f"Starting {media_type} search")
+            embedding = self._extract_media_embedding(search_request, media_type)
             search_params = search_request.get_search_params()
 
-            if len(embeddings) > 1:
-                self.logger.debug("Using batch search for multiple embeddings")
-                results = self._perform_vector_search(
-                    embeddings, search_params, use_batch=True
-                )
+            if media_type == "video":
+                if isinstance(embedding, list) and isinstance(embedding[0], list):
+                    self.logger.debug("Using batch search for multiple embeddings")
+                    use_batch = len(embedding) > 1
+                    emb = embedding if use_batch else embedding[0]
+                else:
+                    self.logger.debug("Using single search for one embedding")
             else:
-                self.logger.debug("Using single search for one embedding")
-                results = self._perform_vector_search(embeddings[0], search_params)
+                use_batch = False
+                emb = embedding
 
-            self.logger.info(f"Video search completed, found {len(results)} results")
+            results = self._perform_vector_search(
+                emb, search_params, use_batch=use_batch
+            )
+            self.logger.info(
+                f"{media_type.title()} search completed, found {len(results)} results"
+            )
             return results
 
         except (
@@ -557,5 +448,5 @@ class SearchController:
         ):
             raise
         except Exception as e:
-            self.logger.exception(f"Unexpected error in video search: {str(e)}")
-            raise SearchError(f"Video search failed: {str(e)}")
+            self.logger.exception(f"Unexpected error in {media_type} search: {str(e)}")
+            raise SearchError(f"{media_type.title()} search failed: {str(e)}")
