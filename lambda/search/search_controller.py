@@ -218,6 +218,8 @@ class SearchController:
                     results = self.text_search(search_request=search_request)
                 case "image":
                     results = self.image_search(search_request=search_request)
+                case "audio":
+                    results = self.audio_search(search_request=search_request)
                 case "video":
                     results = self.video_search(search_request=search_request)
                 case "audio":
@@ -442,6 +444,28 @@ class SearchController:
     def image_search(self, search_request: SearchRequest) -> List[Any]:
         try:
             self.logger.info("Starting image search")
+
+            embedding = self._extract_image_embedding(search_request)
+            search_params = search_request.get_search_params()
+            results = self._perform_vector_search(embedding, search_params)
+
+            self.logger.info(f"Image search completed, found {len(results)} results")
+            return results
+
+        except (
+            SearchRequestError,
+            EmbeddingError,
+            MediaProcessingError,
+            DatabaseError,
+        ):
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error in image search: {str(e)}")
+            raise SearchError(f"Image search failed: {str(e)}")
+
+    def audio_search(self, search_request: SearchRequest) -> List[Any]:
+        try:
+            self.logger.info("Starting audio search")
 
             embedding = self._extract_image_embedding(search_request)
             search_params = search_request.get_search_params()

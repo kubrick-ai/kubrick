@@ -1,6 +1,6 @@
 from typing import BinaryIO, Optional, List, Union
 from twelvelabs import TwelveLabs
-from twelvelabs.types import VideoSegment, VideoEmbeddingTask
+from twelvelabs.types import VideoSegment, VideoEmbeddingTask, VideoEmbeddingMetadata
 from twelvelabs.embed import TasksStatusResponse, TasksRetrieveResponse
 from logging import getLogger
 
@@ -51,6 +51,27 @@ class EmbedService:
             raise Exception("Could not extract embedding")
 
         return res.image_embedding.segments[0].float_
+
+    def extract_audio_embedding(
+        self,
+        file: Optional[BinaryIO] = None,
+        url: Optional[str] = None,
+    ) -> list[float]:
+        if url:
+            res = self.client.embed.create(model_name=self.model_name, audio_url=url)
+        elif file:
+            res = self.client.embed.create(model_name=self.model_name, audio_file=file)
+        else:
+            raise Exception("Expected audio file or url as argument")
+
+        if not (
+            res.audio_embedding
+            and res.audio_embedding.segments
+            and res.audio_embedding.segments[0].float_
+        ):
+            raise Exception("Could not extract embedding")
+
+        return res.audio_embedding.segments[0].float_
 
     def extract_video_embedding(
         self,
@@ -145,6 +166,6 @@ class EmbedService:
         response: TasksStatusResponse = self.client.embed.tasks.status(task_id=task_id)
         return response.status
 
-    def get_video_metadata(self, response: TasksRetrieveResponse):
+    def get_video_metadata(self, response: TasksRetrieveResponse) -> VideoEmbeddingMetadata | None:
         if response.video_embedding and response.video_embedding.metadata:
             return response.video_embedding.metadata
