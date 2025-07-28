@@ -423,17 +423,16 @@ class SearchController:
 
             if media_type == "video":
                 if isinstance(embedding, list) and isinstance(embedding[0], list):
-                    self.logger.debug("Using batch search for multiple embeddings")
-                    use_batch = len(embedding) > 1
-                    emb = embedding if use_batch else embedding[0]
+                    if len(embedding) > 1:
+                        use_batch = True
+                        self.logger.debug("Using batch search for multiple embeddings")
+                    else:
+                        embedding = embedding[0]
                 else:
                     self.logger.debug("Using single search for one embedding")
-            else:
-                use_batch = False
-                emb = embedding
 
             results = self._perform_vector_search(
-                emb, search_params, use_batch=use_batch
+                embedding, search_params, use_batch=use_batch
             )
             self.logger.info(
                 f"{media_type.title()} search completed, found {len(results)} results"
