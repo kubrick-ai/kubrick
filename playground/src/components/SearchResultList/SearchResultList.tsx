@@ -9,15 +9,15 @@ interface SearchResultListProps {
   results: Array<SearchResult>;
 }
 
-const THUMBNAILS_PER_PAGE = 12;
+const THUMBNAILS_PER_PAGE = 5;
 
 const SearchResultList = ({ results }: SearchResultListProps) => {
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
 
-  const totalPages = Math.ceil(results.length / THUMBNAILS_PER_PAGE);
+  const maxPage = Math.ceil(results.length / THUMBNAILS_PER_PAGE) - 1;
 
   // Calculate start/end indices for current page
-  const startIdx = (page - 1) * THUMBNAILS_PER_PAGE;
+  const startIdx = page * THUMBNAILS_PER_PAGE;
   const endIdx = startIdx + THUMBNAILS_PER_PAGE;
 
   // Slice videos for current page
@@ -45,20 +45,20 @@ const SearchResultList = ({ results }: SearchResultListProps) => {
       <div className="mt-6 flex justify-center items-center gap-4">
         <Button
           variant="outline"
-          disabled={page === 1}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={!page}
+          onClick={() => setPage((p) => Math.max(0, p - 1))}
         >
           Previous
         </Button>
 
         <span>
-          Page {page} of {totalPages}
+          Page {page + 1} of {maxPage + 1}
         </span>
 
         <Button
           variant="outline"
-          disabled={page === totalPages}
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={page === maxPage}
+          onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
         >
           Next
         </Button>

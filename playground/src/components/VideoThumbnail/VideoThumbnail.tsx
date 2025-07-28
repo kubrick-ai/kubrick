@@ -76,7 +76,7 @@ const VideoThumbnail = ({
           </MediaPlayer.Controls>
         </MediaPlayer.Root>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex-col items-start gap-2 px-4">
         {video.filename && <CardTitle>{video.filename}</CardTitle>}
         <CardDescription>{children}</CardDescription>
       </CardFooter>
