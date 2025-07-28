@@ -31,7 +31,7 @@ resource "aws_iam_policy" "lambda_s3_readonly" {
       {
         Effect = "Allow"
         Action = [
-          "s3:GetObject",
+          # "s3:GetObject",
           "s3:ListBucket",
           "s3:GetBucketLocation"
         ]
