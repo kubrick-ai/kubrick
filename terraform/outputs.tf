@@ -50,3 +50,19 @@ output "lambda_s3_full_access_policy_arn" {
   description = "ARN of the Lambda S3 full access policy"
   value       = module.iam.lambda_s3_full_access_policy_arn
 }
+
+# SQS Queue Outputs
+output "sqs_queue_url" {
+  description = "URL of the main SQS queue for embedding tasks"
+  value       = module.sqs.queue_url
+}
+
+output "sqs_queue_arn" {
+  description = "ARN of the main SQS queue for embedding tasks"
+  value       = module.sqs.queue_arn
+}
+
+output "sqs_queue_name" {
+  description = "Name of the main SQS queue for embedding tasks"
+  value       = module.sqs.queue_name
+}

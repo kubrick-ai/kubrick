@@ -27,3 +27,10 @@ module "rds" {
   private_subnet_cidrs = module.vpc_network.private_subnets_cidrs
 }
 
+module "sqs" {
+  source                  = "./modules/sqs"
+  environment             = local.env
+  enable_queue_policy     = true
+  queue_policy_principals = ["arn:aws:iam::791237609017:root"]
+  queue_policy_actions    = ["SQS:*"]
+}
