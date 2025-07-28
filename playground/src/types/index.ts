@@ -27,12 +27,16 @@ export const VideoSchema = z.object({
 
 export type Video = z.infer<typeof VideoSchema>;
 
-export const VideoListSchema = z.object({
-  videos: VideoSchema.array(),
-  total: z.number(),
+export const VideosResponseSchema = z.object({
+  data: VideoSchema.array(),
+  metadata: z.object({
+    total: z.number().nonnegative(),
+    limit: z.number().nonnegative(),
+    page: z.number().nonnegative(),
+  }),
 });
 
-export type VideoList = z.infer<typeof VideoListSchema>;
+export type VideosResponse = z.infer<typeof VideosResponseSchema>;
 
 export const SearchResultSchema = z.object({
   id: z.number(),
