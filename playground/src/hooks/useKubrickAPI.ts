@@ -13,13 +13,15 @@ import {
 const API_BASE = "https://xt30znkfhh.execute-api.us-east-1.amazonaws.com/dev";
 
 const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
+  console.log(params);
   const formData = new FormData();
   if (params.query_text) {
     formData.append("query_text", params.query_text);
   }
 
-  if (params.query_type) {
-    formData.append("query_type", params.query_type);
+  formData.append("query_type", params.query_type);
+
+  if (params.query_type !== "text") {
     if (params.query_media_url) {
       formData.append("query_media_url", params.query_media_url);
     } else if (params.query_media_file) {
@@ -37,12 +39,13 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
     formData.append("filter", params.filter);
   }
   if (params.query_modality) {
-    for (const modality of params.query_modality) {
-      formData.append("query_modality", modality);
-    }
+    formData.append("query_modality", params.query_modality);
   }
 
+  console.log([...formData.entries()]);
+
   const response = await axios.post(`${API_BASE}/search`, formData);
+  console.log(response);
   const parsedVideos = SearchResultSchema.array().parse(response.data.data);
   return parsedVideos;
 };

@@ -70,7 +70,7 @@ export const SearchParamsSchema = z.object({
   query_type: MediaTypeSchema,
   query_media_url: z.url().optional(),
   query_media_file: z.instanceof(File).optional(),
-  query_modality: EmbeddingModalitySchema.array().optional(),
+  query_modality: z.string().optional(),
   min_similarity: CosineSimilaritySchema.optional(),
   page_limit: z.int().min(0).optional(),
   filter: z.string().optional(),
