@@ -345,20 +345,32 @@ class SearchController:
             if media_url:
                 self.logger.info(
                     f"Extracting {media_type} embedding from URL"
-                    + (f" with modality: {query_modality}" if media_type == "video" else "")
+                    + (
+                        f" with modality: {query_modality}"
+                        if media_type == "video"
+                        else ""
+                    )
                 )
                 self.logger.debug(f"{media_type.title()} URL: {media_url}")
                 if media_type == "video":
-                    embeddings = extract_fn(url=media_url, query_modality=query_modality)
+                    embeddings = extract_fn(
+                        url=media_url, query_modality=query_modality
+                    )
                 else:
                     embeddings = extract_fn(url=media_url)
             elif media_file:
                 self.logger.info(
                     f"Extracting {media_type} embedding from file"
-                    + (f" with modality: {query_modality}" if media_type == "video" else "")
+                    + (
+                        f" with modality: {query_modality}"
+                        if media_type == "video"
+                        else ""
+                    )
                 )
                 if media_type == "video":
-                    embeddings = extract_fn(file=media_file, query_modality=query_modality)
+                    embeddings = extract_fn(
+                        file=media_file, query_modality=query_modality
+                    )
                 else:
                     embeddings = extract_fn(file=media_file)
             else:
@@ -420,7 +432,8 @@ class SearchController:
             self.logger.info(f"Starting {media_type} search")
             embedding = self._extract_media_embedding(search_request, media_type)
             search_params = search_request.get_search_params()
-
+            use_batch = False
+            
             if media_type == "video":
                 if isinstance(embedding, list) and isinstance(embedding[0], list):
                     if len(embedding) > 1:
