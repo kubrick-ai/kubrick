@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { SearchParams, SearchFormSchema } from "@/types";
+import { SearchParams, SearchFormDataSchema, SearchFormData } from "@/types";
 import { z } from "zod";
 import {
   Form,
@@ -59,12 +59,12 @@ const SearchForm = ({
     filter: "",
   };
 
-  const form = useForm<z.infer<typeof SearchFormSchema>>({
-    resolver: zodResolver(SearchFormSchema),
+  const form = useForm<SearchFormData>({
+    resolver: zodResolver(SearchFormDataSchema),
     defaultValues,
   });
 
-  const onSubmit = (values: z.infer<typeof SearchFormSchema>) => {
+  const onSubmit = (values: SearchFormData) => {
     const params: SearchParams = {
       query_text: values.query_text,
       query_type: values.query_type,
@@ -144,7 +144,7 @@ const SearchForm = ({
                 name="query_type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Media Type</FormLabel>
+                    <FormLabel>Query Type</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value || ""}
@@ -155,6 +155,7 @@ const SearchForm = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="text">Text</SelectItem>
                         <SelectItem value="image">Image</SelectItem>
                         <SelectItem value="video">Video</SelectItem>
                         <SelectItem value="audio">Audio</SelectItem>
@@ -176,6 +177,7 @@ const SearchForm = ({
                         type="file"
                         accept="image/*,video/*,audio/*"
                         onChange={(e) => field.onChange(e.target.files?.[0])}
+                        disabled={form.watch("query_type") === "text"}
                       />
                     </FormControl>
                     <FormMessage />

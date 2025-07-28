@@ -61,23 +61,12 @@ export const useSearchVideos = (params: SearchParams) => {
       params.filter,
     ], // Unique key for this query
     queryFn: () => search(params), // Your async function to fetch data
-    enabled: !!params.query_type, // Only run when there's something to search
+    enabled:
+      !!(params.query_type === "text" && params.query_text) ||
+      !!(params.query_media_file || params.query_media_url), // Only run when there's something to search
   });
 };
 
-// const getVideos = async (): Promise<Array<Video>> => {
-//   const response = await axios.get(`${API_BASE}/`);
-//   const parsedVideos = VideoSchema.array().parse(response.data);
-//   return parsedVideos;
-// };
-//
-// export const useGetVideos = () => {
-//   return useQuery<Array<Video>, Error>({
-//     queryKey: ["videos"], // Unique key for this query
-//     queryFn: getVideos, // Your async function to fetch data
-//   });
-// };
-//
 // const createVideo = async () => {};
 //
 // export const useCreateVideo = () => {
@@ -90,6 +79,7 @@ export const useSearchVideos = (params: SearchParams) => {
 //     },
 //   });
 // };
+
 interface EmbedResponse {
   id: string;
   video_url: string;

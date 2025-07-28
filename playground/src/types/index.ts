@@ -46,7 +46,8 @@ export const SearchResultSchema = z.object({
 
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 
-export const SearchFormSchema = z.object({
+// The shape of the data collected from the SearchForm form component
+export const SearchFormDataSchema = z.object({
   query_text: z.string().optional(),
   query_type: MediaTypeSchema,
   query_media_url: z.url().optional(),
@@ -61,6 +62,9 @@ export const SearchFormSchema = z.object({
   filter: z.string().optional(),
 });
 
+export type SearchFormData = z.infer<typeof SearchFormDataSchema>;
+
+// The shape of the data sent to the API as multipart/form-data
 export const SearchParamsSchema = z.object({
   query_text: z.string().optional(),
   query_type: MediaTypeSchema,
