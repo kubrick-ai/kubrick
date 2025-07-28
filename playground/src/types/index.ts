@@ -48,7 +48,10 @@ export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 // The shape of the data collected from the SearchForm form component
 export const SearchFormDataSchema = z.object({
-  query_text: z.string().optional(),
+  query_text: z
+    .string()
+    .max(250, "Query text is too long (max 250 chars)")
+    .optional(),
   query_type: MediaTypeSchema,
   query_media_url: z.url().optional(),
   query_media_file: z.instanceof(File).optional(),
