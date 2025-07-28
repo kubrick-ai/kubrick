@@ -27,3 +27,7 @@ module "rds" {
   private_subnet_cidrs = module.vpc_network.private_subnets_cidrs
 }
 
+module "lambda" {
+  source = "./modules/lambda"
+}
+
