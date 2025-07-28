@@ -13,7 +13,6 @@ import {
 const API_BASE = "https://xt30znkfhh.execute-api.us-east-1.amazonaws.com/dev";
 
 const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
-  console.log(params);
   const formData = new FormData();
   if (params.query_text) {
     formData.append("query_text", params.query_text);
@@ -42,10 +41,7 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
     formData.append("query_modality", params.query_modality);
   }
 
-  console.log([...formData.entries()]);
-
   const response = await axios.post(`${API_BASE}/search`, formData);
-  console.log(response);
   const parsedVideos = SearchResultSchema.array().parse(response.data.data);
   return parsedVideos;
 };
@@ -66,7 +62,10 @@ export const useSearchVideos = (params: SearchParams) => {
     queryFn: () => search(params), // Your async function to fetch data
     enabled:
       !!(params.query_type === "text" && params.query_text) ||
-      !!(params.query_media_file || params.query_media_url), // Only run when there's something to search
+      !!(
+        params.query_type !== "text" &&
+        (params.query_media_file || params.query_media_url)
+      ), // Only run when there's something to search
   });
 };
 
