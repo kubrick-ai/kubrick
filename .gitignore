@@ -246,6 +246,9 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+# ignore the videos in the terraform videos folder
+terraform/modules/s3/videos
+
 package.zip
 **/package.zip
 package/
