@@ -2,13 +2,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import {
-  VideoSchema,
-  Video,
   SearchParams,
   SearchResultSchema,
   SearchResult,
-  VideoList,
-  VideoListSchema,
+  VideosResponse,
+  VideosResponseSchema,
 } from "@/types";
 
 // TODO: Move to config?
@@ -20,8 +18,9 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
     formData.append("query_text", params.query_text);
   }
 
-  if (params.query_type) {
-    formData.append("query_type", params.query_type);
+  formData.append("query_type", params.query_type);
+
+  if (params.query_type !== "text") {
     if (params.query_media_url) {
       formData.append("query_media_url", params.query_media_url);
     } else if (params.query_media_file) {
@@ -39,13 +38,10 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
     formData.append("filter", params.filter);
   }
   if (params.query_modality) {
-    for (const modality of params.query_modality) {
-      formData.append("query_modality", modality);
-    }
+    formData.append("query_modality", params.query_modality);
   }
 
   const response = await axios.post(`${API_BASE}/search`, formData);
-  console.log(response);
   const parsedVideos = SearchResultSchema.array().parse(response.data.data);
   return parsedVideos;
 };
@@ -64,23 +60,15 @@ export const useSearchVideos = (params: SearchParams) => {
       params.filter,
     ], // Unique key for this query
     queryFn: () => search(params), // Your async function to fetch data
-    enabled: !!params.query_type, // Only run when there's something to search
+    enabled:
+      !!(params.query_type === "text" && params.query_text) ||
+      !!(
+        params.query_type !== "text" &&
+        (params.query_media_file || params.query_media_url)
+      ), // Only run when there's something to search
   });
 };
 
-// const getVideos = async (): Promise<Array<Video>> => {
-//   const response = await axios.get(`${API_BASE}/`);
-//   const parsedVideos = VideoSchema.array().parse(response.data);
-//   return parsedVideos;
-// };
-//
-// export const useGetVideos = () => {
-//   return useQuery<Array<Video>, Error>({
-//     queryKey: ["videos"], // Unique key for this query
-//     queryFn: getVideos, // Your async function to fetch data
-//   });
-// };
-//
 // const createVideo = async () => {};
 //
 // export const useCreateVideo = () => {
@@ -93,6 +81,7 @@ export const useSearchVideos = (params: SearchParams) => {
 //     },
 //   });
 // };
+
 interface EmbedResponse {
   id: string;
   video_url: string;
@@ -162,7 +151,6 @@ export const useEmbedVideo = () => {
 
   if (statusData && typeof statusData.error === "string") {
     console.log("statusData error: " + statusData.error);
-    console.log(statusData.error);
   }
 
   return {
@@ -181,20 +169,20 @@ export const useEmbedVideo = () => {
 
 export const fetchVideos = async (
   page = 0,
-  pageLimit = 12
-): Promise<VideoList> => {
+  limit: number,
+): Promise<VideosResponse> => {
   const response = await axios.get(`${API_BASE}/videos`, {
-    params: { page, limit: pageLimit },
+    params: { page, limit },
   });
 
-  const parsedVideos = VideoListSchema.parse(response.data);
+  const parsedVideos = VideosResponseSchema.parse(response.data);
   return parsedVideos;
 };
 
 // React Query hook for videos
-export const useGetVideos = (page = 0, pageLimit = 12) =>
-  useQuery<VideoList, Error>({
-    queryKey: ["data", page, pageLimit],
-    queryFn: () => fetchVideos(page, pageLimit),
+export const useGetVideos = (page = 0, limit: number) =>
+  useQuery<VideosResponse, Error>({
+    queryKey: ["data", page, limit],
+    queryFn: () => fetchVideos(page, limit),
     placeholderData: (prev) => prev, // Keeps old data during loading
   });

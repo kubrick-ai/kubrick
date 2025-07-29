@@ -153,7 +153,7 @@ class SearchController:
                     else:  # Text field
                         try:
                             value = part.value
-                            if field_name == "filter" and value:
+                            if field_name in ["filter", "query_modality"] and value:
                                 value = json.loads(value)
                             search_request[field_name] = value
                             self.logger.debug(f"Processed text field: {field_name}")

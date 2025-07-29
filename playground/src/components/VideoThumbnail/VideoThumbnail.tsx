@@ -76,8 +76,12 @@ const VideoThumbnail = ({
           </MediaPlayer.Controls>
         </MediaPlayer.Root>
       </CardContent>
-      <CardFooter>
-        {video.filename && <CardTitle>{video.filename}</CardTitle>}
+      <CardFooter className="flex-col items-start gap-2 px-4">
+        <a href={video.url} target="_blank" rel="noopener">
+          <CardTitle className="hover:underline cursor-pointer">
+            {video.filename}
+          </CardTitle>
+        </a>
         <CardDescription>{children}</CardDescription>
       </CardFooter>
     </Card>

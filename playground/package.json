@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "deploy": "./deploy.sh",
     "start": "next start",
     "lint": "next lint"
   },
