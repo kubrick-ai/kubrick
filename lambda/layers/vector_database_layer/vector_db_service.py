@@ -207,7 +207,7 @@ class VectorDBService:
             query_parts.append("AND modality = %s")
             query_params.append(filter["modality"])
 
-        query_parts.append("ORDER BY similarity DESC LIMIT %s")
+        query_parts.append("ORDER BY similarity DESC, videos.id ASC LIMIT %s")
         query_params.append(page_limit)
 
         try:
@@ -272,7 +272,9 @@ class VectorDBService:
                     {" UNION ALL ".join(query_parts)}
                 )
                 SELECT * FROM combined_results
-                ORDER BY similarity DESC
+                ORDER BY
+                    similarity DESC,
+                    videos.id ASC
                 LIMIT %s;
             """
             query_params.append(page_limit)
