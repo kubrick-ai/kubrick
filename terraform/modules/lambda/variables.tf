@@ -49,6 +49,11 @@ variable "vpc_id" {
 #   type        = string
 # }
 
+variable "lambda_iam_db_bootstrap_role_arn" {
+  description = "IAM role ARN for database initialisation Lambda"
+  type        = string
+}
+
 variable "lambda_iam_s3_delete_handler_role_arn" {
   description = "IAM role ARN for S3 delete handler Lambda"
   type        = string

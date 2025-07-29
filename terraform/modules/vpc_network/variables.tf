@@ -1,4 +1,4 @@
- variable "vpc_cidr" {
+variable "vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
   default     = "10.0.0.0/16"
@@ -24,10 +24,10 @@ variable "region" {
 variable "azs" {
   type        = list(string)
   description = "Availability zones to use"
-  default     = ["us-east-2a", "us-east-2b"]
 }
 
 variable "env" {
   type        = string
   description = "Environment name (e.g., dev, prod)"
 }
+

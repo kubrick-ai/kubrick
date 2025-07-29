@@ -29,6 +29,11 @@ output "lambda_s3_full_access_policy_arn" {
 }
 
 #
+output "db_bootstrap_role_arn" {
+  description = "IAM role ARN for database bootstrap Lambda"
+  value       = aws_iam_role.lambda_roles["kubrick_db_bootstrap"].arn
+}
+
 output "s3_delete_handler_role_arn" {
   description = "IAM role ARN for S3 delete handler Lambda"
   value       = aws_iam_role.lambda_roles["kubrick_s3_delete_handler"].arn
