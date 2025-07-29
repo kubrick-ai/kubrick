@@ -25,6 +25,11 @@ output "kubrick_api_video_upload_link_handler_invoke_arn" {
   value       = aws_lambda_function.kubrick_api_video_upload_link_handler.invoke_arn
 }
 
+output "kubrick_api_fetch_tasks_handler_invoke_arn" {
+  description = "Invoke ARN of the kubrick_api_fetch_tasks_handler Lambda function"
+  value       = aws_lambda_function.kubrick_api_fetch_tasks_handler.invoke_arn
+}
+
 # Lambda Function Names
 output "kubrick_api_fetch_videos_handler_function_name" {
   description = "Function name of the kubrick_api_fetch_videos_handler Lambda"
@@ -39,6 +44,11 @@ output "kubrick_api_search_handler_function_name" {
 output "kubrick_api_video_upload_link_handler_function_name" {
   description = "Function name of the kubrick_api_video_upload_link_handler Lambda"
   value       = aws_lambda_function.kubrick_api_video_upload_link_handler.function_name
+}
+
+output "kubrick_api_fetch_tasks_handler_function_name" {
+  description = "Function name of the kubrick_api_fetch_tasks_handler Lambda"
+  value       = aws_lambda_function.kubrick_api_fetch_tasks_handler.function_name
 }
 
 # Additional Lambda Function ARNs (for reference)

@@ -22,6 +22,12 @@ variable "generate_upload_link_path" {
   default     = "generate-upload-link"
 }
 
+variable "tasks_path" {
+  description = "The 'tasks' endpoint for the API"
+  type        = string
+  default     = "tasks"
+}
+
 variable "fetch_videos_lambda_invoke_arn" {
   description = "Invoke ARN of the kubrick_api_fetch_videos_handler Lambda function"
   type        = string
@@ -49,6 +55,16 @@ variable "upload_link_lambda_invoke_arn" {
 
 variable "upload_link_lambda_function_name" {
   description = "Function name of the kubrick_api_video_upload_link_handler Lambda"
+  type        = string
+}
+
+variable "fetch_tasks_lambda_invoke_arn" {
+  description = "Invoke ARN of the kubrick_api_fetch_tasks_handler Lambda function"
+  type        = string
+}
+
+variable "fetch_tasks_lambda_function_name" {
+  description = "Function name of the kubrick_api_fetch_tasks_handler Lambda"
   type        = string
 }
 

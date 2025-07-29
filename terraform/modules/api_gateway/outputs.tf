@@ -28,6 +28,11 @@ output "generate_upload_link_endpoint_url" {
   value       = "${aws_api_gateway_stage.api_stage.invoke_url}/${var.generate_upload_link_path}"
 }
 
+output "tasks_endpoint_url" {
+  description = "Full URL for the tasks endpoint"
+  value       = "${aws_api_gateway_stage.api_stage.invoke_url}/${var.tasks_path}"
+}
+
 output "api_gateway_execution_arn" {
   description = "The execution ARN of the API Gateway REST API"
   value       = aws_api_gateway_rest_api.api.execution_arn

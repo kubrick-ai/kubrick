@@ -63,9 +63,11 @@ module "api_gateway" {
   fetch_videos_lambda_invoke_arn      = module.lambda.kubrick_api_fetch_videos_handler_invoke_arn
   search_lambda_invoke_arn            = module.lambda.kubrick_api_search_handler_invoke_arn
   upload_link_lambda_invoke_arn       = module.lambda.kubrick_api_video_upload_link_handler_invoke_arn
+  fetch_tasks_lambda_invoke_arn       = module.lambda.kubrick_api_fetch_tasks_handler_invoke_arn
   fetch_videos_lambda_function_name   = module.lambda.kubrick_api_fetch_videos_handler_function_name
   search_lambda_function_name         = module.lambda.kubrick_api_search_handler_function_name
   upload_link_lambda_function_name    = module.lambda.kubrick_api_video_upload_link_handler_function_name
+  fetch_tasks_lambda_function_name    = module.lambda.kubrick_api_fetch_tasks_handler_function_name
   aws_region                          = local.region
 
   depends_on = [module.lambda]

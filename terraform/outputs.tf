@@ -98,6 +98,11 @@ output "generate_upload_link_endpoint_url" {
   value       = module.api_gateway.generate_upload_link_endpoint_url
 }
 
+output "tasks_endpoint_url" {
+  description = "Full URL for the tasks endpoint"
+  value       = module.api_gateway.tasks_endpoint_url
+}
+
 output "api_gateway_execution_arn" {
   description = "The execution ARN of the API Gateway REST API"
   value       = module.api_gateway.api_gateway_execution_arn
