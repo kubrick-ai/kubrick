@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const RootLayout = ({
@@ -17,7 +18,10 @@ const RootLayout = ({
     <html lang="en">
       <head>
         <title>Kubrick</title>
-        <meta name="description" content="Kubrick Semantic Video Search Playground" />
+        <meta
+          name="description"
+          content="Kubrick Semantic Video Search Playground"
+        />
       </head>
       <body>
         <QueryClientProvider client={queryClient}>
@@ -29,6 +33,7 @@ const RootLayout = ({
             </main>
           </SidebarProvider>
         </QueryClientProvider>
+        <Toaster position="top-center" />
       </body>
     </html>
   );
