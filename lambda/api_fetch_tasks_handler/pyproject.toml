@@ -1,15 +1,13 @@
 [project]
-name = "search"
+name = "kubrick_api_fetch_tasks_handler"
 version = "0.1.0"
-description = "Handle POST requests to `/search` endpoint"
-readme = ""
+description = "Lambda Function to Handle GET /tasks"
 requires-python = ">=3.13"
-dependencies = ["multipart>=1.2.1", "pydantic>=2.11.7",]
+dependencies = []
 
 [tool.pyright]
 extraPaths = [
   "../layers/vector_database_layer/",
-  "../layers/embed_service_layer/",
   "../layers/response_utils_layer/",
   "../layers/config_layer/",
 ]

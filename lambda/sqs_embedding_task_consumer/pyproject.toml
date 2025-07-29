@@ -1,5 +1,5 @@
 [project]
-name = "SQSEmbeddingTaskConsumer"
+name = "sqs_embedding_task_consumer"
 version = "0.1.0"
 description = "SQS Embedding Task Consumer Lambda function"
 readme = ""

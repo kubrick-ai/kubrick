@@ -1,9 +1,6 @@
 [project]
-name = "vector-database-layer"
+name = "kubrick_vector_database_layer"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "AWS Lambda Layer for database queries and transactions"
 requires-python = ">=3.13"
-dependencies = [
-    "psycopg2-binary>=2.9.10",
-]
+dependencies = ["psycopg2-binary>=2.9.10"]
