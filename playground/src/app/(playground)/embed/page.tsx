@@ -125,7 +125,12 @@ const Embed = () => {
           <AccordionItem value="embedding-tasks-table">
             <AccordionTrigger>Embedding Tasks</AccordionTrigger>
             <AccordionContent className="flex flex-col gap-4 text-balance">
-              {/* TODO: Use is loading and error from TasksTable */}
+              {isLoading && <p>Loading embedding tasks...</p>}
+              {error && (
+                <p className="text-red-500">
+                  Error loading embedding tasks: {error.message}
+                </p>
+              )}
               {tasks && tasks.length > 0 ? (
                 <TasksTable
                   tasks={tasks}
