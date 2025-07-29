@@ -3,7 +3,6 @@
 import {
   Table,
   TableBody,
-  // TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -11,6 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Task } from "@/types";
+import dayjs from "dayjs";
+
 
 import React from "react";
 
@@ -31,24 +32,9 @@ const TasksTable = ({
 }: TasksListProps) => {
   const totalPages = Math.ceil(totalTasks / perPage);
 
-  function formatDateTime(isoString: string) {
-    const date = new Date(isoString);
-    const pad = (n: number) => String(n).padStart(2, "0");
-
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1);
-    const day = pad(date.getDate());
-    const hours = pad(date.getHours());
-    const minutes = pad(date.getMinutes());
-    const seconds = pad(date.getSeconds());
-
-    return `${year}:${month}:${day} ${hours}:${minutes}:${seconds}`;
-  }
-
   return (
     <>
       <Table>
-        {/* <TableCaption>A list of your recent embedding tasks.</TableCaption> */}
         <TableHeader>
           <TableRow>
             <TableHead>SQS Message ID</TableHead>
@@ -67,8 +53,8 @@ const TasksTable = ({
               </TableCell>
               <TableCell>{task.s3_bucket}</TableCell>
               <TableCell>{task.s3_key}</TableCell>
-              <TableCell>{formatDateTime(task.created_at)}</TableCell>
-              <TableCell>{formatDateTime(task.updated_at)}</TableCell>
+              <TableCell>{dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}</TableCell>
+              <TableCell>{dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}</TableCell>
               <TableCell>{task.status}</TableCell>
             </TableRow>
           ))}

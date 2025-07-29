@@ -12,6 +12,12 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import TasksTable from "@/components/TasksTable";
 import { useEmbedVideo, useGetTasks } from "@/hooks/useKubrickAPI";
 import { useState } from "react";
@@ -113,18 +119,27 @@ const Embed = () => {
           </div>
         </div>
       )}
-
-      {tasks && tasks.length > 0 ? (
-        <TasksTable
-          tasks={tasks}
-          page={page}
-          totalTasks={total}
-          perPage={PAGE_LIMIT}
-          onPageChange={setPage}
-        ></TasksTable>
-      ) : (
-        !isLoading && <p>No tasks found.</p>
-      )}
+      <div className="pt-3">
+        <Accordion type="single" collapsible className="w-full" defaultValue="">
+          <AccordionItem value="embedding-tasks-table">
+            <AccordionTrigger>Embedding Tasks</AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-4 text-balance">
+              {/* TODO: Use is loading and error from TasksTable */}
+              {tasks && tasks.length > 0 ? (
+                <TasksTable
+                  tasks={tasks}
+                  page={page}
+                  totalTasks={total}
+                  perPage={PAGE_LIMIT}
+                  onPageChange={setPage}
+                ></TasksTable>
+              ) : (
+                !isLoading && <p>No tasks found.</p>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
     </div>
   );
 };
