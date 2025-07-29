@@ -107,7 +107,6 @@ class VectorDBService:
         try:
             video_id = self._insert_video(video_metadata)
             self._insert_video_segments(video_id, video_segments)
-            self._ensure_ann_index_exists()
             self.conn.commit()
             self.logger.info(f"Stored video and {len(video_segments)} embeddings.")
 
@@ -162,34 +161,6 @@ class VectorDBService:
             """,
                 data_to_insert,
             )
-
-    def _ensure_ann_index_exists(self):
-        index_name = "video_segments_embedding_ann_idx"
-        check_query = """
-            SELECT 1
-            FROM pg_indexes
-            WHERE tablename = 'video_segments' AND indexname = %s
-        """
-        create_index_query = """
-            CREATE INDEX IF NOT EXISTS video_segments_embedding_ann_idx
-            ON video_segments
-            USING ivfflat (embedding vector_cosine_ops)
-            WITH (lists = 100)
-        """
-        try:
-            with self.conn.cursor() as cur:
-                cur.execute(check_query, (index_name,))
-                exists = cur.fetchone()
-                if not exists:
-                    self.logger.info(
-                        "Creating aNN index on video_segments.embedding..."
-                    )
-                    cur.execute(create_index_query)
-                else:
-                    self.logger.debug("aNN index already exists.")
-        except Exception as e:
-            self.logger.error("Failed to create or verify aNN index:", e)
-            raise
 
     def find_similar(
         self,
