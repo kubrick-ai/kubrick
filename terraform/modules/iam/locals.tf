@@ -33,20 +33,21 @@ locals {
 
   # IAM Roles and their policies
   lambda_role_policies = {
-    kubrick_s3_delete_handler             = ["s3_full_access", "lambda_basic_execution", "secrets_access"]
-    kubrick_api_search_handler            = ["s3_readonly_access", "lambda_basic_execution", "secrets_access"]
-    kubrick_api_fetch_videos_handler      = ["s3_readonly_access", "lambda_basic_execution", "secrets_access"]
-    kubrick_api_video_upload_link_handler = ["s3_full_access", "lambda_basic_execution"]
-    kubrick_api_fetch_tasks_handler       = ["lambda_basic_execution", "secrets_access"]
-    kubrick_sqs_embedding_task_producer   = ["s3_full_access", "lambda_basic_execution", "secrets_access", "sqs_full_access"]
-    kubrick_sqs_embedding_task_consumer   = ["lambda_sqs_execution", "secrets_access"]
+    kubrick_s3_delete_handler             = ["s3_full_access", "lambda_basic_execution", "secrets_access", "lambda_vpc_access"]
+    kubrick_api_search_handler            = ["s3_readonly_access", "lambda_basic_execution", "secrets_access", "lambda_vpc_access"]
+    kubrick_api_fetch_videos_handler      = ["s3_readonly_access", "lambda_basic_execution", "secrets_access", "lambda_vpc_access"]
+    kubrick_api_video_upload_link_handler = ["s3_full_access", "lambda_basic_execution", "lambda_vpc_access"]
+    kubrick_api_fetch_tasks_handler       = ["lambda_basic_execution", "secrets_access", "lambda_vpc_access"]
+    kubrick_sqs_embedding_task_producer   = ["s3_full_access", "lambda_basic_execution", "secrets_access", "sqs_full_access", "lambda_vpc_access"]
+    kubrick_sqs_embedding_task_consumer   = ["lambda_sqs_execution", "secrets_access", "lambda_vpc_access"]
   }
 
   # Merge managed + custom policy ARNs
   all_policy_arns = merge(
     local.managed_policy_arns,
     {
-      secrets_access = aws_iam_policy.secrets_access.arn
+      secrets_access    = aws_iam_policy.secrets_access.arn
+      lambda_vpc_access = aws_iam_policy.lambda_vpc_access.arn 
     }
   )
 }
