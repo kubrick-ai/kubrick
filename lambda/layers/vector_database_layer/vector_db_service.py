@@ -221,10 +221,10 @@ class VectorDBService:
                 video_segments.scope,
                 video_segments.start_time,
                 video_segments.end_time,
-                1 - (embedding <=> %s::vector) AS similarity
+                1 - (video_segments.embedding <=> %s::vector) AS similarity
             FROM videos
             INNER JOIN video_segments ON videos.id = video_segments.video_id
-            WHERE (1 - (embedding <=> %s::vector)) > %s
+            WHERE (1 - (video_segments.embedding <=> %s::vector)) > %s
             """
         )
         query_params.extend([embedding, embedding, min_similarity])
@@ -279,11 +279,11 @@ class VectorDBService:
                         video_segments.scope,
                         video_segments.start_time,
                         video_segments.end_time,
-                        1 - (embedding <=> %s::vector) AS similarity
+                        1 - (video_segments.embedding <=> %s::vector) AS similarity
                         {i} AS query_index
                     FROM videos
                     INNER JOIN video_segments ON videos.id = video_segments.video_id
-                    WHERE (1 - (embedding <=> %s::vector)) > %s
+                    WHERE (1 - (video_segments.embedding <=> %s::vector)) > %s
                 """
                 query_params.extend([embedding, embedding, min_similarity])
 
