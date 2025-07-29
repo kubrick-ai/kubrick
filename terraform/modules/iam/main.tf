@@ -152,6 +152,24 @@ resource "aws_iam_policy" "secrets_access" {
   })
 }
 
+resource "aws_iam_policy" "lambda_vpc_access" {
+  name   = "lambda-vpc-access"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = [
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # Once this is merged I can extract the ARN from the SQS module
 # resource "aws_iam_policy" "sqs_send_message_policy" {
 #   name        = "SqsSendMessageOnlyPolicy"

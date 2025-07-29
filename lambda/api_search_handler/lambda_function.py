@@ -47,8 +47,8 @@ def lambda_handler(event, context):
     )
 
     try:
-        results = search_controller.process_search_request(event)
-        return build_success_response(results)
+        results, metadata = search_controller.process_search_request(event)
+        return build_success_response(data=results, metadata=metadata)
 
     except SearchRequestError as e:
         logger.error(f"Search request error: {e}")
