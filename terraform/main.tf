@@ -30,16 +30,23 @@ module "rds" {
 
 module "lambda" {
   source = "./modules/lambda"
-
-  private_subnet_ids   = module.vpc_network.private_subnet_ids
-  db_host              = "your.db.host.address"
-  db_username          = local.secrets.database.username
-  db_password          = local.secrets.database.password
-  embedding_model      = local.embedding_model
-  min_similarity       = local.min_similarity
-  clip_length          = local.clip_length
-  lambda_iam_role_arn  = "arn:aws:iam::123456789012:role/your_lambda_role"
-  lambda_sg_id         = "sg-xxxxxxxx"
+  lambda_iam_s3_delete_handler_role_arn             = module.iam.s3_delete_handler_role_arn
+  lambda_iam_api_search_handler_role_arn            = module.iam.api_search_handler_role_arn
+  lambda_iam_api_fetch_videos_handler_role_arn      = module.iam.api_fetch_videos_handler_role_arn
+  lambda_iam_api_video_upload_link_handler_role_arn = module.iam.api_video_upload_link_handler_role_arn
+  lambda_iam_api_fetch_tasks_handler_role_arn       = module.iam.api_fetch_tasks_handler_role_arn
+  lambda_iam_sqs_embedding_task_producer_role_arn   = module.iam.sqs_embedding_task_producer_role_arn
+  lambda_iam_sqs_embedding_task_consumer_role_arn   = module.iam.sqs_embedding_task_consumer_role_arn
+  db_host                                           = module.rds.db_host
+  db_username                                       = local.secrets.database.username
+  db_password                                       = local.secrets.database.password
+  embedding_model                                   = local.embedding_model
+  min_similarity                                    = local.min_similarity
+  page_limit                                        = local.page_limit 
+  clip_length                                       = local.clip_length
+  private_subnet_ids                                = module.vpc_network.private_subnet_ids
+  vpc_id                                            = module.vpc_network.vpc_id
+  s3_bucket_name                                    = module.s3.bucket_name
 }
 
 

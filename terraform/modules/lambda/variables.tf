@@ -1,8 +1,3 @@
-variable "lambda_iam_role_arn" {
-  description = "ARN for the lambda IAM role"
-  type        = string
-}
-
 variable "db_host" {
   description = "The endpoint of the RDS database"
   type        = string
@@ -28,6 +23,11 @@ variable "min_similarity" {
   type        = number
 }
 
+variable "page_limit" {
+  description = "The default clips in a page"
+  type        = number
+}
+
 variable "embedding_model" {
   description = "The embedding model's name"
   type        = string
@@ -38,7 +38,53 @@ variable "private_subnet_ids" {
   type        = list(string)
 }
 
-variable "lambda_sg_id" {
-  description = "The security group ID for Lambda access"
+variable "vpc_id" {
+  description = "The ID of the VPC where the Lambda and security groups will be created"
+  type        = string
+}
+
+#
+# variable "lambda_sg_id" {
+#   description = "The security group ID for Lambda access"
+#   type        = string
+# }
+
+variable "lambda_iam_s3_delete_handler_role_arn" {
+  description = "IAM role ARN for S3 delete handler Lambda"
+  type        = string
+}
+
+variable "lambda_iam_api_search_handler_role_arn" {
+  description = "IAM role ARN for API search handler Lambda"
+  type        = string
+}
+
+variable "lambda_iam_api_fetch_videos_handler_role_arn" {
+  description = "IAM role ARN for API fetch videos handler Lambda"
+  type        = string
+}
+
+variable "lambda_iam_api_video_upload_link_handler_role_arn" {
+  description = "IAM role ARN for API video upload link handler Lambda"
+  type        = string
+}
+
+variable "lambda_iam_api_fetch_tasks_handler_role_arn" {
+  description = "IAM role ARN for API fetch tasks handler Lambda"
+  type        = string
+}
+
+variable "lambda_iam_sqs_embedding_task_producer_role_arn" {
+  description = "IAM role ARN for SQS embedding task producer Lambda"
+  type        = string
+}
+
+variable "lambda_iam_sqs_embedding_task_consumer_role_arn" {
+  description = "IAM role ARN for SQS embedding task consumer Lambda"
+  type        = string
+}
+
+variable "s3_bucket_name" {
+  description = "The name to the S3 Bucket"
   type        = string
 }
