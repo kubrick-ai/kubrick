@@ -12,6 +12,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import TasksTable from "@/components/TasksTable";
 
 import { useEmbedVideo } from "@/hooks/useKubrickAPI";
 
@@ -106,6 +107,7 @@ const Embed = () => {
           </div>
         </div>
       )}
+      <TasksTable></TasksTable>
     </div>
   );
 };
