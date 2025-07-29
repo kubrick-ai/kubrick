@@ -3,7 +3,7 @@ resource "aws_lambda_layer_version" "vectordb_layer" {
   layer_name              = "vectordb_layer"
   compatible_runtimes     = ["python3.13"]
   compatible_architectures = ["x86_64"]
-  filename                = "${path.module}/VectorDBServiceLayer.zip"
+  filename                = "${local.base_path}/layers/vector_database_layer/package.zip"
   description             = "Module for interacting with the PostgreSQL vector database"
 }
 
@@ -11,7 +11,7 @@ resource "aws_lambda_layer_version" "embed_layer" {
   layer_name              = "embed_layer"
   compatible_runtimes     = ["python3.13"]
   compatible_architectures = ["x86_64"]
-  filename                = "${path.module}/EmbedLayer.zip"
+  filename                = "${local.base_path}/layers/embed_service_layer/package.zip"
   description             = "Multi-modal embedding extraction and management module using TwelveLabs API."
 }
 
@@ -19,7 +19,7 @@ resource "aws_lambda_layer_version" "config_layer" {
   layer_name              = "config_layer"
   compatible_runtimes     = ["python3.13"]
   compatible_architectures = ["x86_64"]
-  filename                = "${path.module}/ConfigLayer.zip"
+  filename                = "${local.base_path}/layers/config_layer/package.zip"
   description             = "Configuration management module for secrets and database settings."
 }
 
@@ -27,7 +27,7 @@ resource "aws_lambda_layer_version" "utils_layer" {
   layer_name              = "utils_layer"
   compatible_runtimes     = ["python3.13"]
   compatible_architectures = ["x86_64"]
-  filename                = "${path.module}/ResponseUtilsLayer.zip"
+  filename                = "${local.base_path}/layers/response_utils_layer/package.zip"
   description             = "Utility module for error handling, S3 presigned URL generation, and API response construction."
 }
 
@@ -53,7 +53,7 @@ resource "aws_lambda_function" "kubrick_api_search_handler" {
   role          = var.lambda_iam_api_search_handler_role_arn
   runtime       = "python3.13"
   handler       = "lambda_function.lambda_handler"
-  filename      = "${path.module}/KubrickSearch.zip" # This is just a placeholder, I don't know the zip's name
+  filename      = "${local.base_path}/api_search_handler/package.zip"
 
   layers = [
     aws_lambda_layer_version.vectordb_layer.arn,
@@ -88,7 +88,7 @@ resource "aws_lambda_function" "kubrick_s3_delete_handler" {
   role          = var.lambda_iam_s3_delete_handler_role_arn
   runtime       = "python3.13"
   handler       = "lambda_function.lambda_handler"
-  filename      = "${path.module}/DeleteHandler.zip" # This is just a placeholder, I don't know the zip's name
+  filename      = "${local.base_path}/s3_delete_handler/package.zip"
 
   layers = [
     aws_lambda_layer_version.vectordb_layer.arn,
@@ -115,7 +115,7 @@ resource "aws_lambda_function" "kubrick_api_fetch_videos_handler" {
   role          = var.lambda_iam_api_fetch_videos_handler_role_arn
   runtime       = "python3.13"
   handler       = "lambda_function.lambda_handler"
-  filename      = "${path.module}/FetchVideosHandler.zip" # This is just a placeholder, I don't know the zip's name
+  filename      = "${local.base_path}/api_fetch_videos_handler/package.zip"
 
   layers = [
     aws_lambda_layer_version.vectordb_layer.arn,
@@ -144,7 +144,7 @@ resource "aws_lambda_function" "kubrick_api_video_upload_link_handler" {
   role          = var.lambda_iam_api_video_upload_link_handler_role_arn
   runtime       = "python3.13"
   handler       = "lambda_function.lambda_handler"
-  filename      = "${path.module}/UploadHandler.zip" # This is just a placeholder, I don't know the zip's name
+  filename      = "${local.base_path}/api_video_upload_link_handler/package.zip"
 
   layers = [
     aws_lambda_layer_version.utils_layer.arn,
@@ -152,7 +152,7 @@ resource "aws_lambda_function" "kubrick_api_video_upload_link_handler" {
 
   environment {
     variables = {
-      PRESIGNED_URL_EXPIRATION = 900                 # This is a magic number, could prob go to locals
+      PRESIGNED_URL_EXPIRATION = 900 # This is a magic number, could prob go to locals
       S3_BUCKET_NAME           = var.s3_bucket_name
     }
   }
@@ -171,7 +171,7 @@ resource "aws_lambda_function" "kubrick_api_fetch_tasks_handler" {
   role          = var.lambda_iam_api_fetch_tasks_handler_role_arn
   runtime       = "python3.13"
   handler       = "lambda_function.lambda_handler"
-  filename      = "${path.module}/FetchTasksHandler.zip" # This is just a placeholder, I don't know the zip's name
+  filename      = "${local.base_path}/api_fetch_tasks_handler/package.zip"
 
   layers = [
     aws_lambda_layer_version.vectordb_layer.arn,
@@ -199,7 +199,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
   role          = var.lambda_iam_sqs_embedding_task_producer_role_arn
   runtime       = "python3.13"
   handler       = "lambda_function.lambda_handler"
-  filename      = "${path.module}/TaskProducer.zip" # This is just a placeholder, I don't know the zip's name
+  filename      = "${local.base_path}/sqs_embedding_task_producer/package.zip"
 
   layers = [
     aws_lambda_layer_version.vectordb_layer.arn,
@@ -230,7 +230,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
   role          = var.lambda_iam_sqs_embedding_task_consumer_role_arn
   runtime       = "python3.13"
   handler       = "lambda_function.lambda_handler"
-  filename      = "${path.module}/TaskConsumer.zip" # This is just a placeholder, I don't know the zip's name
+  filename      = "${local.base_path}/sqs_embedding_task_consumer/package.zip"
 
   layers = [
     aws_lambda_layer_version.vectordb_layer.arn,
