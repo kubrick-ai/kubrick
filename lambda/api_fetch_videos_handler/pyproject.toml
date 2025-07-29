@@ -1,8 +1,7 @@
 [project]
-name = "fetchTasks"
+name = "kubrick_api_fetch_videos_handler"
 version = "0.1.0"
-description = "Lambda Function to Handle GET /tasks"
-readme = ""
+description = "Lambda Function to Handle GET /videos"
 requires-python = ">=3.13"
 dependencies = []
 

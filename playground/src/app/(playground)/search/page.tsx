@@ -7,7 +7,9 @@ import { SearchParams } from "@/types";
 import SearchForm from "@/components/SearchForm";
 
 const Search = () => {
-  const [searchParams, setSearchParams] = useState<SearchParams>({});
+  const [searchParams, setSearchParams] = useState<SearchParams>({
+    query_type: "text",
+  });
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const { data: results, isLoading, error } = useSearchVideos(searchParams);
 

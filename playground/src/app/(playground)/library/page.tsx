@@ -9,8 +9,8 @@ const PAGE_LIMIT = 12;
 const Library = () => {
   const [page, setPage] = useState(1);
   const { data, isLoading, error } = useGetVideos(page - 1, PAGE_LIMIT);
-  const videos = data?.videos ?? [];
-  const totalVideos = data?.total ?? 0;
+  const videos = data?.data ?? [];
+  const total = data?.metadata?.total ?? 0;
 
   return (
     <div className="p-4">
@@ -25,7 +25,7 @@ const Library = () => {
         <VideoList
           videos={videos}
           page={page}
-          totalVideos={totalVideos}
+          totalVideos={total}
           perPage={PAGE_LIMIT}
           onPageChange={setPage}
         />

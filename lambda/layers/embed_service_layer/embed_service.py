@@ -53,6 +53,27 @@ class EmbedService:
 
         return res.image_embedding.segments[0].float_
 
+    def extract_audio_embedding(
+        self,
+        file: Optional[BinaryIO] = None,
+        url: Optional[str] = None,
+    ) -> list[float]:
+        if url:
+            res = self.client.embed.create(model_name=self.model_name, audio_url=url)
+        elif file:
+            res = self.client.embed.create(model_name=self.model_name, audio_file=file)
+        else:
+            raise Exception("Expected audio file or url as argument")
+
+        if not (
+            res.audio_embedding
+            and res.audio_embedding.segments
+            and res.audio_embedding.segments[0].float_
+        ):
+            raise Exception("Could not extract embedding")
+
+        return res.audio_embedding.segments[0].float_
+
     def extract_video_embedding(
         self,
         file: Optional[Union[str, BinaryIO, None]] = None,

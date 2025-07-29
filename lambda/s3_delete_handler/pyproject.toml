@@ -1,13 +1,13 @@
 [project]
-name = "fetch_videos"
+name = "kubrick_s3_delete_handler"
 version = "0.1.0"
-description = "Lambda Function to Handle GET /videos"
+description = "Handles Video Delete in S3 Bucket"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = ["boto3>=1.39.11"]
 
 [tool.pyright]
 extraPaths = [
   "../layers/vector_database_layer/",
-  "../layers/response_utils_layer/",
+  "../layers/embed_service_layer/",
   "../layers/config_layer/",
 ]

@@ -1,4 +1,3 @@
-import { Video } from "lucide-react";
 import { z } from "zod";
 
 export const MediaTypeSchema = z.enum(["image", "video", "audio", "text"]);
@@ -16,7 +15,7 @@ export type EmbeddingModality = z.infer<typeof EmbeddingModalitySchema>;
 export const VideoSchema = z.object({
   id: z.number(),
   url: z.string(),
-  filename: z.string().nullable().optional(),
+  filename: z.string(),
   duration: z.number().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
@@ -26,14 +25,18 @@ export const VideoSchema = z.object({
   s3_key: z.string().nullable().optional(),
 });
 
-export const VideoListSchema = z.object({
-  videos: VideoSchema.array(),
-  total: z.number(),
+export type Video = z.infer<typeof VideoSchema>;
+
+export const VideosResponseSchema = z.object({
+  data: VideoSchema.array(),
+  metadata: z.object({
+    total: z.number().nonnegative(),
+    limit: z.number().nonnegative(),
+    page: z.number().nonnegative(),
+  }),
 });
 
-export type VideoList = z.infer<typeof VideoListSchema>;
-
-export type Video = z.infer<typeof VideoSchema>;
+export type VideosResponse = z.infer<typeof VideosResponseSchema>;
 
 export const SearchResultSchema = z.object({
   id: z.number(),
@@ -47,8 +50,12 @@ export const SearchResultSchema = z.object({
 
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 
-export const SearchFormSchema = z.object({
-  query_text: z.string().optional(),
+// The shape of the data collected from the SearchForm form component
+export const SearchFormDataSchema = z.object({
+  query_text: z
+    .string()
+    .max(250, "Query text is too long (max 250 chars)")
+    .optional(),
   query_type: MediaTypeSchema,
   query_media_url: z.url().optional(),
   query_media_file: z.instanceof(File).optional(),
@@ -62,12 +69,15 @@ export const SearchFormSchema = z.object({
   filter: z.string().optional(),
 });
 
+export type SearchFormData = z.infer<typeof SearchFormDataSchema>;
+
+// The shape of the data sent to the API as multipart/form-data
 export const SearchParamsSchema = z.object({
   query_text: z.string().optional(),
   query_type: MediaTypeSchema,
   query_media_url: z.url().optional(),
   query_media_file: z.instanceof(File).optional(),
-  query_modality: EmbeddingModalitySchema.array().optional(),
+  query_modality: z.string().optional(),
   min_similarity: CosineSimilaritySchema.optional(),
   page_limit: z.int().min(0).optional(),
   filter: z.string().optional(),

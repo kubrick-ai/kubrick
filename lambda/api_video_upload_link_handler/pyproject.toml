@@ -1,0 +1,10 @@
+[project]
+name = "kubrick_api_video_upload_link_handler"
+version = "0.1.0"
+description = "Lambda Function to handle generating presigned URLs for S3 video upload"
+readme = ""
+requires-python = ">=3.13"
+dependencies = ["boto3>=1.39.14"]
+
+[tool.pyright]
+extraPaths = ["../layers/response_utils_layer/"]
