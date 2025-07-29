@@ -88,3 +88,8 @@ variable "s3_bucket_name" {
   description = "The name to the S3 Bucket"
   type        = string
 }
+
+variable "queue_url" {
+  description = "The URL of the main SQS queue"
+  type        = string
+}

@@ -1,5 +1,4 @@
 # Lambda Layers
-
 resource "aws_lambda_layer_version" "vectordb_layer" {
   layer_name              = "vectordb_layer"
   compatible_runtimes     = ["python3.13"]
@@ -213,7 +212,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
       PGHOST                 = var.db_host
       DEFAULT_CLIP_LENGTH    = var.clip_length
       EMBEDDING_MODEL_NAME   = var.embedding_model
-      QUEUE_URL              = "QUEUE URL HERE"    # I need to get this from the sqs as a variable
+      QUEUE_URL              = var.queue_url
     }
   }
 
