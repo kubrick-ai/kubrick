@@ -40,6 +40,10 @@ CREATE TABLE IF NOT EXISTS video_segments (
   embedding vector(1024)
 );
 
+CREATE INDEX IF NOT EXISTS video_segments_embedding_ann_idx
+  ON video_segments
+  USING hnsw (embedding vector_cosine_ops);
+
 CREATE TABLE IF NOT EXISTS tasks (
   id SERIAL PRIMARY KEY,
   sqs_message_id TEXT,
