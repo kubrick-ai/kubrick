@@ -3,4 +3,6 @@ name = "kubrick_response_utils_layer"
 version = "0.1.0"
 description = "AWS Lambda Layer for HTTP response utilities"
 requires-python = ">=3.13"
-dependencies = ["boto3>=1.39.14"]
+dependencies = [
+    "aioboto3>=15.0.0",
+]

@@ -6,7 +6,7 @@ from embed_service import EmbedService
 from vector_db_service import VectorDBService
 from logging import getLogger, Logger
 from typing import Dict, List, Any, Optional, Union, Literal
-from response_utils import generate_presigned_url
+from response_utils import add_presigned_urls
 from search_errors import (
     SearchError,
     SearchRequestError,
@@ -24,9 +24,7 @@ DEFAULT_MIN_SIMILARITY = 0.2
 class SearchRequest(BaseModel):
     query_type: Literal["text", "image", "video", "audio"] = "text"
     query_text: Optional[str] = None
-    page_limit: Optional[int] = Field(
-        DEFAULT_PAGE_LIMIT, gt=0, description="Must be positive"
-    )
+    page_limit: int = Field(DEFAULT_PAGE_LIMIT, gt=0, description="Must be positive")
     min_similarity: Optional[float] = Field(
         DEFAULT_MIN_SIMILARITY, ge=0, le=1, description="Must be between 0 and 1"
     )
@@ -201,14 +199,7 @@ class SearchController:
             self.logger.error(f"Unexpected error in parse_form_data: {str(e)}")
             raise SearchRequestError(f"Failed to parse request: {str(e)}")
 
-    def _add_url(self, result):
-        """Add presigned URL to search result"""
-        result["video"]["url"] = generate_presigned_url(
-            bucket=result["video"]["s3_bucket"], key=result["video"]["s3_key"]
-        )
-        return result
-
-    def process_search_request(self, event) -> List[Any]:
+    def process_search_request(self, event) -> tuple[List[Any], dict[str, int]]:
         """Parse event to SearchRequest and execute the search request"""
         try:
             self.logger.info("Processing search request")
@@ -227,11 +218,16 @@ class SearchController:
 
             # Add presigned url to each result
             try:
-                results_with_urls = [self._add_url(result) for result in results]
+                add_presigned_urls(result["video"] for result in results)
                 self.logger.info(
-                    f"Successfully processed search request, returning {len(results_with_urls)} results"
+                    f"Successfully processed search request, returning {len(results)} results"
                 )
-                return results_with_urls
+                metadata = {
+                    "page": 0,
+                    "limit": search_request.page_limit,
+                    "total": len(results),
+                }
+                return results, metadata
             except Exception as e:
                 self.logger.exception(f"Error adding URLs to results: {str(e)}")
                 raise SearchError(f"Failed to process search results: {str(e)}")
@@ -427,13 +423,17 @@ class SearchController:
             self.logger.exception(f"Unexpected error in text search: {str(e)}")
             raise SearchError(f"Text search failed: {str(e)}")
 
-    def media_search(self, search_request: SearchRequest, media_type: str) -> List[Any]:
+    def media_search(
+        self,
+        search_request: SearchRequest,
+        media_type: Literal["image", "audio", "video"],
+    ) -> List[Any]:
         try:
             self.logger.info(f"Starting {media_type} search")
             embedding = self._extract_media_embedding(search_request, media_type)
             search_params = search_request.get_search_params()
             use_batch = False
-            
+
             if media_type == "video":
                 if isinstance(embedding, list) and isinstance(embedding[0], list):
                     if len(embedding) > 1:
