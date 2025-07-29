@@ -11,7 +11,7 @@ module "iam" {
   environment              = local.env
   embedding_task_queue_arn = module.sqs.queue_arn
 
-  depends_on               = [module.s3]
+  depends_on = [module.s3]
 }
 
 module "s3" {
@@ -29,7 +29,8 @@ module "rds" {
 }
 
 module "lambda" {
-  source = "./modules/lambda"
+  source                                            = "./modules/lambda"
+  lambda_iam_db_bootstrap_role_arn                  = module.iam.db_bootstrap_role_arn
   lambda_iam_s3_delete_handler_role_arn             = module.iam.s3_delete_handler_role_arn
   lambda_iam_api_search_handler_role_arn            = module.iam.api_search_handler_role_arn
   lambda_iam_api_fetch_videos_handler_role_arn      = module.iam.api_fetch_videos_handler_role_arn
@@ -42,7 +43,7 @@ module "lambda" {
   db_password                                       = local.secrets.database.password
   embedding_model                                   = local.embedding_model
   min_similarity                                    = local.min_similarity
-  page_limit                                        = local.page_limit 
+  page_limit                                        = local.page_limit
   clip_length                                       = local.clip_length
   private_subnet_ids                                = module.vpc_network.private_subnet_ids
   vpc_id                                            = module.vpc_network.vpc_id

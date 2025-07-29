@@ -22,6 +22,7 @@ locals {
 
   # The IAM roles for lambdas
   lambda_roles = {
+    kubrick_db_bootstrap                  = { purpose = "Initialises database schema" }
     kubrick_s3_delete_handler             = { purpose = "Handles S3 file deletions" }
     kubrick_api_search_handler            = { purpose = "Search API Lambda" }
     kubrick_api_fetch_videos_handler      = { purpose = "Fetches videos from DB" }
@@ -33,6 +34,7 @@ locals {
 
   # IAM Roles and their policies
   lambda_role_policies = {
+    kubrick_db_bootstrap                  = ["lambda_basic_execution", "secrets_access"]
     kubrick_s3_delete_handler             = ["s3_full_access", "lambda_basic_execution", "secrets_access"]
     kubrick_api_search_handler            = ["s3_readonly_access", "lambda_basic_execution", "secrets_access"]
     kubrick_api_fetch_videos_handler      = ["s3_readonly_access", "lambda_basic_execution", "secrets_access"]

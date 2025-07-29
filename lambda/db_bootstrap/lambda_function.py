@@ -1,4 +1,5 @@
 from config import load_config, get_secret, setup_logging, get_db_config
+import json
 import psycopg2
 
 
@@ -19,6 +20,17 @@ def lambda_handler():
                 conn.commit()
                 logger.info("Database initialization SQL script executed successfully.")
 
+            return {
+                "statusCode": 200,
+                "body": json.dumps(
+                    "Database initialization SQL script executed successfully."
+                ),
+            }
+
     except Exception as e:
         print(f"Error connecting to or executing bootstrap SQL on database: {e}")
-        raise
+        return {
+            "statusCode": 500,
+            "body": json.dumps("Database initialization failed."),
+        }
+        # raise
