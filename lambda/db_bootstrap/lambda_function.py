@@ -3,7 +3,7 @@ import json
 import psycopg2
 
 
-def lambda_handler():
+def lambda_handler(event, context):
     logger = setup_logging()
     config = load_config()
     SECRET = get_secret(config)

@@ -1,17 +1,17 @@
 variable "db_name" {
   description = "The name of the database to connect to"
   type        = string
-  default     = "kubrick_db"
+  default     = "kubrick"
 }
 
 variable "db_username" {
-    description = "The username for the database"
-    type = string
+  description = "The username for the database"
+  type        = string
 }
 
 variable "db_password" {
-    description = "The password for the database"
-    type = string
+  description = "The password for the database"
+  type        = string
 }
 
 variable "vpc_id" {
@@ -33,3 +33,4 @@ variable "db_subnet_ids" {
   description = "A list of subnet IDs for the RDS subnet group"
   type        = list(string)
 }
+

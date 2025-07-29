@@ -2,6 +2,7 @@ module "vpc_network" {
   source = "./modules/vpc_network"
   env    = local.env
   region = local.region
+  azs    = local.azs
 }
 
 module "iam" {
@@ -20,8 +21,8 @@ module "s3" {
 
 module "rds" {
   source               = "./modules/rds"
-  db_username          = local.secrets.database.username
-  db_password          = local.secrets.database.password
+  db_username          = local.secrets.DB_USERNAME
+  db_password          = local.secrets.DB_PASSWORD
   vpc_id               = module.vpc_network.vpc_id
   db_subnet_ids        = module.vpc_network.private_subnet_ids
   public_subnet_cidrs  = module.vpc_network.public_subnets_cidrs
@@ -39,8 +40,8 @@ module "lambda" {
   lambda_iam_sqs_embedding_task_producer_role_arn   = module.iam.sqs_embedding_task_producer_role_arn
   lambda_iam_sqs_embedding_task_consumer_role_arn   = module.iam.sqs_embedding_task_consumer_role_arn
   db_host                                           = module.rds.db_host
-  db_username                                       = local.secrets.database.username
-  db_password                                       = local.secrets.database.password
+  db_username                                       = local.secrets.DB_USERNAME
+  db_password                                       = local.secrets.DB_PASSWORD
   embedding_model                                   = local.embedding_model
   min_similarity                                    = local.min_similarity
   page_limit                                        = local.page_limit
@@ -49,6 +50,10 @@ module "lambda" {
   vpc_id                                            = module.vpc_network.vpc_id
   s3_bucket_name                                    = module.s3.bucket_name
   queue_url                                         = module.sqs.queue_url
+
+  depends_on = [
+    module.rds
+  ]
 }
 
 module "sqs" {

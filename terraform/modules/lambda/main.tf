@@ -76,7 +76,6 @@ resource "aws_lambda_function" "kubrick_db_bootstrap" {
 
 resource "null_resource" "invoke_db_bootstrap" {
   depends_on = [
-    aws_db_instance.kubrick_db,
     aws_lambda_function.kubrick_db_bootstrap,
   ]
 
@@ -85,9 +84,6 @@ resource "null_resource" "invoke_db_bootstrap" {
       echo "Invoking db_bootstrap lambda..."
       aws lambda invoke \
         --function-name ${aws_lambda_function.kubrick_db_bootstrap.function_name} \
-        --payload '{}' \
-        --log-type Tail
-        --cli-binary-format raw-in-base64-out \
         output.json
 
       cat output.json
