@@ -67,9 +67,10 @@ const Embed = () => {
             control={form.control}
             name="video_url"
             render={({ field }) => (
-              <FormItem className="flex-1">
+              <FormItem>
                 <FormControl>
                   <Input
+                    className="min-w-90"
                     placeholder="Paste video URL (e.g. from S3)"
                     {...field}
                   />
@@ -119,6 +120,7 @@ const Embed = () => {
           </div>
         </div>
       )}
+
       {/* Embedding tasks table accordion */}
       <div className="pt-3">
         <Accordion type="single" collapsible className="w-full" defaultValue="">
