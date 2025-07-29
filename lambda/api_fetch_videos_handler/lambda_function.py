@@ -3,7 +3,7 @@ from vector_db_service import VectorDBService
 from response_utils import (
     build_error_response,
     build_success_response,
-    generate_presigned_url,
+    add_presigned_urls,
 )
 
 
@@ -22,11 +22,8 @@ def lambda_handler(event, context):
         logger.info("Fetching videos...")
         videos_data, total = vector_db.fetch_videos(page=page, limit=limit)
         logger.debug(f"videos={videos_data}")
-        for video in videos_data:
-            if video.get("s3_bucket") and video.get("s3_key"):
-                video["url"] = generate_presigned_url(
-                    video["s3_bucket"], video["s3_key"], config["presigned_url_expiry"]
-                )
+        add_presigned_urls(videos_data, config["presigned_url_expiry"])
+
         return build_success_response(
             data=videos_data, metadata={"total": total, "limit": limit, "page": page}
         )
