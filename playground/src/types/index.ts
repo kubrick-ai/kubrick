@@ -84,3 +84,26 @@ export const SearchParamsSchema = z.object({
 });
 
 export type SearchParams = z.infer<typeof SearchParamsSchema>;
+
+export const TaskSchema = z.object({
+  id: z.number(),
+  sqs_message_id: z.string().nullable().optional(),
+  s3_bucket: z.string().nullable().optional(),
+  s3_key: z.string().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  status: z.string(),
+});
+
+export type Task = z.infer<typeof TaskSchema>;
+
+export const TasksResponseSchema = z.object({
+  data: TaskSchema.array(),
+  metadata: z.object({
+    total: z.number().nonnegative(),
+    limit: z.number().nonnegative(),
+    page: z.number().nonnegative(),
+  }),
+});
+
+export type TasksResponse = z.infer<typeof TasksResponseSchema>;

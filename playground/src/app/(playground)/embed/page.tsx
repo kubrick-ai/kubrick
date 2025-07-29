@@ -13,8 +13,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import TasksTable from "@/components/TasksTable";
+import { useEmbedVideo, useGetTasks } from "@/hooks/useKubrickAPI";
+import { useState } from "react";
 
-import { useEmbedVideo } from "@/hooks/useKubrickAPI";
+const PAGE_LIMIT = 10;
 
 const embedFormSchema = z.object({
   video_url: z.string().url("Please enter a valid URL"),
@@ -27,6 +29,10 @@ const Embed = () => {
     resolver: zodResolver(embedFormSchema),
     defaultValues: { video_url: "" },
   });
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error } = useGetTasks(page - 1, PAGE_LIMIT);
+  const tasks = data?.data ?? [];
+  const total = data?.metadata?.total ?? 0;
 
   const {
     submitVideo,
@@ -107,7 +113,18 @@ const Embed = () => {
           </div>
         </div>
       )}
-      <TasksTable></TasksTable>
+
+      {tasks && tasks.length > 0 ? (
+        <TasksTable
+          tasks={tasks}
+          page={page}
+          totalTasks={total}
+          perPage={PAGE_LIMIT}
+          onPageChange={setPage}
+        ></TasksTable>
+      ) : (
+        !isLoading && <p>No tasks found.</p>
+      )}
     </div>
   );
 };
