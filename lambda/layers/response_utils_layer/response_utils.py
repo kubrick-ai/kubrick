@@ -123,7 +123,7 @@ async def generate_presigned_url_async(
         raise
 
 
-def add_presigned_urls(items, expires_in):
+def add_presigned_urls(items, expires_in: int = 3600):
     asyncio.run(add_presigned_urls_async(items, expires_in))
 
 
