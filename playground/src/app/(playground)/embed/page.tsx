@@ -119,6 +119,7 @@ const Embed = () => {
           </div>
         </div>
       )}
+      {/* Embedding tasks table accordion */}
       <div className="pt-3">
         <Accordion type="single" collapsible className="w-full" defaultValue="">
           <AccordionItem value="embedding-tasks-table">
