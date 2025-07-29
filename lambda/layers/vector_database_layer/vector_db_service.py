@@ -107,6 +107,7 @@ class VectorDBService:
         try:
             video_id = self._insert_video(video_metadata)
             self._insert_video_segments(video_id, video_segments)
+            self._ensure_ann_index_exists()
             self.conn.commit()
             self.logger.info(f"Stored video and {len(video_segments)} embeddings.")
 
@@ -162,6 +163,34 @@ class VectorDBService:
                 data_to_insert,
             )
 
+    def _ensure_ann_index_exists(self):
+        index_name = "video_segments_embedding_ann_idx"
+        check_query = """
+            SELECT 1
+            FROM pg_indexes
+            WHERE tablename = 'video_segments' AND indexname = %s
+        """
+        create_index_query = """
+            CREATE INDEX IF NOT EXISTS video_segments_embedding_ann_idx
+            ON video_segments
+            USING ivfflat (embedding vector_ip_ops)
+            WITH (lists = 100)
+        """
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(check_query, (index_name,))
+                exists = cur.fetchone()
+                if not exists:
+                    self.logger.info(
+                        "Creating aNN index on video_segments.embedding..."
+                    )
+                    cur.execute(create_index_query)
+                else:
+                    self.logger.debug("aNN index already exists.")
+        except Exception as e:
+            self.logger.error("Failed to create or verify aNN index:", e)
+            raise
+
     def find_similar(
         self,
         embedding,
@@ -192,10 +221,10 @@ class VectorDBService:
                 video_segments.scope,
                 video_segments.start_time,
                 video_segments.end_time,
-                1 - (video_segments.embedding <=> %s::vector) AS similarity
+                1 - (video_segments.embedding <#> %s::vector) AS similarity
             FROM videos
             INNER JOIN video_segments ON videos.id = video_segments.video_id
-            WHERE (1 - (video_segments.embedding <=> %s::vector)) > %s
+            WHERE (1 - (video_segments.embedding <#> %s::vector)) > %s
             """
         )
         query_params.extend([embedding, embedding, min_similarity])
@@ -207,7 +236,7 @@ class VectorDBService:
             query_parts.append("AND modality = %s")
             query_params.append(filter["modality"])
 
-        query_parts.append("ORDER BY similarity DESC LIMIT %s")
+        query_parts.append("ORDER BY similarity DESC, videos.id ASC LIMIT %s")
         query_params.append(page_limit)
 
         try:
@@ -250,11 +279,11 @@ class VectorDBService:
                         video_segments.scope,
                         video_segments.start_time,
                         video_segments.end_time,
-                        1 - (video_segments.embedding <=> %s::vector) AS similarity,
+                        1 - (video_segments.embedding <#> %s::vector) AS similarity,
                         {i} AS query_index
                     FROM videos
                     INNER JOIN video_segments ON videos.id = video_segments.video_id
-                    WHERE (1 - (video_segments.embedding <=> %s::vector)) > %s
+                    WHERE (1 - (video_segments.embedding <#> %s::vector)) > %s
                 """
                 query_params.extend([embedding, embedding, min_similarity])
 
@@ -272,7 +301,9 @@ class VectorDBService:
                     {" UNION ALL ".join(query_parts)}
                 )
                 SELECT * FROM combined_results
-                ORDER BY similarity DESC
+                ORDER BY
+                    similarity DESC,
+                    videos.id ASC
                 LIMIT %s;
             """
             query_params.append(page_limit)
