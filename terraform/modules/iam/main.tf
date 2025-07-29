@@ -182,6 +182,7 @@ resource "aws_iam_role" "lambda_roles" {
   }
 }
 
+# This attaches policies to all IAM Lambda roles
 resource "aws_iam_role_policy_attachment" "lambda_role_policy_attachments" {
   for_each = {
     for pair in flatten([

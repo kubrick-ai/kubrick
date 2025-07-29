@@ -166,10 +166,12 @@ class VectorDBService:
         self,
         embedding,
         filter=None,
-        page_limit=None,
+        page=0,
+        limit=None,
         min_similarity=None,
     ) -> list[dict[str, Any]]:
-        page_limit = page_limit or self.default_page_limit
+        limit = limit or self.default_page_limit
+        offset = limit * page
         min_similarity = min_similarity or self.default_min_similarity
 
         query_parts = []
@@ -207,8 +209,8 @@ class VectorDBService:
             query_parts.append("AND modality = %s")
             query_params.append(filter["modality"])
 
-        query_parts.append("ORDER BY similarity DESC, videos.id ASC LIMIT %s")
-        query_params.append(page_limit)
+        query_parts.append("ORDER BY similarity DESC, videos.id ASC LIMIT %s OFFSET %s")
+        query_params.extend([limit, offset])
 
         try:
             query = "\n".join(query_parts)
@@ -224,9 +226,10 @@ class VectorDBService:
             raise e
 
     def find_similar_batch(
-        self, embeddings, filter=None, page_limit=None, min_similarity=None
+        self, embeddings, filter=None, page=0, limit=None, min_similarity=None
     ) -> list[dict[str, Any]]:
-        page_limit = page_limit or self.default_page_limit
+        limit = limit or self.default_page_limit
+        offset = limit * page
         min_similarity = min_similarity or self.default_min_similarity
 
         try:
@@ -275,9 +278,10 @@ class VectorDBService:
                 ORDER BY
                     similarity DESC,
                     videos.id ASC
-                LIMIT %s;
+                LIMIT %s
+                OFFSET %s;
             """
-            query_params.append(page_limit)
+            query_params.extend([limit, offset])
 
             with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(full_query, query_params)
