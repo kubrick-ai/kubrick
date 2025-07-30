@@ -347,6 +347,8 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     }
   }
 
+  
+
   vpc_config {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
@@ -355,4 +357,13 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
   timeout = 900 # 15 minutes timeout
 
   depends_on = [null_resource.lambda_build_sqs_embedding_task_consumer]
+}
+
+# trigger for the task consumer
+resource "aws_lambda_event_source_mapping" "sqs_embedding_task_consumer_trigger" {
+  event_source_arn = var.queue_arn
+  function_name    = aws_lambda_function.kubrick_sqs_embedding_task_consumer.arn
+  batch_size       = 10
+  
+  function_response_types = ["ReportBatchItemFailures"]
 }

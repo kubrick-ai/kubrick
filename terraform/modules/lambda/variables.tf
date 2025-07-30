@@ -143,3 +143,8 @@ variable "queue_url" {
   description = "The URL of the main SQS queue"
   type        = string
 }
+
+variable "queue_arn" {
+  description = "ARN of the SQS queue to trigger the embedding task consumer"
+  type        = string
+}

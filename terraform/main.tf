@@ -70,9 +70,11 @@ module "lambda" {
   vpc_id                                            = module.vpc_network.vpc_id
   s3_bucket_name                                    = module.s3.bucket_name
   queue_url                                         = module.sqs.queue_url
+  queue_arn                                         = module.sqs.queue_arn
+
 
   depends_on = [
-    module.rds, module.iam
+    module.rds, module.iam, module.sqs
   ]
 }
 
