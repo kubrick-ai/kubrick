@@ -19,6 +19,16 @@ resource "aws_s3_bucket_public_access_block" "kubrick_video_upload_bucket" {
   restrict_public_buckets = true
 }
 
+# S3 Lambda Permissions - allow kubrick_sqs_embedding_task_producer
+resource "aws_lambda_permission" "s3_invoke_embedding_task_producer" {
+  statement_id  = "AllowExecutionFromS3Bucket"
+  action        = "lambda:InvokeFunction"
+  function_name = var.kubrick_sqs_embedding_task_producer_function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = aws_s3_bucket.kubrick_video_upload_bucket.arn
+}
+
+
 # resource "aws_s3_object" "upload_videos" {
 #   for_each = fileset("${path.module}/videos", "**")
 #   bucket   = aws_s3_bucket.kubrick_video_upload_bucket.id

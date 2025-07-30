@@ -17,7 +17,18 @@ module "iam" {
 
 module "s3" {
   source = "./modules/s3"
+  kubrick_sqs_embedding_task_producer_function_name = module.lambda.kubrick_sqs_embedding_task_producer_function_name
 }
+
+module "s3_notifications" {
+  source = "./modules/s3_notifications"
+  bucket_name = module.s3.bucket_name
+  lambda_function_arn = module.lambda.kubrick_sqs_embedding_task_producer_arn
+  kubrick_sqs_embedding_task_producer_arn = module.lambda.kubrick_sqs_embedding_task_producer_arn
+  depends_on = [module.lambda]
+}
+
+
 
 module "rds" {
   source               = "./modules/rds"
@@ -50,7 +61,6 @@ module "lambda" {
   vpc_id                                            = module.vpc_network.vpc_id
   s3_bucket_name                                    = module.s3.bucket_name
   queue_url                                         = module.sqs.queue_url
-
   depends_on = [
     module.rds
   ]
