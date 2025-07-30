@@ -180,10 +180,7 @@ export const fetchVideos = async (
 };
 
 // React Query hook for videos
-export const useGetAndPrefetchVideos = (
-  page: number,
-  limit: number,
-) => {
+export const useGetAndPrefetchVideos = (page: number, limit: number) => {
   const queryClient = useQueryClient();
 
   const query = useQuery<VideosResponse, Error>({
@@ -193,21 +190,24 @@ export const useGetAndPrefetchVideos = (
   });
 
   useEffect(() => {
+    if (!query.data) return;
+
+    const totalPages = Math.ceil(query.data.metadata.total / limit);
 
     queryClient.prefetchQuery({
       queryKey: ["data", page, limit],
       queryFn: () => fetchVideos(page, limit),
     });
-
-    queryClient.prefetchQuery({
-      queryKey: ["data", page + 1, limit],
-      queryFn: () => fetchVideos(page + 1, limit),
-    });
-  }, [page, limit, queryClient]);
+    if (page + 1 < totalPages) {
+      queryClient.prefetchQuery({
+        queryKey: ["data", page + 1, limit],
+        queryFn: () => fetchVideos(page + 1, limit),
+      });
+    }
+  }, [query, page, limit, queryClient]);
 
   return query;
 };
-
 
 export const fetchTasks = async (
   page = 0,
@@ -238,18 +238,22 @@ export const useGetAndPrefetchTasks = (
   });
 
   useEffect(() => {
-    if (!isAccordionOpen) return;
+    if (!isAccordionOpen || !query.data) return;
+
+    const totalPages = Math.ceil(query.data.metadata.total / limit);
 
     queryClient.prefetchQuery({
       queryKey: ["data", page, limit],
       queryFn: () => fetchTasks(page, limit),
     });
 
-    queryClient.prefetchQuery({
-      queryKey: ["data", page + 1, limit],
-      queryFn: () => fetchTasks(page + 1, limit),
-    });
-  }, [page, limit, isAccordionOpen, queryClient]);
+    if (page + 1 < totalPages) {
+      queryClient.prefetchQuery({
+        queryKey: ["data", page + 1, limit],
+        queryFn: () => fetchTasks(page + 1, limit),
+      });
+    }
+  }, [query, page, limit, isAccordionOpen, queryClient]);
 
   return query;
 };
