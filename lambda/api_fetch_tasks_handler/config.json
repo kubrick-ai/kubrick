@@ -1,5 +1,5 @@
 {
-  "secret_name": "KubrickEmbeddingTaskConsumerSecret",
+  "secret_name": "kubrick_secret",
   "default_limit": 10,
   "max_limit": 50,
   "default_page": 0

@@ -1,4 +1,4 @@
 {
-  "presigned_url_expiry": 86400,
-  "secret_name": "KubrickEmbeddingTaskConsumerSecret"
+  "secret_name": "kubrick_secret",
+  "presigned_url_expiry": 86400
 }
