@@ -159,6 +159,13 @@ resource "aws_lambda_function" "kubrick_s3_delete_handler" {
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
   }
 
+  # avoid slow destroy operations caused by security group blocking
+  # see: https://github.com/hashicorp/terraform-provider-aws/issues/265#issuecomment-1462631019
+  lifecycle {
+    replace_triggered_by = [
+      aws_security_group.lambda_private_egress_all_sg.name
+    ]
+  }
   timeout = 900 # 15 minutes timeout
 }
 
@@ -187,6 +194,13 @@ resource "aws_lambda_function" "kubrick_api_fetch_videos_handler" {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
   }
+  # avoid slow destroy operations caused by security group blocking
+  # see: https://github.com/hashicorp/terraform-provider-aws/issues/265#issuecomment-1462631019
+  lifecycle {
+    replace_triggered_by = [
+      aws_security_group.lambda_private_egress_all_sg.name
+    ]
+  }
 
   timeout = 900 # 15 minutes timeout
 }
@@ -213,6 +227,13 @@ resource "aws_lambda_function" "kubrick_api_video_upload_link_handler" {
   vpc_config {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
+  }
+  # avoid slow destroy operations caused by security group blocking
+  # see: https://github.com/hashicorp/terraform-provider-aws/issues/265#issuecomment-1462631019
+  lifecycle {
+    replace_triggered_by = [
+      aws_security_group.lambda_private_egress_all_sg.name
+    ]
   }
 
   timeout = 900 # 15 minutes timeout
@@ -241,6 +262,13 @@ resource "aws_lambda_function" "kubrick_api_fetch_tasks_handler" {
   vpc_config {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
+  }
+  # avoid slow destroy operations caused by security group blocking
+  # see: https://github.com/hashicorp/terraform-provider-aws/issues/265#issuecomment-1462631019
+  lifecycle {
+    replace_triggered_by = [
+      aws_security_group.lambda_private_egress_all_sg.name
+    ]
   }
 
   timeout = 900 # 15 minutes timeout
@@ -274,6 +302,13 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
   }
+  # avoid slow destroy operations caused by security group blocking
+  # see: https://github.com/hashicorp/terraform-provider-aws/issues/265#issuecomment-1462631019
+  lifecycle {
+    replace_triggered_by = [
+      aws_security_group.lambda_private_egress_all_sg.name
+    ]
+  }
 
   timeout = 900 # 15 minutes timeout
 }
@@ -303,6 +338,13 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
   vpc_config {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
+  }
+  # avoid slow destroy operations caused by security group blocking
+  # see: https://github.com/hashicorp/terraform-provider-aws/issues/265#issuecomment-1462631019
+  lifecycle {
+    replace_triggered_by = [
+      aws_security_group.lambda_private_egress_all_sg.name
+    ]
   }
 
   timeout = 900 # 15 minutes timeout
