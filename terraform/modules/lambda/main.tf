@@ -255,7 +255,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
   environment {
     variables = {
       # TODO: PGHOST is not consistent
-      PGHOST               = var.db_host
+      DB_HOST              = var.db_host
       DEFAULT_CLIP_LENGTH  = var.clip_length
       EMBEDDING_MODEL_NAME = var.embedding_model
       QUEUE_URL            = var.queue_url

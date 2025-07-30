@@ -51,6 +51,11 @@ output "kubrick_api_fetch_tasks_handler_function_name" {
   value       = aws_lambda_function.kubrick_api_fetch_tasks_handler.function_name
 }
 
+output "kubrick_sqs_embedding_task_producer_function_name" {
+  description = "Function name of the kubrick_sqs_embedding_task_producer"
+  value       = aws_lambda_function.kubrick_sqs_embedding_task_producer.function_name
+}
+
 # Additional Lambda Function ARNs (for reference)
 output "kubrick_s3_delete_handler_arn" {
   description = "ARN of the kubrick_s3_delete_handler Lambda function"

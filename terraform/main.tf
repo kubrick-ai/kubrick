@@ -8,15 +8,23 @@ module "vpc_network" {
 module "iam" {
   source                   = "./modules/iam"
   secret_arn               = data.aws_secretsmanager_secret.kubrick_secrets.arn
-  s3_bucket_arn            = module.s3.bucket_arn
   environment              = local.env
   embedding_task_queue_arn = module.sqs.queue_arn
-
-  depends_on = [module.s3]
 }
 
 module "s3" {
   source = "./modules/s3"
+}
+
+module "s3_notifications" {
+  source = "./modules/s3_notifications"
+  # bucket_name          = module.s3.bucket_name
+  bucket_id            = module.s3.bucket_id
+  lambda_function_arn  = module.lambda.kubrick_sqs_embedding_task_producer_arn
+  lambda_function_name = module.lambda.kubrick_sqs_embedding_task_producer_function_name
+  bucket_arn           = module.s3.bucket_arn
+
+  depends_on = [module.lambda, module.s3]
 }
 
 module "rds" {
@@ -52,7 +60,7 @@ module "lambda" {
   queue_url                                         = module.sqs.queue_url
 
   depends_on = [
-    module.rds
+    module.rds, module.iam
   ]
 }
 

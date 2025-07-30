@@ -19,6 +19,8 @@ resource "aws_s3_bucket_public_access_block" "kubrick_video_upload_bucket" {
   restrict_public_buckets = true
 }
 
+
+
 # resource "aws_s3_object" "upload_videos" {
 #   for_each = fileset("${path.module}/videos", "**")
 #   bucket   = aws_s3_bucket.kubrick_video_upload_bucket.id
