@@ -171,7 +171,7 @@ export const useEmbedVideo = () => {
 
 export const fetchVideos = async (
   page = 0,
-  limit: number,
+  limit: number
 ): Promise<VideosResponse> => {
   const response = await axios.get(`${API_BASE}/videos`, {
     params: { page, limit },
@@ -191,7 +191,7 @@ export const useGetVideos = (page = 0, limit: number) =>
 
 export const fetchTasks = async (
   page = 0,
-  limit: number,
+  limit: number
 ): Promise<TasksResponse> => {
   const response = await axios.get(`${API_BASE}/tasks`, {
     params: { page, limit },
@@ -202,9 +202,15 @@ export const fetchTasks = async (
 };
 
 // React Query hook for tasks
-export const useGetTasks = (page = 0, limit: number) =>
+export const useGetTasks = (
+  page = 0,
+  limit: number,
+  isAccordionOpen: boolean
+) =>
   useQuery<TasksResponse, Error>({
     queryKey: ["data", page, limit],
     queryFn: () => fetchTasks(page, limit),
-    placeholderData: (prev) => prev, // Keeps old data during loading
+    placeholderData: (prev) => prev, // Keeps old data during loading,
+    refetchInterval: 5000,
+    enabled: isAccordionOpen,
   });

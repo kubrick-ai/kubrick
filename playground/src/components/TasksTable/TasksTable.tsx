@@ -19,6 +19,12 @@ import { toast } from "sonner";
 import { Task } from "@/types";
 import dayjs from "dayjs";
 import React from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface TasksListProps {
   tasks: Array<Task>;
@@ -57,46 +63,64 @@ const TasksTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tasks.map((task) => (
-              <TableRow key={task.id}>
-                <TableCell className="flex items-center gap-2">
-                  <span className="truncate max-w-[200px]">
-                    {task.sqs_message_id}
-                  </span>
-                  {task.sqs_message_id && (
-                    <button
-                      onClick={() =>
-                        handleCopy(
-                          task.sqs_message_id ? task.sqs_message_id : ""
-                        )
-                      }
-                      className="text-muted-foreground hover:text-foreground transition"
-                      aria-label="Copy SQS Message ID"
-                    >
-                      <IconCopy className="size-4" />
-                    </button>
-                  )}
-                </TableCell>
-                <TableCell className="truncate max-w-[200px]">{task.s3_bucket}</TableCell>
-                <TableCell className="truncate max-w-[200px]">{task.s3_key}</TableCell>
-                <TableCell className="truncate max-w-[200px]">
-                  {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
-                </TableCell>
-                <TableCell className="truncate max-w-[200px]">
-                  {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
-                </TableCell>
-                <TableCell className="flex items-center gap-2 truncate max-w-[200px]">
-                  {task.status === "completed" ? (
-                    <IconCircleCheckFilled className="size-4 fill-green-500 dark:fill-green-400" />
-                  ) : task.status === "processing" ? (
-                    <IconLoader className="size-4 animate-spin text-yellow-500" />
-                  ) : (
-                    <IconAlertCircleFilled className="size-4 text-red-400" />
-                  )}
-                  {task.status[0].toUpperCase() + task.status.slice(1)}
-                </TableCell>
-              </TableRow>
-            ))}
+            <TooltipProvider>
+              {tasks.map((task) => (
+                <TableRow key={task.id}>
+                  <TableCell className="flex items-center gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="truncate max-w-[200px]">
+                          {task.sqs_message_id}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>{task.sqs_message_id}</TooltipContent>
+                    </Tooltip>
+                    {task.sqs_message_id && (
+                      <button
+                        onClick={() =>
+                          handleCopy(
+                            task.sqs_message_id ? task.sqs_message_id : ""
+                          )
+                        }
+                        className="text-muted-foreground hover:text-foreground transition"
+                        aria-label="Copy SQS Message ID"
+                      >
+                        <IconCopy className="size-4" />
+                      </button>
+                    )}
+                  </TableCell>
+                  <TableCell className="truncate max-w-[200px]">
+                    {task.s3_bucket}
+                  </TableCell>
+                  <TableCell className="truncate max-w-[200px]">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          {task.s3_key}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>{task.s3_key}</TooltipContent>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell className="truncate max-w-[200px]">
+                    {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
+                  </TableCell>
+                  <TableCell className="truncate max-w-[200px]">
+                    {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
+                  </TableCell>
+                  <TableCell className="flex items-center gap-2 truncate max-w-[200px]">
+                    {task.status === "completed" ? (
+                      <IconCircleCheckFilled className="size-4 fill-green-500 dark:fill-green-400" />
+                    ) : task.status === "processing" ? (
+                      <IconLoader className="size-4 animate-spin text-yellow-500" />
+                    ) : (
+                      <IconAlertCircleFilled className="size-4 text-red-400" />
+                    )}
+                    {task.status[0].toUpperCase() + task.status.slice(1)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TooltipProvider>
           </TableBody>
         </Table>
       </div>
