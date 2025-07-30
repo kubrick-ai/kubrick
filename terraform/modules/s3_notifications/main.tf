@@ -1,12 +1,12 @@
 # S3 Lambda notification kubrick_sqs_embedding_task_producer
 resource "aws_s3_bucket_notification" "bucket_notification" {
-  bucket = var.bucket_name
+  bucket = var.bucket_id
 
   lambda_function {
     lambda_function_arn = var.lambda_function_arn
     events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = "videos/"  # Optional: only trigger for files in videos/ folder
-    filter_suffix       = ".mp4"    # Optional: only trigger for .mp4 files
+    # filter_prefix       = "videos/"  # Optional: only trigger for files in videos/ folder
+    # filter_suffix       = ".mp4"    # Optional: only trigger for .mp4 files
   }
 
   depends_on = [aws_lambda_permission.s3_invoke_lambda]
@@ -16,7 +16,8 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 resource "aws_lambda_permission" "s3_invoke_lambda" {
   statement_id  = "AllowExecutionFromS3Bucket"
   action        = "lambda:InvokeFunction"
-  function_name = var.lambda_function_arn
+  function_name = var.lambda_function_name
   principal     = "s3.amazonaws.com"
-  source_arn    = "arn:aws:s3:::${var.bucket_name}"
+  source_arn    = var.bucket_arn
+  # source_arn    = "arn:aws:s3:::${var.bucket_name}"
 }

@@ -16,6 +16,17 @@ module "s3" {
   source = "./modules/s3"
 }
 
+module "s3_notifications" {
+  source = "./modules/s3_notifications"
+  # bucket_name          = module.s3.bucket_name
+  bucket_id            = module.s3.bucket_id
+  lambda_function_arn  = module.lambda.kubrick_sqs_embedding_task_producer_arn
+  lambda_function_name = module.lambda.kubrick_sqs_embedding_task_producer_function_name
+  bucket_arn           = module.s3.bucket_arn
+
+  depends_on = [module.lambda, module.s3]
+}
+
 module "rds" {
   source               = "./modules/rds"
   db_username          = local.secrets.DB_USERNAME
@@ -47,6 +58,7 @@ module "lambda" {
   vpc_id                                            = module.vpc_network.vpc_id
   s3_bucket_name                                    = module.s3.bucket_name
   queue_url                                         = module.sqs.queue_url
+
   depends_on = [
     module.rds, module.iam
   ]
@@ -58,14 +70,6 @@ module "sqs" {
   enable_queue_policy     = true
   queue_policy_principals = ["arn:aws:iam::791237609017:root"]
   queue_policy_actions    = ["SQS:*"]
-}
-
-module "s3_notifications" {
-  source = "./modules/s3_notifications"
-  bucket_name = module.s3.bucket_name
-  lambda_function_arn = module.lambda.kubrick_sqs_embedding_task_producer_arn
-
-  depends_on = [module.lambda, module.s3]
 }
 
 module "api_gateway" {

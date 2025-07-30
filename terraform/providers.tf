@@ -1,6 +1,5 @@
 provider "aws" {
   region  = local.region
-  profile = "AdministratorAccess-791237609017-DanSinger"
 }
 
 terraform {
