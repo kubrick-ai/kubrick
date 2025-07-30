@@ -1,9 +1,0 @@
-{
-  "model_name": "Marengo-retrieval-2.7",
-  "video_embedding_scopes": ["clip", "video"],
-  "secret_name": "kubrick_secret",
-  "clip_length": 6,
-  "presigned_url_ttl": 600,
-  "file_check_retries": 2,
-  "file_check_delay_sec": 0.5
-}

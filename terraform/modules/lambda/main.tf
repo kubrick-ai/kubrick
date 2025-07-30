@@ -70,7 +70,9 @@ resource "aws_lambda_function" "kubrick_db_bootstrap" {
 
   environment {
     variables = {
-      DB_HOST = var.db_host
+      DB_HOST     = var.db_host
+      SECRET_NAME = "kubrick_secret"
+      LOG_LEVEL   = "INFO"
     }
   }
 
@@ -119,13 +121,15 @@ resource "aws_lambda_function" "kubrick_api_search_handler" {
 
   environment {
     variables = {
-      DB_HOST                = var.db_host
-      DB_PASSWORD            = var.db_password
-      DEFAULT_CLIP_LENGTH    = var.clip_length
-      DEFAULT_MIN_SIMILARITY = var.min_similarity
-      DEFAULT_PAGE_LIMIT     = var.page_limit
-      EMBEDDING_MODEL_NAME   = var.embedding_model
-      LOG_LEVEL              = "INFO"
+      DB_HOST                         = var.db_host
+      DB_PASSWORD                     = var.db_password
+      DEFAULT_CLIP_LENGTH             = var.clip_length
+      DEFAULT_MIN_SIMILARITY          = var.min_similarity
+      DEFAULT_PAGE_LIMIT              = var.page_limit
+      EMBEDDING_MODEL_NAME            = var.embedding_model
+      QUERY_MEDIA_FILE_SIZE_LIMIT     = var.query_media_file_size_limit
+      SECRET_NAME                     = "kubrick_secret"
+      LOG_LEVEL                       = "INFO"
     }
   }
 
@@ -154,7 +158,9 @@ resource "aws_lambda_function" "kubrick_s3_delete_handler" {
 
   environment {
     variables = {
-      DB_HOST = var.db_host
+      DB_HOST     = var.db_host
+      SECRET_NAME = "kubrick_secret"
+      LOG_LEVEL   = "INFO"
     }
   }
 
@@ -184,8 +190,10 @@ resource "aws_lambda_function" "kubrick_api_fetch_videos_handler" {
 
   environment {
     variables = {
-      DB_HOST   = var.db_host
-      LOG_LEVEL = "INFO"
+      DB_HOST                = var.db_host
+      PRESIGNED_URL_EXPIRY   = var.presigned_url_expiry
+      SECRET_NAME            = "kubrick_secret"
+      LOG_LEVEL              = "INFO"
     }
   }
 
@@ -244,7 +252,12 @@ resource "aws_lambda_function" "kubrick_api_fetch_tasks_handler" {
 
   environment {
     variables = {
-      DB_HOST = var.db_host
+      DB_HOST            = var.db_host
+      DEFAULT_TASK_LIMIT = var.default_task_limit
+      MAX_TASK_LIMIT     = var.max_task_limit
+      DEFAULT_TASK_PAGE  = var.default_task_page
+      SECRET_NAME        = "kubrick_secret"
+      LOG_LEVEL          = "INFO"
     }
   }
 
@@ -275,10 +288,16 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
   environment {
     variables = {
       # TODO: PGHOST is not consistent
-      DB_HOST              = var.db_host
-      DEFAULT_CLIP_LENGTH  = var.clip_length
-      EMBEDDING_MODEL_NAME = var.embedding_model
-      QUEUE_URL            = var.queue_url
+      DB_HOST                  = var.db_host
+      DEFAULT_CLIP_LENGTH      = var.clip_length
+      EMBEDDING_MODEL_NAME     = var.embedding_model
+      QUEUE_URL                = var.queue_url
+      PRESIGNED_URL_TTL        = var.presigned_url_ttl
+      FILE_CHECK_RETRIES       = var.file_check_retries
+      FILE_CHECK_DELAY_SEC     = var.file_check_delay_sec
+      VIDEO_EMBEDDING_SCOPES   = jsonencode(var.video_embedding_scopes)
+      SECRET_NAME              = "kubrick_secret"
+      LOG_LEVEL                = "INFO"
     }
   }
 
@@ -311,6 +330,8 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     variables = {
       DB_HOST     = var.db_host
       DB_PASSWORD = var.db_password
+      SECRET_NAME = "kubrick_secret"
+      LOG_LEVEL   = "INFO"
     }
   }
 

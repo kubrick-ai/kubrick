@@ -1,12 +1,15 @@
-from config import load_config, get_secret, setup_logging, get_db_config
+import os
+from config import get_secret, setup_logging, get_db_config
 import json
 import psycopg2
+
+# Environment variables
+SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
 
 
 def lambda_handler(event, context):
     logger = setup_logging()
-    config = load_config()
-    SECRET = get_secret(config)
+    SECRET = get_secret(SECRET_NAME)
     DB_CONFIG = get_db_config(SECRET)
 
     try:

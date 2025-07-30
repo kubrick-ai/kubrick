@@ -57,6 +57,15 @@ module "lambda" {
   min_similarity                                    = local.min_similarity
   page_limit                                        = local.page_limit
   clip_length                                       = local.clip_length
+  query_media_file_size_limit                       = local.query_media_file_size_limit
+  default_task_limit                                = local.default_task_limit
+  max_task_limit                                    = local.max_task_limit
+  default_task_page                                 = local.default_task_page
+  presigned_url_expiry                              = local.presigned_url_expiry
+  presigned_url_ttl                                 = local.presigned_url_ttl
+  file_check_retries                                = local.file_check_retries
+  file_check_delay_sec                              = local.file_check_delay_sec
+  video_embedding_scopes                            = local.video_embedding_scopes
   private_subnet_ids                                = module.vpc_network.private_subnet_ids
   vpc_id                                            = module.vpc_network.vpc_id
   s3_bucket_name                                    = module.s3.bucket_name

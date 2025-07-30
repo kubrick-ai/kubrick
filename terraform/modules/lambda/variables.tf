@@ -33,6 +33,51 @@ variable "embedding_model" {
   type        = string
 }
 
+variable "query_media_file_size_limit" {
+  description = "Maximum file size for media queries"
+  type        = number
+}
+
+variable "default_task_limit" {
+  description = "Default limit for task queries"
+  type        = number
+}
+
+variable "max_task_limit" {
+  description = "Maximum limit for task queries"
+  type        = number
+}
+
+variable "default_task_page" {
+  description = "Default page number for task queries"
+  type        = number
+}
+
+variable "presigned_url_expiry" {
+  description = "Expiry time for presigned URLs in seconds"
+  type        = number
+}
+
+variable "presigned_url_ttl" {
+  description = "TTL for presigned URLs in seconds"
+  type        = number
+}
+
+variable "file_check_retries" {
+  description = "Number of retries for file checks"
+  type        = number
+}
+
+variable "file_check_delay_sec" {
+  description = "Delay between file check retries in seconds"
+  type        = number
+}
+
+variable "video_embedding_scopes" {
+  description = "Scopes for video embeddings"
+  type        = list(string)
+}
+
 variable "private_subnet_ids" {
   description = "VPC private subnet ids"
   type        = list(string)

@@ -8,29 +8,14 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def load_config(config_path: str = "config.json") -> Dict[str, Any]:
-    """Load configuration from JSON file."""
-    try:
-        logger.info("Loading config from config.json...")
-        with open(config_path) as f:
-            config = json.load(f)
-        required_keys = ["secret_name"]
-        missing_keys = [key for key in required_keys if key not in config]
-        if missing_keys:
-            raise ValueError(f"Missing required keys from config: {missing_keys}")
-        return config
-    except FileNotFoundError:
-        logger.error(f"Config file not found: {config_path}")
-        raise
 
-
-def get_secret(config: Dict[str, Any], key: str = "secret_name") -> Dict[str, Any]:
+def get_secret(secret_name: str = "kubrick_secret") -> Dict[str, Any]:
     """Retrieve secret from AWS Secrets Manager."""
 
     try:
         logger.info("Retrieving secret...")
         secretsmanager = boto3.client("secretsmanager")
-        sm_response = secretsmanager.get_secret_value(SecretId=config[key])
+        sm_response = secretsmanager.get_secret_value(SecretId=secret_name)
         return json.loads(sm_response["SecretString"])
     except Exception as e:
         logger.error(f"Failed to retrieve secret: {e}")
