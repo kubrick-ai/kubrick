@@ -5,6 +5,8 @@ resource "aws_lambda_layer_version" "vectordb_layer" {
   compatible_architectures = ["x86_64"]
   filename                 = "${local.base_path}/layers/vector_database_layer/package.zip"
   description              = "Module for interacting with the PostgreSQL vector database"
+
+  depends_on = [null_resource.layer_build_vectordb]
 }
 
 resource "aws_lambda_layer_version" "embed_layer" {
@@ -13,6 +15,8 @@ resource "aws_lambda_layer_version" "embed_layer" {
   compatible_architectures = ["x86_64"]
   filename                 = "${local.base_path}/layers/embed_service_layer/package.zip"
   description              = "Multi-modal embedding extraction and management module using TwelveLabs API."
+
+  depends_on = [null_resource.layer_build_embed]
 }
 
 resource "aws_lambda_layer_version" "config_layer" {
@@ -21,6 +25,8 @@ resource "aws_lambda_layer_version" "config_layer" {
   compatible_architectures = ["x86_64"]
   filename                 = "${local.base_path}/layers/config_layer/package.zip"
   description              = "Configuration management module for secrets and database settings."
+
+  depends_on = [null_resource.layer_build_config]
 }
 
 resource "aws_lambda_layer_version" "utils_layer" {
@@ -29,6 +35,8 @@ resource "aws_lambda_layer_version" "utils_layer" {
   compatible_architectures = ["x86_64"]
   filename                 = "${local.base_path}/layers/response_utils_layer/package.zip"
   description              = "Utility module for error handling, S3 presigned URL generation, and API response construction."
+
+  depends_on = [null_resource.layer_build_utils]
 }
 
 # Security Group
@@ -72,6 +80,8 @@ resource "aws_lambda_function" "kubrick_db_bootstrap" {
   }
 
   timeout = 300 # 5 minutes timeout
+
+  depends_on = [null_resource.lambda_build_db_bootstrap]
 }
 
 resource "null_resource" "invoke_db_bootstrap" {
@@ -125,6 +135,8 @@ resource "aws_lambda_function" "kubrick_api_search_handler" {
   }
 
   timeout = 900 # 15 minutes timeout
+
+  depends_on = [null_resource.lambda_build_api_search_handler]
 }
 
 # kubrick_s3_delete_handler
@@ -152,6 +164,8 @@ resource "aws_lambda_function" "kubrick_s3_delete_handler" {
   }
 
   timeout = 900 # 15 minutes timeout
+
+  depends_on = [null_resource.lambda_build_s3_delete_handler]
 }
 
 # kubrick_api_fetch_videos_handler
@@ -181,6 +195,8 @@ resource "aws_lambda_function" "kubrick_api_fetch_videos_handler" {
   }
 
   timeout = 900 # 15 minutes timeout
+
+  depends_on = [null_resource.lambda_build_api_fetch_videos_handler]
 }
 
 # kubrick_api_video_upload_link_handler
@@ -208,6 +224,8 @@ resource "aws_lambda_function" "kubrick_api_video_upload_link_handler" {
   }
 
   timeout = 900 # 15 minutes timeout
+
+  depends_on = [null_resource.lambda_build_api_video_upload_link_handler]
 }
 
 # kubrick_api_fetch_tasks_handler
@@ -236,6 +254,8 @@ resource "aws_lambda_function" "kubrick_api_fetch_tasks_handler" {
   }
 
   timeout = 900 # 15 minutes timeout
+
+  depends_on = [null_resource.lambda_build_api_fetch_tasks_handler]
 }
 
 # kubrick_sqs_embedding_task_producer
@@ -268,6 +288,8 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
   }
 
   timeout = 900 # 15 minutes timeout
+
+  depends_on = [null_resource.lambda_build_sqs_embedding_task_producer]
 }
 
 # kubrick_sqs_embedding_task_consumer
@@ -298,4 +320,6 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
   }
 
   timeout = 900 # 15 minutes timeout
+
+  depends_on = [null_resource.lambda_build_sqs_embedding_task_consumer]
 }
