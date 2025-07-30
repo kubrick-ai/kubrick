@@ -1,12 +1,9 @@
-variable "kubrick_sqs_embedding_task_producer_arn" {
-  description = "ARN of the Lambda function to trigger"
+variable "bucket_name" {
+  description = "Name of the S3 bucket"
   type        = string
 }
 
-variable "bucket_name" {
-  type = string
-}
-
 variable "lambda_function_arn" {
-  type = string
+  description = "ARN of the Lambda function to trigger"
+  type        = string
 }
