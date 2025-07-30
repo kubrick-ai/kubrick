@@ -16,13 +16,16 @@ module "s3" {
   source = "./modules/s3"
 }
 
+# kubrick_sqs_embedding_task_producer_function
+# kubrick_s3_delete_handler_function
 module "s3_notifications" {
   source = "./modules/s3_notifications"
-  # bucket_name          = module.s3.bucket_name
-  bucket_id            = module.s3.bucket_id
-  lambda_function_arn  = module.lambda.kubrick_sqs_embedding_task_producer_arn
-  lambda_function_name = module.lambda.kubrick_sqs_embedding_task_producer_function_name
-  bucket_arn           = module.s3.bucket_arn
+  bucket_id                   = module.s3.bucket_id
+  create_lambda_function_arn  = module.lambda.kubrick_sqs_embedding_task_producer_arn
+  create_lambda_function_name = module.lambda.kubrick_sqs_embedding_task_producer_function_name
+  delete_lambda_function_arn  = module.lambda.kubrick_s3_delete_handler_arn
+  delete_lambda_function_name = module.lambda.kubrick_s3_delete_handler_function_name
+  bucket_arn                  = module.s3.bucket_arn
 
   depends_on = [module.lambda, module.s3]
 }

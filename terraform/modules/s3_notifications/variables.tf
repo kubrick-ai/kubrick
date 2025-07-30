@@ -1,15 +1,20 @@
-# variable "bucket_name" {
-#   description = "Name of the S3 bucket"
-#   type        = string
-# }
-
-variable "lambda_function_arn" {
-  description = "ARN of the Lambda function to trigger"
+variable "create_lambda_function_arn" {
+  description = "ARN of the kubrick_sqs_embedding_task_producer_function to trigger"
   type        = string
 }
 
-variable "lambda_function_name" {
-  description = "Function name"
+variable "create_lambda_function_name" {
+  description = "kubrick_sqs_embedding_task_producer_function name"
+  type        = string
+}
+
+variable "delete_lambda_function_arn" {
+  description = "ARN of the kubrick_s3_delete_handler_function to trigger"
+  type        = string
+}
+
+variable "delete_lambda_function_name" {
+  description = "kubrick_s3_delete_handler_function name"
   type        = string
 }
 
