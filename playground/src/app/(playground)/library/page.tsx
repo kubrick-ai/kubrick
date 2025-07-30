@@ -1,14 +1,14 @@
 "use client";
 
 import VideoList from "@/components/VideoList";
-import { useGetVideos } from "@/hooks/useKubrickAPI";
+import { useGetAndPrefetchVideos } from "@/hooks/useKubrickAPI";
 import { useState } from "react";
 
 const PAGE_LIMIT = 12;
 
 const Library = () => {
   const [page, setPage] = useState(1);
-  const { data, isLoading, error } = useGetVideos(page - 1, PAGE_LIMIT);
+  const { data, isLoading, error } = useGetAndPrefetchVideos(page - 1, PAGE_LIMIT);
   const videos = data?.data ?? [];
   const total = data?.metadata?.total ?? 0;
 

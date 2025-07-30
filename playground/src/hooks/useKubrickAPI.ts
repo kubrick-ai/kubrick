@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import {
@@ -167,8 +167,6 @@ export const useEmbedVideo = () => {
   };
 };
 
-///
-
 export const fetchVideos = async (
   page = 0,
   limit: number
@@ -182,12 +180,34 @@ export const fetchVideos = async (
 };
 
 // React Query hook for videos
-export const useGetVideos = (page = 0, limit: number) =>
-  useQuery<VideosResponse, Error>({
+export const useGetAndPrefetchVideos = (page: number, limit: number) => {
+  const queryClient = useQueryClient();
+
+  const query = useQuery<VideosResponse, Error>({
     queryKey: ["data", page, limit],
     queryFn: () => fetchVideos(page, limit),
-    placeholderData: (prev) => prev, // Keeps old data during loading
+    placeholderData: (prev) => prev,
   });
+
+  useEffect(() => {
+    if (!query.data) return;
+
+    const totalPages = Math.ceil(query.data.metadata.total / limit);
+
+    queryClient.prefetchQuery({
+      queryKey: ["data", page, limit],
+      queryFn: () => fetchVideos(page, limit),
+    });
+    if (page + 1 < totalPages) {
+      queryClient.prefetchQuery({
+        queryKey: ["data", page + 1, limit],
+        queryFn: () => fetchVideos(page + 1, limit),
+      });
+    }
+  }, [query, page, limit, queryClient]);
+
+  return query;
+};
 
 export const fetchTasks = async (
   page = 0,
@@ -202,15 +222,38 @@ export const fetchTasks = async (
 };
 
 // React Query hook for tasks
-export const useGetTasks = (
-  page = 0,
+export const useGetAndPrefetchTasks = (
+  page: number,
   limit: number,
   isAccordionOpen: boolean
-) =>
-  useQuery<TasksResponse, Error>({
+) => {
+  const queryClient = useQueryClient();
+
+  const query = useQuery<TasksResponse, Error>({
     queryKey: ["data", page, limit],
     queryFn: () => fetchTasks(page, limit),
-    placeholderData: (prev) => prev, // Keeps old data during loading,
+    placeholderData: (prev) => prev,
     refetchInterval: 5000,
     enabled: isAccordionOpen,
   });
+
+  useEffect(() => {
+    if (!isAccordionOpen || !query.data) return;
+
+    const totalPages = Math.ceil(query.data.metadata.total / limit);
+
+    queryClient.prefetchQuery({
+      queryKey: ["data", page, limit],
+      queryFn: () => fetchTasks(page, limit),
+    });
+
+    if (page + 1 < totalPages) {
+      queryClient.prefetchQuery({
+        queryKey: ["data", page + 1, limit],
+        queryFn: () => fetchTasks(page + 1, limit),
+      });
+    }
+  }, [query, page, limit, isAccordionOpen, queryClient]);
+
+  return query;
+};
