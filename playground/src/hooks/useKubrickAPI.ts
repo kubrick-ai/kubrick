@@ -7,6 +7,8 @@ import {
   SearchResult,
   VideosResponse,
   VideosResponseSchema,
+  TasksResponse,
+  TasksResponseSchema,
 } from "@/types";
 
 // TODO: Move to config?
@@ -184,5 +186,25 @@ export const useGetVideos = (page = 0, limit: number) =>
   useQuery<VideosResponse, Error>({
     queryKey: ["data", page, limit],
     queryFn: () => fetchVideos(page, limit),
+    placeholderData: (prev) => prev, // Keeps old data during loading
+  });
+
+export const fetchTasks = async (
+  page = 0,
+  limit: number,
+): Promise<TasksResponse> => {
+  const response = await axios.get(`${API_BASE}/tasks`, {
+    params: { page, limit },
+  });
+
+  const parsedTasks = TasksResponseSchema.parse(response.data);
+  return parsedTasks;
+};
+
+// React Query hook for tasks
+export const useGetTasks = (page = 0, limit: number) =>
+  useQuery<TasksResponse, Error>({
+    queryKey: ["data", page, limit],
+    queryFn: () => fetchTasks(page, limit),
     placeholderData: (prev) => prev, // Keeps old data during loading
   });

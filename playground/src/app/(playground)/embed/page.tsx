@@ -12,8 +12,17 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import TasksTable from "@/components/TasksTable";
+import { useEmbedVideo, useGetTasks } from "@/hooks/useKubrickAPI";
+import { useState } from "react";
 
-import { useEmbedVideo } from "@/hooks/useKubrickAPI";
+const PAGE_LIMIT = 10;
 
 const embedFormSchema = z.object({
   video_url: z.string().url("Please enter a valid URL"),
@@ -26,6 +35,10 @@ const Embed = () => {
     resolver: zodResolver(embedFormSchema),
     defaultValues: { video_url: "" },
   });
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error } = useGetTasks(page - 1, PAGE_LIMIT);
+  const tasks = data?.data ?? [];
+  const total = data?.metadata?.total ?? 0;
 
   const {
     submitVideo,
@@ -42,7 +55,7 @@ const Embed = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="px-6">
       <h1 className="text-2xl font-bold mb-6">Playground - Embed</h1>
 
       <Form {...form}>
@@ -54,9 +67,10 @@ const Embed = () => {
             control={form.control}
             name="video_url"
             render={({ field }) => (
-              <FormItem className="flex-1">
+              <FormItem>
                 <FormControl>
                   <Input
+                    className="min-w-90"
                     placeholder="Paste video URL (e.g. from S3)"
                     {...field}
                   />
@@ -106,6 +120,34 @@ const Embed = () => {
           </div>
         </div>
       )}
+
+      {/* Embedding tasks table accordion */}
+      <div className="w-full">
+        <Accordion type="single" collapsible className="w-full" defaultValue="">
+          <AccordionItem value="embedding-tasks-table" className="w-full">
+            <AccordionTrigger className="w-full">Embedding Tasks</AccordionTrigger>
+            <AccordionContent className="w-full flex flex-col gap-4 text-balance">
+              {isLoading && <p>Loading embedding tasks...</p>}
+              {error && (
+                <p className="text-red-500">
+                  Error loading embedding tasks: {error.message}
+                </p>
+              )}
+              {tasks && tasks.length > 0 ? (
+                <TasksTable
+                  tasks={tasks}
+                  page={page}
+                  totalTasks={total}
+                  perPage={PAGE_LIMIT}
+                  onPageChange={setPage}
+                ></TasksTable>
+              ) : (
+                !isLoading && <p>No tasks found.</p>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
     </div>
   );
 };
