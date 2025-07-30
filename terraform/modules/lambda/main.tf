@@ -124,6 +124,14 @@ resource "aws_lambda_function" "kubrick_api_search_handler" {
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
   }
 
+  # avoid slow destroy operations caused by security group blocking
+  # see: https://github.com/hashicorp/terraform-provider-aws/issues/265#issuecomment-1462631019
+  lifecycle {
+    replace_triggered_by = [
+      aws_security_group.lambda_private_egress_all_sg.name
+    ]
+  }
+
   timeout = 900 # 15 minutes timeout
 }
 
