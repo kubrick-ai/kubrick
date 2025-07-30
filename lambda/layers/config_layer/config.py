@@ -60,7 +60,7 @@ def get_db_config(secret: Dict[str, Any]) -> Dict[str, Any]:
     Environment Variables:
         DB_HOST     : Database host, defaults to localhost
         DB_NAME     : Database name, defaults to kubrick
-        DB_USER     : Database user, defaults to postgres
+        DB_USERNAME : Database user, defaults to postgres
         DB_PASSWORD : Database password, defaults to password
         DB_PORT     : Database port, defaults to 5432
     """
@@ -68,7 +68,7 @@ def get_db_config(secret: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "host": os.getenv("DB_HOST", "localhost"),
         "database": os.getenv("DB_NAME", "kubrick"),
-        "user": os.getenv("DB_USER", "postgres"),
+        "user": secret.get("DB_USERNAME", os.getenv("DB_USERNAME", "postgres")),
         "password": secret.get("DB_PASSWORD", os.getenv("DB_PASSWORD", "password")),
         "port": int(os.getenv("DB_PORT", 5432)),
     }
