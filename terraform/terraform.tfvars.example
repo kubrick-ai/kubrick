@@ -4,5 +4,5 @@
 # AWS Region - Update to match where your secrets and resources should be deployed
 aws_region = "ap-northeast-2"  # or us-east-1, us-west-2, etc.
 
-# Secrets Manager - Name of your secret containing API keys and RDS credentials  
-secrets_manager_name = "kubrick_secrets"
+# Secrets Manager - Name of your secret containing API keys and RDS credentials
+secrets_manager_name = "kubrick_secret"
