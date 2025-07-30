@@ -127,15 +127,15 @@ resource "aws_lambda_function" "kubrick_api_search_handler" {
 
   environment {
     variables = {
-      DB_HOST                         = var.db_host
-      DB_PASSWORD                     = var.db_password
-      DEFAULT_CLIP_LENGTH             = var.clip_length
-      DEFAULT_MIN_SIMILARITY          = var.min_similarity
-      DEFAULT_PAGE_LIMIT              = var.page_limit
-      EMBEDDING_MODEL_NAME            = var.embedding_model
-      QUERY_MEDIA_FILE_SIZE_LIMIT     = var.query_media_file_size_limit
-      SECRET_NAME                     = "kubrick_secret"
-      LOG_LEVEL                       = "INFO"
+      DB_HOST                     = var.db_host
+      DB_PASSWORD                 = var.db_password
+      DEFAULT_CLIP_LENGTH         = var.clip_length
+      DEFAULT_MIN_SIMILARITY      = var.min_similarity
+      DEFAULT_PAGE_LIMIT          = var.page_limit
+      EMBEDDING_MODEL_NAME        = var.embedding_model
+      QUERY_MEDIA_FILE_SIZE_LIMIT = var.query_media_file_size_limit
+      SECRET_NAME                 = "kubrick_secret"
+      LOG_LEVEL                   = "INFO"
     }
   }
 
@@ -198,10 +198,10 @@ resource "aws_lambda_function" "kubrick_api_fetch_videos_handler" {
 
   environment {
     variables = {
-      DB_HOST                = var.db_host
-      PRESIGNED_URL_EXPIRY   = var.presigned_url_expiry
-      SECRET_NAME            = "kubrick_secret"
-      LOG_LEVEL              = "INFO"
+      DB_HOST              = var.db_host
+      PRESIGNED_URL_EXPIRY = var.presigned_url_expiry
+      SECRET_NAME          = "kubrick_secret"
+      LOG_LEVEL            = "INFO"
     }
   }
 
@@ -298,17 +298,16 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
 
   environment {
     variables = {
-      # TODO: PGHOST is not consistent
-      DB_HOST                  = var.db_host
-      DEFAULT_CLIP_LENGTH      = var.clip_length
-      EMBEDDING_MODEL_NAME     = var.embedding_model
-      QUEUE_URL                = var.queue_url
-      PRESIGNED_URL_TTL        = var.presigned_url_ttl
-      FILE_CHECK_RETRIES       = var.file_check_retries
-      FILE_CHECK_DELAY_SEC     = var.file_check_delay_sec
-      VIDEO_EMBEDDING_SCOPES   = jsonencode(var.video_embedding_scopes)
-      SECRET_NAME              = "kubrick_secret"
-      LOG_LEVEL                = "INFO"
+      DB_HOST                = var.db_host
+      DEFAULT_CLIP_LENGTH    = var.clip_length
+      EMBEDDING_MODEL_NAME   = var.embedding_model
+      QUEUE_URL              = var.queue_url
+      PRESIGNED_URL_TTL      = var.presigned_url_ttl
+      FILE_CHECK_RETRIES     = var.file_check_retries
+      FILE_CHECK_DELAY_SEC   = var.file_check_delay_sec
+      VIDEO_EMBEDDING_SCOPES = jsonencode(var.video_embedding_scopes)
+      SECRET_NAME            = "kubrick_secret"
+      LOG_LEVEL              = "INFO"
     }
   }
 
@@ -347,7 +346,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     }
   }
 
-  
+
 
   vpc_config {
     subnet_ids         = var.private_subnet_ids
@@ -364,6 +363,7 @@ resource "aws_lambda_event_source_mapping" "sqs_embedding_task_consumer_trigger"
   event_source_arn = var.queue_arn
   function_name    = aws_lambda_function.kubrick_sqs_embedding_task_consumer.arn
   batch_size       = 10
-  
+
   function_response_types = ["ReportBatchItemFailures"]
 }
+
