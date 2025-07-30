@@ -36,7 +36,12 @@ const Embed = () => {
     defaultValues: { video_url: "" },
   });
   const [page, setPage] = useState(1);
-  const { data, isLoading, error } = useGetTasks(page - 1, PAGE_LIMIT);
+  const [isAccordionOpen, setIsAccordionOpen] = useState(false);
+  const { data, isLoading, error } = useGetTasks(
+    page - 1,
+    PAGE_LIMIT,
+    isAccordionOpen
+  );
   const tasks = data?.data ?? [];
   const total = data?.metadata?.total ?? 0;
 
@@ -52,6 +57,10 @@ const Embed = () => {
   const onSubmit = (values: EmbedForm) => {
     submitVideo(values.video_url);
     form.reset();
+  };
+
+  const onClick = () => {
+    setIsAccordionOpen(!isAccordionOpen);
   };
 
   return (
@@ -123,9 +132,17 @@ const Embed = () => {
 
       {/* Embedding tasks table accordion */}
       <div className="w-full">
-        <Accordion type="single" collapsible className="w-full" defaultValue="">
+        <Accordion
+          type="single"
+          collapsible
+          className="w-full"
+          defaultValue=""
+          onClick={onClick}
+        >
           <AccordionItem value="embedding-tasks-table" className="w-full">
-            <AccordionTrigger className="w-full">Embedding Tasks</AccordionTrigger>
+            <AccordionTrigger className="w-full">
+              Embedding Tasks
+            </AccordionTrigger>
             <AccordionContent className="w-full flex flex-col gap-4 text-balance">
               {isLoading && <p>Loading embedding tasks...</p>}
               {error && (
