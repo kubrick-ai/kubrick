@@ -19,7 +19,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import TasksTable from "@/components/TasksTable";
-import { useEmbedVideo, useGetTasks } from "@/hooks/useKubrickAPI";
+import { useEmbedVideo, useGetAndPrefetchTasks } from "@/hooks/useKubrickAPI";
 import { useState } from "react";
 
 const PAGE_LIMIT = 10;
@@ -37,7 +37,7 @@ const Embed = () => {
   });
   const [page, setPage] = useState(1);
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
-  const { data, isLoading, error } = useGetTasks(
+  const { data, isLoading, error } = useGetAndPrefetchTasks(
     page - 1,
     PAGE_LIMIT,
     isAccordionOpen
