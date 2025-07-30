@@ -106,8 +106,8 @@ def lambda_handler(event, context):
             s3,
             bucket,
             key,
-            config["file_check_retries"],
-            config["file_check_delay_sec"],
+            FILE_CHECK_RETRIES,
+            FILE_CHECK_DELAY_SEC,
             logger,
         ):
             raise FileNotFoundError(f"File s3://{bucket}/{key} not found after retries")
@@ -115,10 +115,10 @@ def lambda_handler(event, context):
         presigned_url = s3.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=config["presigned_url_ttl"],
+            ExpiresIn=PRESIGNED_URL_TTL,
         )
         logger.info(
-            f"Presigned URL generated (expires in {config['presigned_url_ttl']} seconds)"
+            f"Presigned URL generated (expires in {PRESIGNED_URL_TTL} seconds)"
         )
 
         task_id = embed_service.create_embedding_request(url=presigned_url).id
