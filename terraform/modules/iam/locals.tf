@@ -34,14 +34,14 @@ locals {
 
   # IAM Roles and their policies
   lambda_role_policies = {
-    kubrick_db_bootstrap                  = ["lambda_basic_execution", "secrets_access", "lambda_vpc_access"]
-    kubrick_s3_delete_handler             = ["s3_full_access", "lambda_basic_execution", "secrets_access", "lambda_vpc_access"]
-    kubrick_api_search_handler            = ["s3_readonly_access", "lambda_basic_execution", "secrets_access", "lambda_vpc_access"]
-    kubrick_api_fetch_videos_handler      = ["s3_readonly_access", "lambda_basic_execution", "secrets_access", "lambda_vpc_access"]
-    kubrick_api_video_upload_link_handler = ["s3_full_access", "lambda_basic_execution", "lambda_vpc_access"]
-    kubrick_api_fetch_tasks_handler       = ["lambda_basic_execution", "secrets_access", "lambda_vpc_access"]
-    kubrick_sqs_embedding_task_producer   = ["s3_full_access", "lambda_basic_execution", "secrets_access", "sqs_full_access", "lambda_vpc_access"]
-    kubrick_sqs_embedding_task_consumer   = ["lambda_sqs_execution", "secrets_access", "lambda_vpc_access"]
+    kubrick_db_bootstrap                  = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access"]
+    kubrick_s3_delete_handler             = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_full_access"]
+    kubrick_api_search_handler            = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_readonly_access"]
+    kubrick_api_fetch_videos_handler      = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_readonly_access"]
+    kubrick_api_video_upload_link_handler = ["lambda_basic_execution", "lambda_vpc_access", "s3_full_access"]
+    kubrick_api_fetch_tasks_handler       = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access"]
+    kubrick_sqs_embedding_task_producer   = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_full_access", "sqs_full_access"]
+    kubrick_sqs_embedding_task_consumer   = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "lambda_sqs_execution"]
   }
 
   # Merge managed + custom policy ARNs
