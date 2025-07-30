@@ -55,7 +55,7 @@ const Embed = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="px-6">
       <h1 className="text-2xl font-bold mb-6">Playground - Embed</h1>
 
       <Form {...form}>
@@ -122,11 +122,11 @@ const Embed = () => {
       )}
 
       {/* Embedding tasks table accordion */}
-      <div className="pt-3">
+      <div className="w-full">
         <Accordion type="single" collapsible className="w-full" defaultValue="">
-          <AccordionItem value="embedding-tasks-table">
-            <AccordionTrigger>Embedding Tasks</AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-4 text-balance">
+          <AccordionItem value="embedding-tasks-table" className="w-full">
+            <AccordionTrigger className="w-full">Embedding Tasks</AccordionTrigger>
+            <AccordionContent className="w-full flex flex-col gap-4 text-balance">
               {isLoading && <p>Loading embedding tasks...</p>}
               {error && (
                 <p className="text-red-500">

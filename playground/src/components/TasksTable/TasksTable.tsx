@@ -44,58 +44,64 @@ const TasksTable = ({
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>SQS Message ID</TableHead>
-            <TableHead>S3 Bucket</TableHead>
-            <TableHead>S3 Key</TableHead>
-            <TableHead>Created At</TableHead>
-            <TableHead>Updated At</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tasks.map((task) => (
-            <TableRow key={task.id}>
-              <TableCell className="flex items-center gap-2">
-                <span className="truncate max-w-[200px]">
-                  {task.sqs_message_id}
-                </span>
-                {task.sqs_message_id && (
-                  <button
-                    onClick={() =>
-                      handleCopy(task.sqs_message_id ? task.sqs_message_id : "")
-                    }
-                    className="text-muted-foreground hover:text-foreground transition"
-                    aria-label="Copy SQS Message ID"
-                  >
-                    <IconCopy className="size-4" />
-                  </button>
-                )}
-              </TableCell>
-              <TableCell>{task.s3_bucket}</TableCell>
-              <TableCell>{task.s3_key}</TableCell>
-              <TableCell>
-                {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
-              </TableCell>
-              <TableCell>
-                {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
-              </TableCell>
-              <TableCell className="flex items-center gap-2">
-                {task.status === "completed" ? (
-                  <IconCircleCheckFilled className="size-4 fill-green-500 dark:fill-green-400" />
-                ) : task.status === "processing" ? (
-                  <IconLoader className="size-4 animate-spin text-yellow-500" />
-                ) : (
-                  <IconAlertCircleFilled className="size-4 text-red-400" />
-                )}
-                {task.status[0].toUpperCase() + task.status.slice(1)}
-              </TableCell>
+      <div>
+        <Table className="w-full table-fixed min-h-[400px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[180px]">SQS Message ID</TableHead>
+              <TableHead className="w-[200px]">S3 Bucket</TableHead>
+              <TableHead className="w-[250px]">S3 Key</TableHead>
+              <TableHead className="w-[180px]">Created At</TableHead>
+              <TableHead className="w-[180px]">Updated At</TableHead>
+              <TableHead className="w-[150px]">Status</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {tasks.map((task) => (
+              <TableRow key={task.id}>
+                <TableCell className="flex items-center gap-2">
+                  <span className="truncate max-w-[200px]">
+                    {task.sqs_message_id}
+                  </span>
+                  {task.sqs_message_id && (
+                    <button
+                      onClick={() =>
+                        handleCopy(
+                          task.sqs_message_id ? task.sqs_message_id : ""
+                        )
+                      }
+                      className="text-muted-foreground hover:text-foreground transition"
+                      aria-label="Copy SQS Message ID"
+                    >
+                      <IconCopy className="size-4" />
+                    </button>
+                  )}
+                </TableCell>
+                <TableCell className="truncate max-w-[200px]">{task.s3_bucket}</TableCell>
+                <TableCell className="truncate max-w-[200px]">{task.s3_key}</TableCell>
+                <TableCell className="truncate max-w-[200px]">
+                  {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
+                </TableCell>
+                <TableCell className="truncate max-w-[200px]">
+                  {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
+                </TableCell>
+                <TableCell className="flex items-center gap-2 truncate max-w-[200px]">
+                  {task.status === "completed" ? (
+                    <IconCircleCheckFilled className="size-4 fill-green-500 dark:fill-green-400" />
+                  ) : task.status === "processing" ? (
+                    <IconLoader className="size-4 animate-spin text-yellow-500" />
+                  ) : (
+                    <IconAlertCircleFilled className="size-4 text-red-400" />
+                  )}
+                  {task.status[0].toUpperCase() + task.status.slice(1)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination controls */}
       <div className="mt-6 flex justify-center items-center gap-4">
         <Button
           variant="outline"
