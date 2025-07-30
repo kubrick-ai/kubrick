@@ -148,3 +148,4 @@ variable "queue_arn" {
   description = "ARN of the SQS queue to trigger the embedding task consumer"
   type        = string
 }
+
