@@ -40,7 +40,7 @@ aws secretsmanager create-secret \
     --description "Secret store for Kubrick application" \
     --secret-string '{
         "DB_USERNAME": <db_username>,
-        "DB_PASSWORD": <db_password>
+        "DB_PASSWORD": <db_password>,
         "TWELVELABS_API_KEY": <twelvelabs_API_key>
     }'
 ```
@@ -59,4 +59,3 @@ aws secretsmanager create-secret \
    AWS region and provision the architecture:
 
 // TODO
-
