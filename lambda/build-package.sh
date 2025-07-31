@@ -33,5 +33,8 @@ find ${TARGET_DIR} -type d -name "__pycache__" -exec rm -rf {} +
 find ${TARGET_DIR} -type f -name "*.pyc" -delete
 find ${TARGET_DIR} -type f -name "*.DS_Store" -delete
 
+# Make builds more deterministic by setting consistent timestamps
+find ${TARGET_DIR} -type f -exec touch -t 202101010000 {} +
+
 echo "Dependencies and source files installed in ${TARGET_DIR}/ directory"
 

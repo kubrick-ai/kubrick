@@ -16,8 +16,7 @@ DEFAULT_PAGE_LIMIT = os.getenv("DEFAULT_PAGE_LIMIT", 10)
 DEFAULT_MIN_SIMILARITY = os.getenv("DEFAULT_MIN_SIMILARITY", 0.2)
 
 
-# TODO: Refactor this class to only handle operations related to vectors
-# TODO: Create a new class to handle video metadata, tasks and query records
+# TODO: Create a new class to handle non-vector db operations, allow for relational + vector DB architecture.
 class VectorDBService:
     def __init__(
         self,

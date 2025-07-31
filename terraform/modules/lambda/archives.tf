@@ -113,8 +113,7 @@ resource "null_resource" "build_package" {
 }
 
 data "archive_file" "packages" {
-  for_each   = local.lambda_configs
-  depends_on = [null_resource.build_package]
+  for_each = local.lambda_configs
 
   type        = "zip"
   output_path = "${local.base_path}/${each.value.path}/package.zip"

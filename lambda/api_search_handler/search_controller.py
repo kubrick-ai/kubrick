@@ -81,6 +81,7 @@ class SearchController:
         self.logger = logger
 
     def parse_lambda_event(self, event) -> SearchRequest:
+        # Lambda event body must be passed as binary data
         try:
             self.logger.info("Starting multipart parsing")
 
