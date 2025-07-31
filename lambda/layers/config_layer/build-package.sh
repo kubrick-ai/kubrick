@@ -3,6 +3,9 @@ set -e
 
 PACKAGE_NAME="package"
 
+# Fixed timestamp for reproducible builds
+FIXED_TIMESTAMP="202001010000"
+
 # Clean previous builds
 rm -rf python ${PACKAGE_NAME}.zip ${PACKAGE_NAME}/ *.egg-info/ build/
 
@@ -15,8 +18,16 @@ uv pip install --target python/ --python-platform x86_64-unknown-linux-gnu --pyt
 # Copy Python source files to package directory
 cp *.py python/
 
+# Remove common non-essential files
+find python -type d -name "__pycache__" -exec rm -rf {} +
+find python -type f -name "*.pyc" -delete
+find python -type f -name "*.DS_Store" -delete
+
+# Set consistent timestamps for all files
+find python -exec touch -h -t ${FIXED_TIMESTAMP} {} +
+
 # Create a zip file containing everything from the package directory at the zip root
-zip -r ${PACKAGE_NAME}.zip python/
+find python -type f | LC_ALL=C sort | zip -X -@ ${PACKAGE_NAME}.zip
 
 # Clean up the temporary package directory
 rm -rf python
