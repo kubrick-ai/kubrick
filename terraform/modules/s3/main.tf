@@ -53,6 +53,8 @@ resource "aws_s3_bucket_policy" "kubrick_video_upload_bucket_policy" {
       }
     ]
   })
+
+  depends_on = [aws_s3_bucket_public_access_block.kubrick_video_upload_bucket]
 }
 
 # Public s3 bucket that hosts the playground frontend static files
@@ -105,5 +107,28 @@ resource "aws_s3_bucket_website_configuration" "kubrick_playground_bucket" {
 
   error_document {
     key = "index.html"
+  }
+}
+
+
+resource "null_resource" "upload_static_site" {
+  depends_on = [
+    aws_s3_bucket_website_configuration.kubrick_playground_bucket,
+    var.api_gateway_write_done
+  ]
+
+  triggers = {
+    bucket_name = aws_s3_bucket.kubrick_playground_bucket.bucket
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+bash -c '
+set -e
+cd ${path.root}/../playground
+npm run build
+aws s3 sync out/ s3://${self.triggers.bucket_name} --delete
+'
+EOT
   }
 }
