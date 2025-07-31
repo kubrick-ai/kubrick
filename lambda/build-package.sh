@@ -3,22 +3,22 @@ set -e
 
 # Determine if this is a layer (has python/) or function (has package/)
 if [ -f "pyproject.toml" ]; then
-    # Check if we're in a layer directory
-    if [[ $(pwd) == *"/layers/"* ]]; then
-        TARGET_DIR="python"
-    else
-        TARGET_DIR="package"
-    fi
+  # Check if we're in a layer directory
+  if [[ $(pwd) == *"/layers/"* ]]; then
+    TARGET_DIR="package/python"
+  else
+    TARGET_DIR="package"
+  fi
 else
-    echo "No pyproject.toml found"
-    exit 1
+  echo "No pyproject.toml found"
+  exit 1
 fi
 
 # Clean previous builds
-rm -rf ${TARGET_DIR} *.egg-info/ build/
+rm -rf package *.egg-info/ build/
 
 # Create target directory
-mkdir ${TARGET_DIR}
+mkdir -p ${TARGET_DIR}
 
 # Install dependencies
 uv pip install --target ${TARGET_DIR}/ --python-platform x86_64-unknown-linux-gnu --python-version 3.13 --python python3.13 .
@@ -34,3 +34,4 @@ find ${TARGET_DIR} -type f -name "*.pyc" -delete
 find ${TARGET_DIR} -type f -name "*.DS_Store" -delete
 
 echo "Dependencies and source files installed in ${TARGET_DIR}/ directory"
+
