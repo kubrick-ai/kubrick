@@ -1,6 +1,7 @@
 import logging
 import os
 import boto3
+import uuid
 from response_utils import ErrorCode, build_success_response, build_error_response
 
 logger = logging.getLogger()
@@ -24,13 +25,6 @@ CONTENT_TYPE_MAPPING = {
     ".ts": "video/mp2t",
     ".mxf": "application/mxf",
 }
-
-
-def sanitize_filename(filename):
-    sanitized = filename.replace("../", "").replace("..\\", "")
-    sanitized = os.path.basename(sanitized)
-    sanitized = "".join(c for c in sanitized if c.isalnum() or c in ".-_")
-    return sanitized
 
 
 def get_file_extension(filename):
@@ -65,19 +59,7 @@ def lambda_handler(event, context):
                 error_code=ErrorCode.INVALID_REQUEST,
             )
 
-        # Sanitize filename to prevent path traversal
-        sanitized_filename = sanitize_filename(filename)
-        if not sanitized_filename:
-            logger.error("Invalid filename after sanitization")
-            return build_error_response(
-                status_code=400,
-                message="Invalid filename",
-                error_code=ErrorCode.INVALID_REQUEST,
-            )
-
-        logger.info(f"Processing filename: {filename} -> {sanitized_filename}")
-
-        file_extension = get_file_extension(sanitized_filename)
+        file_extension = get_file_extension(filename)
         if not is_valid_file_extension(file_extension):
             valid_extensions = "\n".join(sorted(list(CONTENT_TYPE_MAPPING.keys())))
             message = f"Invalid video file extension: {file_extension}.\nValid extensions: {valid_extensions},"
@@ -85,18 +67,18 @@ def lambda_handler(event, context):
             return build_error_response(status_code=400, message=message)
 
         bucket_name = os.environ.get("S3_BUCKET_NAME")
-        object_key = sanitized_filename
+        unique_key = f"uploads/{uuid.uuid4()}/{filename}"
         expiration = int(os.environ.get("PRESIGNED_URL_EXPIRATION", 3600))
 
         logger.info(
-            f"Generating presigned URL for bucket: {bucket_name}, key: {object_key}"
+            f"Generating presigned URL for bucket: {bucket_name}, key: {unique_key}"
         )
 
         presigned_url = s3_client.generate_presigned_url(
             "put_object",
             Params={
                 "Bucket": bucket_name,
-                "Key": object_key,
+                "Key": unique_key,
                 "ContentType": get_content_type(file_extension),
             },
             ExpiresIn=expiration,
@@ -107,7 +89,7 @@ def lambda_handler(event, context):
         return build_success_response(
             data={
                 "presigned_url": presigned_url,
-                "filename": sanitized_filename,
+                "filename": filename,
                 "file_extension": file_extension,
                 "expires_in_seconds": expiration,
                 "upload_method": "PUT",
