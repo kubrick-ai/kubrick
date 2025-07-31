@@ -42,6 +42,7 @@ module "rds" {
 
 module "lambda" {
   source                                            = "./modules/lambda"
+  aws_region                                        = local.region
   lambda_iam_db_bootstrap_role_arn                  = module.iam.db_bootstrap_role_arn
   lambda_iam_s3_delete_handler_role_arn             = module.iam.s3_delete_handler_role_arn
   lambda_iam_api_search_handler_role_arn            = module.iam.api_search_handler_role_arn

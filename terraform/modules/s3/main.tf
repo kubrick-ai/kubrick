@@ -5,7 +5,7 @@ resource "random_id" "bucket_suffix" {
 
 # S3 Bucket with UUID-based naming
 resource "aws_s3_bucket" "kubrick_video_upload_bucket" {
-  bucket = "kubrick-video-library-${random_id.bucket_suffix.hex}"
+  bucket        = "kubrick-video-library-${random_id.bucket_suffix.hex}"
   force_destroy = true
 }
 
@@ -30,6 +30,29 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
 
     bucket_key_enabled = true
   }
+}
+
+# S3 Bucket Policy to allow presigned URL access
+resource "aws_s3_bucket_policy" "kubrick_video_upload_bucket_policy" {
+  bucket = aws_s3_bucket.kubrick_video_upload_bucket.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowPresignedURLAccess"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.kubrick_video_upload_bucket.arn}/*"
+        Condition = {
+          StringEquals = {
+            "s3:authType" = "REST-QUERY-STRING"
+          }
+        }
+      }
+    ]
+  })
 }
 
 # Public s3 bucket that hosts the playground frontend static files
@@ -84,4 +107,3 @@ resource "aws_s3_bucket_website_configuration" "kubrick_playground_bucket" {
     key = "index.html"
   }
 }
-
