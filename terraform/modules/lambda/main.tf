@@ -3,8 +3,8 @@ resource "aws_lambda_layer_version" "vector_database_layer" {
   layer_name               = "vector_database_layer"
   compatible_runtimes      = ["python3.13"]
   compatible_architectures = ["x86_64"]
-  filename                 = data.archive_file.packages["vector_database_layer"].output_path
-  source_code_hash         = data.archive_file.packages["vector_database_layer"].output_base64sha256
+  filename                 = data.archive_file.vector_database_layer.output_path
+  source_code_hash         = data.archive_file.vector_database_layer.output_base64sha256
   description              = "Module for interacting with the PostgreSQL vector database"
 }
 
@@ -12,8 +12,8 @@ resource "aws_lambda_layer_version" "embed_layer" {
   layer_name               = "embed_layer"
   compatible_runtimes      = ["python3.13"]
   compatible_architectures = ["x86_64"]
-  filename                 = data.archive_file.packages["embed_layer"].output_path
-  source_code_hash         = data.archive_file.packages["embed_layer"].output_base64sha256
+  filename                 = data.archive_file.embed_layer.output_path
+  source_code_hash         = data.archive_file.embed_layer.output_base64sha256
   description              = "Multi-modal embedding extraction and management module using TwelveLabs API."
 }
 
@@ -21,8 +21,8 @@ resource "aws_lambda_layer_version" "config_layer" {
   layer_name               = "config_layer"
   compatible_runtimes      = ["python3.13"]
   compatible_architectures = ["x86_64"]
-  filename                 = data.archive_file.packages["config_layer"].output_path
-  source_code_hash         = data.archive_file.packages["config_layer"].output_base64sha256
+  filename                 = data.archive_file.config_layer.output_path
+  source_code_hash         = data.archive_file.config_layer.output_base64sha256
   description              = "Configuration management module for secrets and database settings."
 }
 
@@ -30,8 +30,8 @@ resource "aws_lambda_layer_version" "response_utils_layer" {
   layer_name               = "response_utils_layer"
   compatible_runtimes      = ["python3.13"]
   compatible_architectures = ["x86_64"]
-  filename                 = data.archive_file.packages["response_utils_layer"].output_path
-  source_code_hash         = data.archive_file.packages["response_utils_layer"].output_base64sha256
+  filename                 = data.archive_file.response_utils_layer.output_path
+  source_code_hash         = data.archive_file.response_utils_layer.output_base64sha256
   description              = "Utility module for error handling, S3 presigned URL generation, and API response construction."
 }
 
@@ -58,8 +58,8 @@ resource "aws_lambda_function" "kubrick_db_bootstrap" {
   role             = var.lambda_iam_db_bootstrap_role_arn
   runtime          = "python3.13"
   handler          = "lambda_function.lambda_handler"
-  filename         = data.archive_file.packages["db_bootstrap"].output_path
-  source_code_hash = data.archive_file.packages["db_bootstrap"].output_base64sha256
+  filename         = data.archive_file.db_bootstrap.output_path
+  source_code_hash = data.archive_file.db_bootstrap.output_base64sha256
 
   layers = [
     aws_lambda_layer_version.config_layer.arn,
@@ -105,8 +105,8 @@ resource "aws_lambda_function" "kubrick_api_search_handler" {
   role             = var.lambda_iam_api_search_handler_role_arn
   runtime          = "python3.13"
   handler          = "lambda_function.lambda_handler"
-  filename         = data.archive_file.packages["api_search_handler"].output_path
-  source_code_hash = data.archive_file.packages["api_search_handler"].output_base64sha256
+  filename         = data.archive_file.api_search_handler.output_path
+  source_code_hash = data.archive_file.api_search_handler.output_base64sha256
 
   layers = [
     aws_lambda_layer_version.vector_database_layer.arn,
@@ -144,8 +144,8 @@ resource "aws_lambda_function" "kubrick_s3_delete_handler" {
   role             = var.lambda_iam_s3_delete_handler_role_arn
   runtime          = "python3.13"
   handler          = "lambda_function.lambda_handler"
-  filename         = data.archive_file.packages["s3_delete_handler"].output_path
-  source_code_hash = data.archive_file.packages["s3_delete_handler"].output_base64sha256
+  filename         = data.archive_file.s3_delete_handler.output_path
+  source_code_hash = data.archive_file.s3_delete_handler.output_base64sha256
 
   layers = [
     aws_lambda_layer_version.vector_database_layer.arn,
@@ -175,8 +175,8 @@ resource "aws_lambda_function" "kubrick_api_fetch_videos_handler" {
   role             = var.lambda_iam_api_fetch_videos_handler_role_arn
   runtime          = "python3.13"
   handler          = "lambda_function.lambda_handler"
-  filename         = data.archive_file.packages["api_fetch_videos_handler"].output_path
-  source_code_hash = data.archive_file.packages["api_fetch_videos_handler"].output_base64sha256
+  filename         = data.archive_file.api_fetch_videos_handler.output_path
+  source_code_hash = data.archive_file.api_fetch_videos_handler.output_base64sha256
 
   layers = [
     aws_lambda_layer_version.vector_database_layer.arn,
@@ -208,8 +208,8 @@ resource "aws_lambda_function" "kubrick_api_video_upload_link_handler" {
   role             = var.lambda_iam_api_video_upload_link_handler_role_arn
   runtime          = "python3.13"
   handler          = "lambda_function.lambda_handler"
-  filename         = data.archive_file.packages["api_video_upload_link_handler"].output_path
-  source_code_hash = data.archive_file.packages["api_video_upload_link_handler"].output_base64sha256
+  filename         = data.archive_file.api_video_upload_link_handler.output_path
+  source_code_hash = data.archive_file.api_video_upload_link_handler.output_base64sha256
 
   layers = [
     aws_lambda_layer_version.response_utils_layer.arn,
@@ -237,8 +237,8 @@ resource "aws_lambda_function" "kubrick_api_fetch_tasks_handler" {
   role             = var.lambda_iam_api_fetch_tasks_handler_role_arn
   runtime          = "python3.13"
   handler          = "lambda_function.lambda_handler"
-  filename         = data.archive_file.packages["api_fetch_tasks_handler"].output_path
-  source_code_hash = data.archive_file.packages["api_fetch_tasks_handler"].output_base64sha256
+  filename         = data.archive_file.api_fetch_tasks_handler.output_path
+  source_code_hash = data.archive_file.api_fetch_tasks_handler.output_base64sha256
 
   layers = [
     aws_lambda_layer_version.vector_database_layer.arn,
@@ -272,8 +272,8 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
   role             = var.lambda_iam_sqs_embedding_task_producer_role_arn
   runtime          = "python3.13"
   handler          = "lambda_function.lambda_handler"
-  filename         = data.archive_file.packages["sqs_embedding_task_producer"].output_path
-  source_code_hash = data.archive_file.packages["sqs_embedding_task_producer"].output_base64sha256
+  filename         = data.archive_file.sqs_embedding_task_producer.output_path
+  source_code_hash = data.archive_file.sqs_embedding_task_producer.output_base64sha256
 
   layers = [
     aws_lambda_layer_version.vector_database_layer.arn,
@@ -313,8 +313,8 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
   role             = var.lambda_iam_sqs_embedding_task_consumer_role_arn
   runtime          = "python3.13"
   handler          = "lambda_function.lambda_handler"
-  filename         = data.archive_file.packages["sqs_embedding_task_consumer"].output_path
-  source_code_hash = data.archive_file.packages["sqs_embedding_task_consumer"].output_base64sha256
+  filename         = data.archive_file.sqs_embedding_task_consumer.output_path
+  source_code_hash = data.archive_file.sqs_embedding_task_consumer.output_base64sha256
 
   layers = [
     aws_lambda_layer_version.vector_database_layer.arn,

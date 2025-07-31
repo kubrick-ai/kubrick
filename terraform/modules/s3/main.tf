@@ -55,20 +55,55 @@ resource "aws_s3_bucket_policy" "kubrick_video_upload_bucket_policy" {
   })
 }
 
+# Public s3 bucket that hosts the playground frontend static files
+resource "aws_s3_bucket" "kubrick_playground_bucket" {
+  bucket        = "kubrick-playground-${random_id.bucket_suffix.hex}"
+  force_destroy = true
+}
 
+resource "aws_s3_bucket_ownership_controls" "kubrick_playground_bucket" {
+  bucket = aws_s3_bucket.kubrick_playground_bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
 
-# resource "aws_s3_object" "upload_videos" {
-#   for_each = fileset("${path.module}/videos", "**")
-#   bucket   = aws_s3_bucket.kubrick_video_upload_bucket.id
-#   key      = each.key
-#   source   = "${path.module}/videos/${each.value}"
-#   etag     = filemd5("${path.module}/videos/${each.value}")
+resource "aws_s3_bucket_policy" "kubrick_playground_bucket" {
+  bucket = aws_s3_bucket.kubrick_playground_bucket.id
 
-#   # Set content type based on file extension
-#   content_type = lookup({
-#     "mp4"  = "video/mp4"
-#     "webm" = "video/webm"
-#     "avi"  = "video/x-msvideo"
-#     "mov"  = "video/quicktime"
-#   }, lower(split(".", each.value)[length(split(".", each.value)) - 1]), "application/octet-stream")
-# }
+  depends_on = [aws_s3_bucket_public_access_block.kubrick_playground_bucket]
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject",
+        Effect    = "Allow",
+        Principal = "*",
+        Action    = "s3:GetObject",
+        Resource  = "${aws_s3_bucket.kubrick_playground_bucket.arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_public_access_block" "kubrick_playground_bucket" {
+  bucket = aws_s3_bucket.kubrick_playground_bucket.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_website_configuration" "kubrick_playground_bucket" {
+  bucket = aws_s3_bucket.kubrick_playground_bucket.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+}

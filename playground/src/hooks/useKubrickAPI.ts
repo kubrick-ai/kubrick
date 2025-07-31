@@ -9,6 +9,8 @@ import {
   VideosResponseSchema,
   TasksResponse,
   TasksResponseSchema,
+  VideoUploadResponse,
+  VideoUploadResponseSchema,
 } from "@/types";
 
 // TODO: Move to config?
@@ -71,100 +73,35 @@ export const useSearchVideos = (params: SearchParams) => {
   });
 };
 
-// const createVideo = async () => {};
-//
-// export const useCreateVideo = () => {
-//   const queryClient = useQueryClient();
-//   return useMutation<string, Error, string>({
-//     mutationFn: createVideo,
-//     onSuccess: () => {
-//       // Invalidate the 'videos' query to refetch the list of videos
-//       queryClient.invalidateQueries({ queryKey: ["videos"] });
-//     },
-//   });
-// };
-
-interface EmbedResponse {
-  id: string;
-  video_url: string;
-}
-
-interface TaskStatus {
-  id: string;
-  status: "processing" | "ready" | "failed";
-  error?: string;
-}
-
-const createEmbedTask = async (video_url: string): Promise<EmbedResponse> => {
-  const formData = new FormData();
-  formData.append("video_url", video_url);
-
-  const res = await axios.post(`${API_BASE}/tasks`, formData);
-
-  if (res.data.error) {
-    throw new Error(res.data.error); // This will be caught by React Query
-  }
-
-  return res.data;
-};
-
-const getEmbedStatus = async (taskId: string): Promise<TaskStatus> => {
-  const res = await axios.get(`${API_BASE}/tasks/${taskId}`);
-  return res.data;
-};
-
-export const useEmbedVideo = () => {
-  const [taskId, setTaskId] = useState<string | null>(null);
-
-  const {
-    mutate: submitVideo,
-    isPending: isSubmitting,
-    data: embedData,
-    isSuccess: isSubmitSuccess,
-    error: submitError,
-  } = useMutation({
-    mutationFn: (video_url: string) => createEmbedTask(video_url),
-    onSuccess: (data) => setTaskId(data.id),
+export const uploadVideo = async (file: File, filename: string) => {
+  const videoLinkResponse = await generateVideoUploadLink(filename);
+  const presignedUrl = videoLinkResponse.data.presigned_url;
+  const contentType = videoLinkResponse.data.content_type;
+  const response = await axios.put(presignedUrl, file, {
+    headers: {
+      "Content-Type": contentType,
+    },
   });
 
-  const {
-    data: statusData,
-    refetch,
-    isFetching: isPolling,
-  } = useQuery({
-    enabled: !!taskId,
-    queryKey: ["embedStatus", taskId],
-    queryFn: () => getEmbedStatus(taskId as string),
-  });
-
-  useEffect(() => {
-    if (!taskId) return;
-
-    const interval = setInterval(() => {
-      if (statusData?.status === "failed" || statusData?.status === "ready") {
-        clearInterval(interval);
-      } else {
-        refetch();
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [taskId, statusData?.status, refetch]);
-
-  if (statusData && typeof statusData.error === "string") {
-    console.log("statusData error: " + statusData.error);
+  if (response.status !== 200 && response.status !== 204) {
+    throw new Error("Upload failed");
   }
 
   return {
-    submitVideo,
-    isSubmitting,
-    isSubmitSuccess, // Not used atm
-    submitError, // Not used atm
-    embedData,
-    taskId, // Not used atm
-    statusData,
-    isPolling,
+    url: presignedUrl.split("?")[0],
   };
+};
+
+export const generateVideoUploadLink = async (
+  filename: string
+): Promise<VideoUploadResponse> => {
+  const response = await axios.get(`${API_BASE}/generate-upload-link`, {
+    params: { filename },
+  });
+
+  const parsedVideoUploadLink = VideoUploadResponseSchema.parse(response.data);
+
+  return parsedVideoUploadLink;
 };
 
 export const fetchVideos = async (

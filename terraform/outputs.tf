@@ -1,8 +1,14 @@
 # S3 Bucket Outputs
-output "s3_bucket_name" {
-  description = "Name of the S3 bucket"
-  value       = module.s3.bucket_name
+output "kubrick_video_upload_bucket_name" {
+  description = "Name of S3 bucket"
+  value       = module.s3.kubrick_video_upload_bucket_name
 }
+
+output "kubrick_playground_bucket_name" {
+  description = "Name of S3 bucket"
+  value       = module.s3.kubrick_video_upload_bucket_name
+}
+
 
 output "s3_bucket_arn" {
   description = "ARN of the S3 bucket"
@@ -79,4 +85,25 @@ output "api_gateway_execution_arn" {
 output "api_gateway_arn" {
   description = "The ARN of the API Gateway REST API"
   value       = module.api_gateway.api_gateway_arn
+}
+
+# CloudFront
+output "cloudfront_distribution_id" {
+  description = "The ID of the CloudFront distribution"
+  value       = module.cloudfront.cloudfront_distribution_id
+}
+
+output "cloudfront_domain_name" {
+  description = "The domain name of the CloudFront distribution"
+  value       = module.cloudfront.cloudfront_domain_name
+}
+
+output "cloudfront_arn" {
+  description = "The ARN of the CloudFront distribution"
+  value       = module.cloudfront.cloudfront_arn
+}
+
+output "cloudfront_status" {
+  description = "The current status of the CloudFront distribution"
+  value       = module.cloudfront.cloudfront_status
 }

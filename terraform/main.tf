@@ -69,7 +69,7 @@ module "lambda" {
   video_embedding_scopes                            = local.video_embedding_scopes
   private_subnet_ids                                = module.vpc_network.private_subnet_ids
   vpc_id                                            = module.vpc_network.vpc_id
-  s3_bucket_name                                    = module.s3.bucket_name
+  s3_bucket_name                                    = module.s3.kubrick_video_upload_bucket_name
   queue_url                                         = module.sqs.queue_url
   queue_arn                                         = module.sqs.queue_arn
 
@@ -100,4 +100,12 @@ module "api_gateway" {
   aws_region                        = local.region
 
   depends_on = [module.lambda]
+}
+
+module "cloudfront" {
+  source                         = "./modules/cloudfront"
+  s3_bucket_regional_domain_name = module.s3.kubrick_playground_bucket_regional_domain_name
+  s3_bucket_arn                  = module.s3.kubrick_playground_bucket_arn
+  aws_region                     = local.region
+  kubrick_playground_bucket_name = module.s3.kubrick_playground_bucket_name
 }
