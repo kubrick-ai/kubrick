@@ -107,3 +107,38 @@ export const TasksResponseSchema = z.object({
 });
 
 export type TasksResponse = z.infer<typeof TasksResponseSchema>;
+
+const MIN_FILES = 1;
+const MAX_FILES = 5;
+const MAX_SIZE = 2 * 1024 * 1024 * 1024;
+
+export const UploadVideosFormDataSchema = z.object({
+  files: z
+    .array(z.custom<File>())
+    .min(MIN_FILES, `Please select at least ${MIN_FILES} file(s)`)
+    .max(MAX_FILES, `Please select up to ${MAX_FILES} files`)
+    .refine((files) => files.every((file) => file.size <= MAX_SIZE), {
+      message: `File size must be less than ${MAX_SIZE / 1024 ** 3}GB`,
+      path: ["files"],
+    }),
+});
+
+export type UploadVideosFormData = z.infer<typeof UploadVideosFormDataSchema>;
+
+export const VideoUpload = z.object({
+  presigned_url: z.string(),
+  filename: z.string(),
+  file_extension: z.string(),
+  expires_in_seconds: z.number(),
+  upload_method: z.string(),
+  content_type: z.string(),
+});
+
+export const VideoUploadResponseSchema = z.object({
+  data: VideoUpload,
+  metadata: z.object({}).optional(),
+});
+
+export type VideoUploadResponse = z.infer<
+  typeof VideoUploadResponseSchema
+>;
