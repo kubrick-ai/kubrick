@@ -1,3 +1,13 @@
+module "secrets_manager" {
+  source              = "./modules/secrets_manager"
+  name                = var.secrets_manager_name
+  description         = "Secret store for Kubrick application"
+  environment         = local.env
+  db_username         = var.db_username
+  db_password         = var.db_password
+  twelvelabs_api_key  = var.twelvelabs_api_key
+}
+
 module "vpc_network" {
   source = "./modules/vpc_network"
   env    = local.env
@@ -7,17 +17,20 @@ module "vpc_network" {
 
 module "iam" {
   source                   = "./modules/iam"
-  secret_arn               = data.aws_secretsmanager_secret.kubrick_secret.arn
+  secret_arn               = module.secrets_manager.secret_arn
   environment              = local.env
   embedding_task_queue_arn = module.sqs.queue_arn
+
+  depends_on = [module.secrets_manager]
 }
 
+# Public S3 bucket depends on API_Gateway
 module "s3" {
   source = "./modules/s3"
+
+  api_gateway_write_done = module.api_gateway.null_resource_write_api_url_to_env
 }
 
-# kubrick_sqs_embedding_task_producer_function
-# kubrick_s3_delete_handler_function
 module "s3_notifications" {
   source                      = "./modules/s3_notifications"
   bucket_id                   = module.s3.bucket_id
@@ -42,6 +55,7 @@ module "rds" {
 
 module "lambda" {
   source                                            = "./modules/lambda"
+
   aws_region                                        = local.region
   lambda_iam_db_bootstrap_role_arn                  = module.iam.db_bootstrap_role_arn
   lambda_iam_s3_delete_handler_role_arn             = module.iam.s3_delete_handler_role_arn
@@ -72,7 +86,8 @@ module "lambda" {
   s3_bucket_name                                    = module.s3.kubrick_video_upload_bucket_name
   queue_url                                         = module.sqs.queue_url
   queue_arn                                         = module.sqs.queue_arn
-
+  secrets_manager_name                              = var.secrets_manager_name
+  aws_profile                                       = var.aws_profile
 
   depends_on = [
     module.rds, module.iam, module.sqs
