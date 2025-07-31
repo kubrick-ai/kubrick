@@ -6,7 +6,7 @@ from embed_service import EmbedService
 from vector_db_service import VectorDBService
 from logging import getLogger, Logger
 from typing import Dict, List, Any, Optional, Union, Literal
-from response_utils import add_presigned_urls
+from s3_utils import add_presigned_urls
 from search_errors import (
     SearchError,
     SearchRequestError,
