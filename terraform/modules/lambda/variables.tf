@@ -160,11 +160,6 @@ variable "secrets_manager_name" {
   default     = "kubrick_secret"
 }
 
-variable "aws_region" {
-  description = "The AWS region where resources are deployed"
-  type        = string
-}
-
 variable "aws_profile" {
   description = "AWS CLI profile to use for local-exec provisioners"
   type        = string

@@ -85,7 +85,6 @@ module "lambda" {
   queue_url                                         = module.sqs.queue_url
   queue_arn                                         = module.sqs.queue_arn
   secrets_manager_name                              = var.secrets_manager_name
-  aws_region                                        = local.region
   aws_profile                                       = var.aws_profile
 
   depends_on = [
