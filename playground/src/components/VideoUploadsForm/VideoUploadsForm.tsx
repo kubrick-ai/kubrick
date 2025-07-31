@@ -45,8 +45,6 @@ const VideoUploadsForm = () => {
     async (data: UploadVideosFormData) => {
       setIsSending(true);
 
-      data.files.map((file) => console.log(file.name));
-
       try {
         await Promise.all(
           data.files.map((file) => uploadVideo(file, file.name))
