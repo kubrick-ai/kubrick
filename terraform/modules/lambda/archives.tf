@@ -35,6 +35,19 @@ resource "null_resource" "build_response_utils_layer" {
   }
 }
 
+resource "null_resource" "build_s3_utils_layer" {
+  triggers = {
+    deps_hash   = filemd5("${local.base_path}/layers/s3_utils_layer/pyproject.toml")
+    source_hash = filemd5("${local.base_path}/layers/s3_utils_layer/s3_utils.py")
+  }
+
+  provisioner "local-exec" {
+    command     = local.build_script
+    working_dir = "${local.base_path}/layers/s3_utils_layer"
+  }
+}
+
+
 resource "null_resource" "build_vector_database_layer" {
   triggers = {
     deps_hash   = filemd5("${local.base_path}/layers/vector_database_layer/pyproject.toml")
@@ -174,6 +187,15 @@ data "archive_file" "response_utils_layer" {
   excludes    = ["__pycache__", "*.pyc", "*.DS_Store"]
 
   depends_on = [null_resource.build_response_utils_layer]
+}
+
+data "archive_file" "s3_utils_layer" {
+  type        = "zip"
+  output_path = "${local.base_path}/layers/s3_utils_layer/package.zip"
+  source_dir  = "${local.base_path}/layers/s3_utils_layer/package"
+  excludes    = ["__pycache__", "*.pyc", "*.DS_Store"]
+
+  depends_on = [null_resource.build_s3_utils_layer]
 }
 
 data "archive_file" "vector_database_layer" {
