@@ -255,6 +255,7 @@ terraform/output.json
 package.zip
 **/package.zip
 package/
+lambda/**/python
 
 # Playground
 
