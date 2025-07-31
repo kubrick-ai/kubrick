@@ -90,3 +90,15 @@ resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
+
+# S3 Gateway Endpoint for VPC
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id       = aws_vpc.main.id
+  service_name = "com.amazonaws.${var.region}.s3"
+  
+  route_table_ids = [aws_route_table.private.id]
+  
+  tags = {
+    Name = "${var.env}-s3-gateway-endpoint"
+  }
+}

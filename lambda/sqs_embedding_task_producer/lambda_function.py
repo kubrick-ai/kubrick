@@ -17,12 +17,26 @@ DEFAULT_CLIP_LENGTH = int(os.getenv("DEFAULT_CLIP_LENGTH", "6"))
 PRESIGNED_URL_TTL = int(os.getenv("PRESIGNED_URL_TTL", "600"))
 FILE_CHECK_RETRIES = int(os.getenv("FILE_CHECK_RETRIES", "2"))
 FILE_CHECK_DELAY_SEC = float(os.getenv("FILE_CHECK_DELAY_SEC", "2.0"))
-VIDEO_EMBEDDING_SCOPES = json.loads(os.getenv("VIDEO_EMBEDDING_SCOPES", '["clip", "video"]'))
+VIDEO_EMBEDDING_SCOPES = json.loads(
+    os.getenv("VIDEO_EMBEDDING_SCOPES", '["clip", "video"]')
+)
 QUEUE_URL = os.environ["QUEUE_URL"]
+S3_REGION = os.getenv("S3_REGION", "us-east-2")
+
+s3 = boto3.client("s3", region_name=S3_REGION)
+sqs = boto3.client("sqs")
+logger = setup_logging()
+SECRET = get_secret(SECRET_NAME)
+DB_CONFIG = get_db_config(SECRET)
 
 
 def wait_for_file(
-    s3_client, bucket, key, retries=FILE_CHECK_RETRIES, delay=FILE_CHECK_DELAY_SEC, logger=logging.getLogger()
+    s3_client,
+    bucket,
+    key,
+    retries=FILE_CHECK_RETRIES,
+    delay=FILE_CHECK_DELAY_SEC,
+    logger=logging.getLogger(),
 ):
     for attempt in range(retries):
         try:
@@ -74,12 +88,6 @@ def persist_task_metadata(
 
 
 def lambda_handler(event, context):
-    s3 = boto3.client("s3")
-    sqs = boto3.client("sqs")
-    logger = setup_logging()
-    SECRET = get_secret(SECRET_NAME)
-    DB_CONFIG = get_db_config(SECRET)
-
     logger.info("Lambda handler invoked")
 
     embed_service = EmbedService(
@@ -117,9 +125,8 @@ def lambda_handler(event, context):
             Params={"Bucket": bucket, "Key": key},
             ExpiresIn=PRESIGNED_URL_TTL,
         )
-        logger.info(
-            f"Presigned URL generated (expires in {PRESIGNED_URL_TTL} seconds)"
-        )
+        logger.info(f"Presigned URL generated (expires in {PRESIGNED_URL_TTL} seconds)")
+        logger.debug(f"presigned_url={presigned_url}")
 
         task_id = embed_service.create_embedding_request(url=presigned_url).id
 

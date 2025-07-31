@@ -1,3 +1,4 @@
 locals {
-  base_path = "${path.root}/../lambda"
+  base_path = abspath("${path.root}/../lambda")
+  build_script = abspath("${path.root}/../lambda/build-package.sh")
 }

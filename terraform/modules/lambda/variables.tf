@@ -1,3 +1,8 @@
+variable "aws_region" {
+  description = "The AWS region"
+  type        = string
+}
+
 variable "db_host" {
   description = "The endpoint of the RDS database"
   type        = string

@@ -54,6 +54,7 @@ module "rds" {
 
 module "lambda" {
   source                                            = "./modules/lambda"
+  aws_region                                        = local.region
   lambda_iam_db_bootstrap_role_arn                  = module.iam.db_bootstrap_role_arn
   lambda_iam_s3_delete_handler_role_arn             = module.iam.s3_delete_handler_role_arn
   lambda_iam_api_search_handler_role_arn            = module.iam.api_search_handler_role_arn
@@ -80,7 +81,7 @@ module "lambda" {
   video_embedding_scopes                            = local.video_embedding_scopes
   private_subnet_ids                                = module.vpc_network.private_subnet_ids
   vpc_id                                            = module.vpc_network.vpc_id
-  s3_bucket_name                                    = module.s3.bucket_name
+  s3_bucket_name                                    = module.s3.kubrick_video_upload_bucket_name
   queue_url                                         = module.sqs.queue_url
   queue_arn                                         = module.sqs.queue_arn
   secrets_manager_name                              = var.secrets_manager_name
@@ -113,4 +114,12 @@ module "api_gateway" {
   aws_region                        = local.region
 
   depends_on = [module.lambda]
+}
+
+module "cloudfront" {
+  source                         = "./modules/cloudfront"
+  s3_bucket_regional_domain_name = module.s3.kubrick_playground_bucket_regional_domain_name
+  s3_bucket_arn                  = module.s3.kubrick_playground_bucket_arn
+  aws_region                     = local.region
+  kubrick_playground_bucket_name = module.s3.kubrick_playground_bucket_name
 }
