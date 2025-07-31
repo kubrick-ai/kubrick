@@ -72,8 +72,10 @@ def lambda_handler(event, context):
                 # If status is "processing", add to pending list for re-queuing
                 pending_message_ids.append({"itemIdentifier": message_id})
                 logger.info(
-                    f"TwelveLabs video embedding task {tl_task_id} is still pending. Re-queueing."
+                    f"TwelveLabs video embedding task {tl_task_id} is still processing. Re-queueing."
                 )
+                vector_db_service.update_task_status(message_id, "processing")
+                logger.info("Successfully updated task status in DB")
             else:
                 raise Exception(f"Unexpected value for task status {task_status}")
 
