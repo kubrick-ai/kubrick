@@ -57,7 +57,8 @@ class SearchRequest(BaseModel):
         """Extract search parameters for vector database"""
         return {
             "filter": self.filter,
-            "page_limit": self.page_limit,
+            "limit": self.page_limit,
+            "page": 0,
             "min_similarity": self.min_similarity,
         }
 
@@ -88,11 +89,17 @@ class SearchController:
             if not event.get("body"):
                 raise SearchRequestError("Request body is empty")
 
-            try:
-                byte_string = base64.b64decode(event.get("body"))
-                self.logger.debug(f"Decoded body length: {len(byte_string)}")
-            except Exception as e:
-                raise SearchRequestError(f"Failed to decode base64 body: {str(e)}")
+            if event.get("isBase64Encoded"):
+                self.logger.debug("Received base64 encoded body")
+                try:
+                    byte_string = base64.b64decode(event.get("body"))
+                    self.logger.debug(f"Decoded body length: {len(byte_string)}")
+                except Exception as e:
+                    raise SearchRequestError(f"Failed to decode base64 body: {str(e)}")
+            else:
+                self.logger.debug("Received plaintext body")
+                byte_string = event.get("body").encode("utf-8")
+                self.logger.debug(f"Encoded body length: {len(byte_string)}")
 
             headers = event.get("headers", {})
             normalized_headers = {k.lower(): v for k, v in headers.items()}
