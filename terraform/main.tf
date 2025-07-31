@@ -12,12 +12,13 @@ module "iam" {
   embedding_task_queue_arn = module.sqs.queue_arn
 }
 
+# Public S3 bucket depends on API_Gateway
 module "s3" {
   source = "./modules/s3"
+
+  api_gateway_write_done = module.api_gateway.null_resource_write_api_url_to_env
 }
 
-# kubrick_sqs_embedding_task_producer_function
-# kubrick_s3_delete_handler_function
 module "s3_notifications" {
   source                      = "./modules/s3_notifications"
   bucket_id                   = module.s3.bucket_id
@@ -42,6 +43,7 @@ module "rds" {
 
 module "lambda" {
   source                                            = "./modules/lambda"
+
   aws_region                                        = local.region
   lambda_iam_db_bootstrap_role_arn                  = module.iam.db_bootstrap_role_arn
   lambda_iam_s3_delete_handler_role_arn             = module.iam.s3_delete_handler_role_arn

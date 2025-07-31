@@ -430,20 +430,6 @@ resource "aws_api_gateway_stage" "api_stage" {
 }
 
 # Working version without npm install
-resource "null_resource" "write_api_url_to_env" {
-  triggers = {
-    api_url = local.api_gateway_url
-  }
-
-  provisioner "local-exec" {
-    command = <<EOT
-echo "NEXT_PUBLIC_API_BASE=${self.triggers.api_url}" > ${path.root}/../playground/.env
-EOT
-  }
-
-  depends_on = [aws_api_gateway_stage.api_stage]
-}
-
 # resource "null_resource" "write_api_url_to_env" {
 #   triggers = {
 #     api_url = local.api_gateway_url
@@ -451,15 +437,29 @@ EOT
 
 #   provisioner "local-exec" {
 #     command = <<EOT
-# bash -c '
-# set -e
 # echo "NEXT_PUBLIC_API_BASE=${self.triggers.api_url}" > ${path.root}/../playground/.env
-# cd ${path.root}/../playground
-# npm install
-# npm run build
-# '
 # EOT
 #   }
 
 #   depends_on = [aws_api_gateway_stage.api_stage]
 # }
+
+resource "null_resource" "write_api_url_to_env" {
+  triggers = {
+    api_url = local.api_gateway_url
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+bash -c '
+set -e
+echo "NEXT_PUBLIC_API_BASE=${self.triggers.api_url}" > ${path.root}/../playground/.env
+cd ${path.root}/../playground
+npm install
+npm run build
+'
+EOT
+  }
+
+  depends_on = [aws_api_gateway_stage.api_stage]
+}
