@@ -283,6 +283,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
 
   environment {
     variables = {
+      S3_REGION              = var.aws_region
       DB_HOST                = var.db_host
       DEFAULT_CLIP_LENGTH    = var.clip_length
       EMBEDDING_MODEL_NAME   = var.embedding_model
@@ -292,7 +293,8 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
       FILE_CHECK_DELAY_SEC   = var.file_check_delay_sec
       VIDEO_EMBEDDING_SCOPES = jsonencode(var.video_embedding_scopes)
       SECRET_NAME            = "kubrick_secret"
-      LOG_LEVEL              = "INFO"
+      # TODO: TEMPORARY
+      LOG_LEVEL = "DEBUG"
     }
   }
 

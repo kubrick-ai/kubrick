@@ -5,7 +5,7 @@ resource "random_id" "bucket_suffix" {
 
 # S3 Bucket with UUID-based naming
 resource "aws_s3_bucket" "kubrick_video_upload_bucket" {
-  bucket = "kubrick-video-library-${random_id.bucket_suffix.hex}"
+  bucket        = "kubrick-video-library-${random_id.bucket_suffix.hex}"
   force_destroy = true
 }
 
@@ -32,6 +32,29 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
   }
 }
 
+# S3 Bucket Policy to allow presigned URL access
+resource "aws_s3_bucket_policy" "kubrick_video_upload_bucket_policy" {
+  bucket = aws_s3_bucket.kubrick_video_upload_bucket.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowPresignedURLAccess"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.kubrick_video_upload_bucket.arn}/*"
+        Condition = {
+          StringEquals = {
+            "s3:authType" = "REST-QUERY-STRING"
+          }
+        }
+      }
+    ]
+  })
+}
+
 
 
 # resource "aws_s3_object" "upload_videos" {
@@ -40,7 +63,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
 #   key      = each.key
 #   source   = "${path.module}/videos/${each.value}"
 #   etag     = filemd5("${path.module}/videos/${each.value}")
-  
+
 #   # Set content type based on file extension
 #   content_type = lookup({
 #     "mp4"  = "video/mp4"
