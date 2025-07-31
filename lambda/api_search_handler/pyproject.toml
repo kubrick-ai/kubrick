@@ -11,5 +11,6 @@ extraPaths = [
   "../layers/vector_database_layer/",
   "../layers/embed_service_layer/",
   "../layers/response_utils_layer/",
+  "../layers/s3_utils_layer/",
   "../layers/config_layer/",
 ]

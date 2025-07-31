@@ -4,8 +4,8 @@ from vector_db_service import VectorDBService
 from response_utils import (
     build_error_response,
     build_success_response,
-    add_presigned_urls,
 )
+from s3_utils import add_presigned_urls
 
 # Environment variables
 SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")

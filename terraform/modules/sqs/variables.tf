@@ -7,7 +7,7 @@ variable "environment" {
 variable "visibility_timeout_seconds" {
   description = "The visibility timeout for the queue in seconds"
   type        = number
-  default     = 960  
+  default     = 30
 }
 
 variable "message_retention_seconds" {

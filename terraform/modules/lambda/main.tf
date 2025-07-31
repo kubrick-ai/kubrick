@@ -32,7 +32,16 @@ resource "aws_lambda_layer_version" "response_utils_layer" {
   compatible_architectures = ["x86_64"]
   filename                 = data.archive_file.response_utils_layer.output_path
   source_code_hash         = data.archive_file.response_utils_layer.output_base64sha256
-  description              = "Utility module for error handling, S3 presigned URL generation, and API response construction."
+  description              = "Utility module for error handling and API response construction."
+}
+
+resource "aws_lambda_layer_version" "s3_utils_layer" {
+  layer_name               = "s3_utils_layer"
+  compatible_runtimes      = ["python3.13"]
+  compatible_architectures = ["x86_64"]
+  filename                 = data.archive_file.s3_utils_layer.output_path
+  source_code_hash         = data.archive_file.s3_utils_layer.output_base64sha256
+  description              = "Utility module for S3 operations, including presigned URL generation."
 }
 
 # Security Group
@@ -115,6 +124,7 @@ resource "aws_lambda_function" "kubrick_api_search_handler" {
     aws_lambda_layer_version.embed_layer.arn,
     aws_lambda_layer_version.config_layer.arn,
     aws_lambda_layer_version.response_utils_layer.arn,
+    aws_lambda_layer_version.s3_utils_layer.arn,
   ]
 
   environment {
@@ -184,6 +194,7 @@ resource "aws_lambda_function" "kubrick_api_fetch_videos_handler" {
     aws_lambda_layer_version.vector_database_layer.arn,
     aws_lambda_layer_version.config_layer.arn,
     aws_lambda_layer_version.response_utils_layer.arn,
+    aws_lambda_layer_version.s3_utils_layer.arn,
   ]
 
   environment {
@@ -281,6 +292,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
     aws_lambda_layer_version.vector_database_layer.arn,
     aws_lambda_layer_version.embed_layer.arn,
     aws_lambda_layer_version.config_layer.arn,
+    aws_lambda_layer_version.s3_utils_layer.arn,
   ]
 
   environment {
