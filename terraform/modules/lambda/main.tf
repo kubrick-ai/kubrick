@@ -224,7 +224,6 @@ resource "aws_lambda_function" "kubrick_api_video_upload_link_handler" {
 
   layers = [
     aws_lambda_layer_version.response_utils_layer.arn,
-    aws_lambda_layer_version.s3_utils_layer.arn,
   ]
 
   environment {
@@ -256,7 +255,6 @@ resource "aws_lambda_function" "kubrick_api_fetch_tasks_handler" {
     aws_lambda_layer_version.vector_database_layer.arn,
     aws_lambda_layer_version.config_layer.arn,
     aws_lambda_layer_version.response_utils_layer.arn,
-    aws_lambda_layer_version.s3_utils_layer.arn,
   ]
 
   environment {
@@ -292,6 +290,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
     aws_lambda_layer_version.vector_database_layer.arn,
     aws_lambda_layer_version.embed_layer.arn,
     aws_lambda_layer_version.config_layer.arn,
+    aws_lambda_layer_version.s3_utils_layer.arn,
   ]
 
   environment {
