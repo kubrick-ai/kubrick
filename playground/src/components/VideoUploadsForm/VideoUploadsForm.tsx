@@ -45,6 +45,8 @@ const VideoUploadsForm = () => {
     async (data: UploadVideosFormData) => {
       setIsSending(true);
 
+      data.files.map((file) => console.log(file.name));
+
       try {
         await Promise.all(
           data.files.map((file) => uploadVideo(file, file.name))
@@ -118,7 +120,8 @@ const VideoUploadsForm = () => {
                   </FileUpload>
                 </FormControl>
                 <FormDescription>
-                  Upload up to {MAX_FILES} videos up to {MAX_SIZE / 1024 ** 3}GB each.
+                  Upload up to {MAX_FILES} videos up to {MAX_SIZE / 1024 ** 3}GB
+                  each.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
