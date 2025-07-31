@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS videos (
   width INTEGER
 );
 
+CREATE UNIQUE INDEX unique_s3_object ON videos (s3_bucket, s3_key);
+
 -- Trigger for videos
 DROP TRIGGER IF EXISTS trg_update_videos_updated_at ON videos;
 CREATE TRIGGER trg_update_videos_updated_at
