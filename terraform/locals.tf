@@ -1,7 +1,11 @@
 locals {
   region = var.aws_region
   env    = "dev"
-  secret = jsondecode(data.aws_secretsmanager_secret_version.kubrick_secret_version.secret_string)
+  secret = {
+    DB_USERNAME         = var.db_username
+    DB_PASSWORD         = var.db_password
+    TWELVELABS_API_KEY = var.twelvelabs_api_key
+  }
 
   # Application configuration defaults
   embedding_model             = "Marengo-retrieval-2.7"
@@ -20,4 +24,3 @@ locals {
 
   azs = data.aws_availability_zones.available.names
 }
-
