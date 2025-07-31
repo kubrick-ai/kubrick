@@ -67,7 +67,7 @@ def lambda_handler(event, context):
             return build_error_response(status_code=400, message=message)
 
         bucket_name = os.environ.get("S3_BUCKET_NAME")
-        unique_key = f"uploads/{uuid.uuid4()}-{filename}"
+        unique_key = f"uploads/{uuid.uuid4()}/{filename}"
         expiration = int(os.environ.get("PRESIGNED_URL_EXPIRATION", 3600))
 
         logger.info(
