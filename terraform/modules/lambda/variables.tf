@@ -150,7 +150,22 @@ variable "queue_url" {
 }
 
 variable "queue_arn" {
-  description = "ARN of the SQS queue to trigger the embedding task consumer"
+  description = "ARN of the SQS queue"
   type        = string
 }
 
+variable "secrets_manager_name" {
+  description = "Name of the AWS Secrets Manager secret"
+  type        = string
+  default     = "kubrick_secret"
+}
+
+variable "aws_region" {
+  description = "The AWS region where resources are deployed"
+  type        = string
+}
+
+variable "aws_profile" {
+  description = "AWS CLI profile to use for local-exec provisioners"
+  type        = string
+}
