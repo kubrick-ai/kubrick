@@ -42,3 +42,8 @@ output "api_gateway_arn" {
   description = "The ARN of the API Gateway REST API"
   value       = aws_api_gateway_rest_api.api.arn
 }
+
+output "api_gateway_url" {
+  description = "Base URL for the API Gateway"
+  value       = "https://${aws_api_gateway_rest_api.api.id}.execute-api.${var.aws_region}.amazonaws.com/${var.stage_name}"
+}

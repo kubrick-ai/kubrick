@@ -14,7 +14,7 @@ import {
 } from "@/types";
 
 // TODO: Move to config?
-const API_BASE = "https://xt30znkfhh.execute-api.us-east-1.amazonaws.com/dev";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:5000";
 
 const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
   const formData = new FormData();

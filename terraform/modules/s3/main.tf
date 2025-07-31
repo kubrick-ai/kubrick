@@ -53,6 +53,8 @@ resource "aws_s3_bucket_policy" "kubrick_video_upload_bucket_policy" {
       }
     ]
   })
+
+  depends_on = [aws_s3_bucket_public_access_block.kubrick_video_upload_bucket]
 }
 
 # Public s3 bucket that hosts the playground frontend static files
