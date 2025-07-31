@@ -72,12 +72,12 @@ class SearchController:
         self,
         embed_service: EmbedService,
         vector_db_service: VectorDBService,
-        config: Dict[str, Any],
+        query_media_file_size_limit: int = 6000000,
         logger: Logger = getLogger(),
     ):
         self.embed_service = embed_service
         self.vector_db_service = vector_db_service
-        self.config = config
+        self.query_media_file_size_limit = query_media_file_size_limit
         self.logger = logger
 
     def parse_lambda_event(self, event) -> SearchRequest:
@@ -137,9 +137,7 @@ class SearchController:
 
                     if part.filename:  # File field
                         file_size = part.size
-                        size_limit = self.config.get(
-                            "query_media_file_size_limit", 6000000
-                        )
+                        size_limit = self.query_media_file_size_limit
                         if file_size > size_limit:
                             raise SearchRequestError(
                                 f"Query media file size too large. Limit: {size_limit/1000} KB"

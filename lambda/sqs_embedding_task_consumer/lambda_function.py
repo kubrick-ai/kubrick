@@ -1,8 +1,11 @@
 import json
 import os
 from embed_service import EmbedService, VideoEmbeddingMetadata
-from config import load_config, get_secret, setup_logging, get_db_config
+from config import get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
+
+# Environment variables
+SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
 
 
 def get_video_metadata(tl_metadata: VideoEmbeddingMetadata | None, message_body):
@@ -19,8 +22,7 @@ def get_video_metadata(tl_metadata: VideoEmbeddingMetadata | None, message_body)
 
 def lambda_handler(event, context):
     logger = setup_logging()
-    config = load_config()
-    SECRET = get_secret(config)
+    SECRET = get_secret(SECRET_NAME)
     DB_CONFIG = get_db_config(SECRET)
 
     embed_service = EmbedService(

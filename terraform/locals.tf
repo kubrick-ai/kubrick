@@ -1,11 +1,23 @@
 locals {
-  region          = var.aws_region
-  env             = "dev"
-  secrets         = jsondecode(data.aws_secretsmanager_secret_version.kubrick_secrets_version.secret_string)
-  embedding_model = "Marengo-retrieval-2.7"
-  clip_length     = 6
-  min_similarity  = 0.2
-  page_limit      = 5
-  azs             = data.aws_availability_zones.available.names
+  region = var.aws_region
+  env    = "dev"
+  secret = jsondecode(data.aws_secretsmanager_secret_version.kubrick_secret_version.secret_string)
+
+  # Application configuration defaults
+  embedding_model             = "Marengo-retrieval-2.7"
+  clip_length                 = 6
+  min_similarity              = 0.2
+  page_limit                  = 5
+  query_media_file_size_limit = 6000000
+  default_task_limit          = 10
+  max_task_limit              = 50
+  default_task_page           = 0
+  presigned_url_expiry        = 86400
+  presigned_url_ttl           = 600
+  file_check_retries          = 2
+  file_check_delay_sec        = 2.0
+  video_embedding_scopes      = ["clip", "video"]
+
+  azs = data.aws_availability_zones.available.names
 }
 

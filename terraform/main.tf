@@ -7,7 +7,7 @@ module "vpc_network" {
 
 module "iam" {
   source                   = "./modules/iam"
-  secret_arn               = data.aws_secretsmanager_secret.kubrick_secrets.arn
+  secret_arn               = data.aws_secretsmanager_secret.kubrick_secret.arn
   environment              = local.env
   embedding_task_queue_arn = module.sqs.queue_arn
 }
@@ -19,7 +19,7 @@ module "s3" {
 # kubrick_sqs_embedding_task_producer_function
 # kubrick_s3_delete_handler_function
 module "s3_notifications" {
-  source = "./modules/s3_notifications"
+  source                      = "./modules/s3_notifications"
   bucket_id                   = module.s3.bucket_id
   create_lambda_function_arn  = module.lambda.kubrick_sqs_embedding_task_producer_arn
   create_lambda_function_name = module.lambda.kubrick_sqs_embedding_task_producer_function_name
@@ -32,8 +32,8 @@ module "s3_notifications" {
 
 module "rds" {
   source               = "./modules/rds"
-  db_username          = local.secrets.DB_USERNAME
-  db_password          = local.secrets.DB_PASSWORD
+  db_username          = local.secret.DB_USERNAME
+  db_password          = local.secret.DB_PASSWORD
   vpc_id               = module.vpc_network.vpc_id
   db_subnet_ids        = module.vpc_network.private_subnet_ids
   public_subnet_cidrs  = module.vpc_network.public_subnets_cidrs
@@ -51,12 +51,21 @@ module "lambda" {
   lambda_iam_sqs_embedding_task_producer_role_arn   = module.iam.sqs_embedding_task_producer_role_arn
   lambda_iam_sqs_embedding_task_consumer_role_arn   = module.iam.sqs_embedding_task_consumer_role_arn
   db_host                                           = module.rds.db_host
-  db_username                                       = local.secrets.DB_USERNAME
-  db_password                                       = local.secrets.DB_PASSWORD
+  db_username                                       = local.secret.DB_USERNAME
+  db_password                                       = local.secret.DB_PASSWORD
   embedding_model                                   = local.embedding_model
   min_similarity                                    = local.min_similarity
   page_limit                                        = local.page_limit
   clip_length                                       = local.clip_length
+  query_media_file_size_limit                       = local.query_media_file_size_limit
+  default_task_limit                                = local.default_task_limit
+  max_task_limit                                    = local.max_task_limit
+  default_task_page                                 = local.default_task_page
+  presigned_url_expiry                              = local.presigned_url_expiry
+  presigned_url_ttl                                 = local.presigned_url_ttl
+  file_check_retries                                = local.file_check_retries
+  file_check_delay_sec                              = local.file_check_delay_sec
+  video_embedding_scopes                            = local.video_embedding_scopes
   private_subnet_ids                                = module.vpc_network.private_subnet_ids
   vpc_id                                            = module.vpc_network.vpc_id
   s3_bucket_name                                    = module.s3.bucket_name
@@ -78,16 +87,16 @@ module "sqs" {
 }
 
 module "api_gateway" {
-  source                              = "./modules/api_gateway"
-  fetch_videos_lambda_invoke_arn      = module.lambda.kubrick_api_fetch_videos_handler_invoke_arn
-  search_lambda_invoke_arn            = module.lambda.kubrick_api_search_handler_invoke_arn
-  upload_link_lambda_invoke_arn       = module.lambda.kubrick_api_video_upload_link_handler_invoke_arn
-  fetch_tasks_lambda_invoke_arn       = module.lambda.kubrick_api_fetch_tasks_handler_invoke_arn
-  fetch_videos_lambda_function_name   = module.lambda.kubrick_api_fetch_videos_handler_function_name
-  search_lambda_function_name         = module.lambda.kubrick_api_search_handler_function_name
-  upload_link_lambda_function_name    = module.lambda.kubrick_api_video_upload_link_handler_function_name
-  fetch_tasks_lambda_function_name    = module.lambda.kubrick_api_fetch_tasks_handler_function_name
-  aws_region                          = local.region
+  source                            = "./modules/api_gateway"
+  fetch_videos_lambda_invoke_arn    = module.lambda.kubrick_api_fetch_videos_handler_invoke_arn
+  search_lambda_invoke_arn          = module.lambda.kubrick_api_search_handler_invoke_arn
+  upload_link_lambda_invoke_arn     = module.lambda.kubrick_api_video_upload_link_handler_invoke_arn
+  fetch_tasks_lambda_invoke_arn     = module.lambda.kubrick_api_fetch_tasks_handler_invoke_arn
+  fetch_videos_lambda_function_name = module.lambda.kubrick_api_fetch_videos_handler_function_name
+  search_lambda_function_name       = module.lambda.kubrick_api_search_handler_function_name
+  upload_link_lambda_function_name  = module.lambda.kubrick_api_video_upload_link_handler_function_name
+  fetch_tasks_lambda_function_name  = module.lambda.kubrick_api_fetch_tasks_handler_function_name
+  aws_region                        = local.region
 
   depends_on = [module.lambda]
 }

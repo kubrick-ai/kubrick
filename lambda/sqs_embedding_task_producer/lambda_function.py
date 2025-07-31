@@ -7,12 +7,22 @@ import logging
 import utils
 import urllib.parse
 from embed_service import EmbedService
-from config import load_config, get_secret, setup_logging, get_db_config
+from config import get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
+
+# Environment variables
+SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
+EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7")
+DEFAULT_CLIP_LENGTH = int(os.getenv("DEFAULT_CLIP_LENGTH", "6"))
+PRESIGNED_URL_TTL = int(os.getenv("PRESIGNED_URL_TTL", "600"))
+FILE_CHECK_RETRIES = int(os.getenv("FILE_CHECK_RETRIES", "2"))
+FILE_CHECK_DELAY_SEC = float(os.getenv("FILE_CHECK_DELAY_SEC", "2.0"))
+VIDEO_EMBEDDING_SCOPES = json.loads(os.getenv("VIDEO_EMBEDDING_SCOPES", '["clip", "video"]'))
+QUEUE_URL = os.environ["QUEUE_URL"]
 
 
 def wait_for_file(
-    s3_client, bucket, key, retries=3, delay=2, logger=logging.getLogger()
+    s3_client, bucket, key, retries=FILE_CHECK_RETRIES, delay=FILE_CHECK_DELAY_SEC, logger=logging.getLogger()
 ):
     for attempt in range(retries):
         try:
@@ -67,17 +77,15 @@ def lambda_handler(event, context):
     s3 = boto3.client("s3")
     sqs = boto3.client("sqs")
     logger = setup_logging()
-    config = load_config()
-    SECRET = get_secret(config)
+    SECRET = get_secret(SECRET_NAME)
     DB_CONFIG = get_db_config(SECRET)
-    QUEUE_URL = os.environ["QUEUE_URL"]
 
     logger.info("Lambda handler invoked")
 
     embed_service = EmbedService(
         api_key=SECRET["TWELVELABS_API_KEY"],
-        model_name=os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"),
-        clip_length=int(os.getenv("DEFAULT_CLIP_LENGTH", 6)),
+        model_name=EMBEDDING_MODEL_NAME,
+        clip_length=DEFAULT_CLIP_LENGTH,
         logger=logger,
     )
     vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
@@ -98,8 +106,8 @@ def lambda_handler(event, context):
             s3,
             bucket,
             key,
-            config["file_check_retries"],
-            config["file_check_delay_sec"],
+            FILE_CHECK_RETRIES,
+            FILE_CHECK_DELAY_SEC,
             logger,
         ):
             raise FileNotFoundError(f"File s3://{bucket}/{key} not found after retries")
@@ -107,10 +115,10 @@ def lambda_handler(event, context):
         presigned_url = s3.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=config["presigned_url_ttl"],
+            ExpiresIn=PRESIGNED_URL_TTL,
         )
         logger.info(
-            f"Presigned URL generated (expires in {config['presigned_url_ttl']} seconds)"
+            f"Presigned URL generated (expires in {PRESIGNED_URL_TTL} seconds)"
         )
 
         task_id = embed_service.create_embedding_request(url=presigned_url).id

@@ -10,7 +10,7 @@ from search_errors import (
     DatabaseError,
 )
 from pydantic import ValidationError
-from config import load_config, get_secret, setup_logging, get_db_config
+from config import get_secret, setup_logging, get_db_config
 from response_utils import (
     build_success_response,
     build_error_response,
@@ -18,11 +18,16 @@ from response_utils import (
     ErrorCode,
 )
 
+# Environment variables
+SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
+EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7")
+DEFAULT_CLIP_LENGTH = int(os.getenv("DEFAULT_CLIP_LENGTH", "6"))
+QUERY_MEDIA_FILE_SIZE_LIMIT = int(os.getenv("QUERY_MEDIA_FILE_SIZE_LIMIT", "6000000"))
+
 
 def lambda_handler(event, context):
     logger = setup_logging()
-    config = load_config()
-    SECRET = get_secret(config)
+    SECRET = get_secret(SECRET_NAME)
     DB_CONFIG = get_db_config(SECRET)
 
     # Handle preflight request (CORS)
@@ -34,15 +39,15 @@ def lambda_handler(event, context):
     # Initialize services
     embed_service = EmbedService(
         api_key=SECRET["TWELVELABS_API_KEY"],
-        model_name=os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"),
-        clip_length=int(os.getenv("DEFAULT_CLIP_LENGTH", 6)),
+        model_name=EMBEDDING_MODEL_NAME,
+        clip_length=DEFAULT_CLIP_LENGTH,
         logger=logger,
     )
     vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
     search_controller = SearchController(
         embed_service=embed_service,
         vector_db_service=vector_db_service,
-        config=config,
+        query_media_file_size_limit=QUERY_MEDIA_FILE_SIZE_LIMIT,
         logger=logger,
     )
 

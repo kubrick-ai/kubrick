@@ -1,4 +1,5 @@
-from config import load_config, get_secret, setup_logging, get_db_config
+import os
+from config import get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 from response_utils import (
     ErrorCode,
@@ -7,11 +8,16 @@ from response_utils import (
     build_success_response,
 )
 
+# Environment variables
+SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
+DEFAULT_TASK_LIMIT = int(os.getenv("DEFAULT_TASK_LIMIT", "10"))
+MAX_TASK_LIMIT = int(os.getenv("MAX_TASK_LIMIT", "50"))
+DEFAULT_TASK_PAGE = int(os.getenv("DEFAULT_TASK_PAGE", "0"))
+
 
 def lambda_handler(event, context):
     logger = setup_logging()
-    config = load_config()
-    SECRET = get_secret(config)
+    SECRET = get_secret(SECRET_NAME)
     DB_CONFIG = get_db_config(SECRET)
 
     # # Handle preflight request (CORS)
@@ -26,11 +32,11 @@ def lambda_handler(event, context):
         limit = max(
             1,
             min(
-                int(query_params.get("limit", config["default_limit"])),
-                config["max_limit"],
+                int(query_params.get("limit", DEFAULT_TASK_LIMIT)),
+                MAX_TASK_LIMIT,
             ),
         )
-        page = max(0, int(query_params.get("page", config["default_page"])))
+        page = max(0, int(query_params.get("page", DEFAULT_TASK_PAGE)))
     except ValueError:
         return build_error_response(
             status_code=400,
