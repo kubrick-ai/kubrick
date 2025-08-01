@@ -79,7 +79,12 @@ Your AWS user/role needs the following permissions to deploy Kubrick:
 
    ```bash
    git clone https://github.com/kubrick-ai/kubrick.git
-   cd kubrick/terraform
+   ```
+
+1. **Build lambda packages:**
+
+   ```bash
+   ./build-all-packages.sh
    ```
 
 ### Deploying Kubrick
@@ -90,6 +95,7 @@ steps:
 1. **Initialize Terraform**:
 
    ```bash
+   cd kubrick/terraform
    terraform init
    ```
 
