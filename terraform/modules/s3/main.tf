@@ -32,6 +32,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
   }
 }
 
+# Configures CORS settings for the S3 upload bucket to allow video uploads
+resource "aws_s3_bucket_cors_configuration" "kubrick_video_upload_bucket_cors" {
+  bucket = aws_s3_bucket.kubrick_video_upload_bucket.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "HEAD", "PUT"]
+    allowed_origins = ["https://${var.cloudfront_domain}", "http://localhost:3000"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
 # Public s3 bucket that hosts the playground frontend static files
 resource "aws_s3_bucket" "kubrick_playground_bucket" {
   bucket        = "kubrick-playground-${random_id.bucket_suffix.hex}"
