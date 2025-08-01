@@ -226,6 +226,7 @@ resource "aws_lambda_function" "kubrick_api_video_upload_link_handler" {
 
   layers = [
     aws_lambda_layer_version.response_utils_layer.arn,
+    aws_lambda_layer_version.s3_utils_layer.arn
   ]
 
   environment {
