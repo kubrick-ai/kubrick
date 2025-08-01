@@ -261,12 +261,31 @@ deploy_terraform() {
     terraform init
   fi
 
+  # Handle existing secrets
+  handle_existing_secret
+
   echo "🚀 Deploying Terraform configuration..."
   terraform apply
   echo -e "${GREEN}✅ Infrastructure deployed successfully!${NC}"
 
   # Return to script directory
   cd "$ROOT_DIR"
+}
+
+handle_existing_secret() {
+  echo ""
+  read -p "Do you have an existing secret in AWS Secrets Manager that you would like to import? (y/N): " -n 1 -r
+  echo ""
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    read -p "Please enter the name of the secret to import (e.g., kubrick_secret): " secret_name
+    if [[ -n "$secret_name" ]]; then
+      echo "🔐 Importing secret: $secret_name"
+      terraform import "module.secrets_manager.aws_secretsmanager_secret.kubrick_secret" "$secret_name"
+      echo -e "${GREEN}✅ Secret imported successfully!${NC}"
+    else
+      echo -e "${YELLOW}⚠️ No secret name provided. Skipping import.${NC}"
+    fi
+  fi
 }
 
 main() {
