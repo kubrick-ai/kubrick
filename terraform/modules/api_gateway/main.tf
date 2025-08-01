@@ -136,7 +136,7 @@ resource "aws_api_gateway_integration" "post_search_lambda" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = var.search_lambda_invoke_arn
-  content_handling = "CONVERT_TO_BINARY"
+  # content_handling = "CONVERT_TO_BINARY"
 }
 
 resource "aws_api_gateway_integration" "get_generate_upload_link_lambda" {
