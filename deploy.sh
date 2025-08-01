@@ -256,16 +256,9 @@ deploy_terraform() {
     terraform init
   fi
 
-  read -p "Do you want to apply the Terraform configuration? (y/N): " -n 1 -r
-  echo ""
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "🚀 Deploying Terraform configuration..."
-    terraform apply
-    echo -e "${GREEN}✅ Infrastructure deployed successfully!${NC}"
-  else
-    echo -e "${RED}❌ Deployment cancelled by user${NC}"
-    exit 1
-  fi
+  echo "🚀 Deploying Terraform configuration..."
+  terraform apply
+  echo -e "${GREEN}✅ Infrastructure deployed successfully!${NC}"
 
   # Return to script directory
   cd "$ROOT_DIR"
@@ -286,4 +279,3 @@ main() {
 
 # Execute main function
 main "$@"
-
