@@ -2,7 +2,6 @@ resource "aws_api_gateway_rest_api" "api" {
   name = var.api_name
   binary_media_types = [
     "multipart/form-data",
-    "*/*"
   ]
 }
 
@@ -72,8 +71,8 @@ resource "aws_api_gateway_method" "post_search" {
   request_validator_id = aws_api_gateway_request_validator.search_validator.id
 
   request_parameters = {
-    "method.request.header.Content-Type" = false
-    "method.request.header.Accept"       = false
+    "method.request.header.Content-Type" = true
+    "method.request.header.Accept"       = true
   }
 
     request_models = {
@@ -136,7 +135,6 @@ resource "aws_api_gateway_integration" "post_search_lambda" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = var.search_lambda_invoke_arn
-  # content_handling = "CONVERT_TO_BINARY"
 }
 
 resource "aws_api_gateway_integration" "get_generate_upload_link_lambda" {
