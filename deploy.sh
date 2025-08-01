@@ -9,6 +9,12 @@ SKIP_AUTH_CHECK=false
 # Get the absolute path of the script's directory (root directory of project)
 ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
+# Color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
@@ -54,7 +60,7 @@ parse_arguments() {
       exit 0
       ;;
     *)
-      echo "Unknown option: $1"
+      echo -e "${RED}Unknown option: $1${NC}"
       show_help
       exit 1
       ;;
@@ -63,23 +69,23 @@ parse_arguments() {
 }
 
 validate_aws_credentials() {
-  echo "🔐 Validating AWS credentials..."
+  echo -e "🔐 Validating AWS credentials..."
 
   # Set AWS profile if specified
   if [[ -n "$AWS_PROFILE" ]]; then
     export AWS_PROFILE="$AWS_PROFILE"
-    echo "Using AWS profile: $AWS_PROFILE"
+    echo -e "Using AWS profile: ${GREEN}$AWS_PROFILE${NC}"
   fi
 
   # Set AWS region if specified
   if [[ -n "$AWS_REGION" ]]; then
     export AWS_DEFAULT_REGION="$AWS_REGION"
-    echo "Using AWS region: $AWS_REGION"
+    echo -e "Using AWS region: ${GREEN}$AWS_REGION${NC}"
   fi
 
   # Test AWS credentials
   if ! aws sts get-caller-identity &>/dev/null; then
-    echo "❌ AWS credentials not configured or invalid"
+    echo -e "${RED}❌ AWS credentials not configured or invalid${NC}"
     echo "Please run 'aws configure' or set up your AWS credentials"
     if [[ -n "$AWS_PROFILE" ]]; then
       echo "Make sure the profile '$AWS_PROFILE' exists and is properly configured"
@@ -88,29 +94,27 @@ validate_aws_credentials() {
   fi
 
   # Get and display current AWS identity
-  local identity
-  identity=$(aws sts get-caller-identity 2>/dev/null)
   local account_id user_arn
-  account_id=$(echo "$identity" | grep -o '"Account": "[^"]*"' | cut -d'"' -f4)
-  user_arn=$(echo "$identity" | grep -o '"Arn": "[^"]*"' | cut -d'"' -f4)
+  account_id=$(aws sts get-caller-identity --query "Account" --output text 2>/dev/null)
+  user_arn=$(aws sts get-caller-identity --query "Arn" --output text 2>/dev/null)
 
-  echo "✅ AWS credentials validated"
+  echo -e "${GREEN}✅ AWS credentials validated${NC}"
   echo "Account ID: $account_id"
   echo "Identity: $user_arn"
 
   # Validate region is accessible
   if [[ -n "$AWS_REGION" ]]; then
     if ! aws ec2 describe-regions --region "$AWS_REGION" &>/dev/null; then
-      echo "❌ Cannot access AWS region: $AWS_REGION"
+      echo -e "${RED}❌ Cannot access AWS region: $AWS_REGION${NC}"
       echo "Please check if the region exists and you have access to it"
       exit 1
     fi
-    echo "✅ AWS region validated: $AWS_REGION"
+    echo -e "${GREEN}✅ AWS region validated: $AWS_REGION${NC}"
   fi
 }
 
 check_aws_permissions() {
-  echo "🔍 Checking AWS permissions..."
+  echo -e "🔍 Checking AWS permissions..."
 
   local failed_checks=()
 
@@ -135,18 +139,18 @@ check_aws_permissions() {
   fi
 
   if [[ ${#failed_checks[@]} -gt 0 ]]; then
-    echo "⚠️  Warning: Missing permissions for: ${failed_checks[*]}"
+    echo -e "${YELLOW}⚠️  Warning: Missing permissions for: ${failed_checks[*]}${NC}"
     echo "The deployment may fail. Consider reviewing your AWS permissions."
     echo "Required permissions are listed in README.md"
     echo ""
     read -p "Do you want to continue anyway? (y/N): " -n 1 -r
     echo ""
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      echo "❌ Deployment cancelled by user"
+      echo -e "${RED}❌ Deployment cancelled by user${NC}"
       exit 1
     fi
   else
-    echo "✅ AWS permissions validated"
+    echo -e "${GREEN}✅ AWS permissions validated${NC}"
   fi
 }
 
@@ -157,7 +161,7 @@ check_terraform_vars() {
   local tfvars_example="$ROOT_DIR/terraform/terraform.tfvars.example"
 
   if [[ ! -f "$tfvars_file" ]]; then
-    echo "⚠️  terraform.tfvars not found"
+    echo -e "${YELLOW}⚠️  terraform.tfvars not found${NC}"
     echo ""
     echo "Terraform will prompt you for required variables during deployment."
     echo "Note: Values entered will NOT be saved for future deployments."
@@ -172,11 +176,11 @@ check_terraform_vars() {
     read -p "Continue anyway? (y/N): " -n 1 -r
     echo ""
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      echo "❌ Deployment cancelled by user"
+      echo -e "${RED}❌ Deployment cancelled by user${NC}"
       exit 1
     fi
   else
-    echo "✅ Found terraform.tfvars"
+    echo -e "${GREEN}✅ Found terraform.tfvars${NC}"
   fi
 }
 
@@ -203,20 +207,20 @@ check_dependencies() {
   fi
 
   if [ ${#missing_deps[@]} -ne 0 ]; then
-    echo "❌ Missing required dependencies: ${missing_deps[*]}"
+    echo -e "${RED}❌ Missing required dependencies: ${missing_deps[*]}${NC}"
     echo "Please install the missing dependencies and try again."
     echo "See README.md for installation instructions."
     exit 1
   fi
 
-  echo "✅ All dependencies are installed"
+  echo -e "${GREEN}✅ All dependencies are installed${NC}"
 
   # Validate AWS credentials unless skipped
   if [[ "$SKIP_AUTH_CHECK" != "true" ]]; then
     validate_aws_credentials
     check_aws_permissions
   else
-    echo "⚠️  Skipping AWS authentication check"
+    echo -e "${YELLOW}⚠️  Skipping AWS authentication check${NC}"
   fi
 }
 
@@ -224,12 +228,12 @@ build_lambdas() {
   echo "🏗️  Building Lambda packages..."
 
   if [ ! -f "$ROOT_DIR/build-lambda-packages.sh" ]; then
-    echo "❌ build-lambda-packages.sh not found"
+    echo -e "${RED}❌ build-lambda-packages.sh not found${NC}"
     exit 1
   fi
 
   bash "$ROOT_DIR/build-lambda-packages.sh"
-  echo "✅ Lambda packages built successfully"
+  echo -e "${GREEN}✅ Lambda packages built successfully${NC}"
 }
 
 deploy_terraform() {
@@ -239,7 +243,7 @@ deploy_terraform() {
 
   # Check if terraform directory exists
   if [ ! -d "$ROOT_DIR/terraform" ]; then
-    echo "❌ Terraform directory not found"
+    echo -e "${RED}❌ Terraform directory not found${NC}"
     exit 1
   fi
 
@@ -252,12 +256,14 @@ deploy_terraform() {
     terraform init
   fi
 
+  read -p "Do you want to apply the Terraform configuration? (y/N): " -n 1 -r
+  echo ""
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🚀 Deploying Terraform configuration..."
     terraform apply
-    echo "✅ Infrastructure deployed successfully!"
+    echo -e "${GREEN}✅ Infrastructure deployed successfully!${NC}"
   else
-    echo "❌ Deployment cancelled by user"
+    echo -e "${RED}❌ Deployment cancelled by user${NC}"
     exit 1
   fi
 
@@ -274,9 +280,10 @@ main() {
   deploy_terraform
 
   echo ""
-  echo "🎉 Kubrick deployment completed successfully!"
+  echo -e "${GREEN}🎉 Kubrick deployment completed successfully!${NC}"
   echo "Check the Terraform outputs for important resource information."
 }
 
 # Execute main function
 main "$@"
+
