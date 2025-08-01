@@ -87,13 +87,14 @@ async def generate_presigned_url_async(
         "s3", region_name=S3_REGION, config=S3_CLIENT_CONFIG
     ) as s3_client:  # type: ignore (type error in aioboto3 library)
         try:
+            params = {"Bucket": bucket, "Key": key}
+
+            if content_type:
+                params["ContentType"] = content_type
+
             url = await s3_client.generate_presigned_url(
                 ClientMethod=client_method,
-                Params=(
-                    {"Bucket": bucket, "Key": key, "ContentType": content_type}
-                    if content_type
-                    else {"Bucket": bucket, "Key": key}
-                ),
+                Params=params,
                 ExpiresIn=expires_in,
             )
 

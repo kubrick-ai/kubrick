@@ -72,13 +72,14 @@ def lambda_handler(event, context):
         key = f"uploads/{uuid.uuid4()}/{filename}"
         expiration = int(os.environ.get("PRESIGNED_URL_EXPIRATION", 3600))
 
-        logger.info(
-            f"Generating presigned URL for bucket: {bucket}, key: {key}"
-        )
+        logger.info(f"Generating presigned URL for bucket: {bucket}, key: {key}")
 
         presigned_url = s3_utils.generate_presigned_url(
-            bucket=bucket, key=key, content_type="put_object",
-            expires_in=PRESIGNED_URL_TTL
+            bucket=bucket,
+            key=key,
+            client_method="put_object",
+            content_type=get_content_type(file_extension),
+            expires_in=PRESIGNED_URL_TTL,
         )
 
         logger.info("Presigned URL generated successfully")
