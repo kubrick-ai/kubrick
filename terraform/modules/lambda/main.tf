@@ -344,8 +344,6 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     }
   }
 
-
-
   vpc_config {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
