@@ -1,13 +1,14 @@
 import logging
 import os
-import boto3
 import uuid
 from response_utils import ErrorCode, build_success_response, build_error_response
 import s3_utils
 
+# Environment variables
+PRESIGNED_URL_TTL = int(os.getenv("PRESIGNED_URL_TTL", "600"))
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-s3_client = boto3.client("s3")
 
 CONTENT_TYPE_MAPPING = {
     ".mp4": "video/mp4",
@@ -67,22 +68,17 @@ def lambda_handler(event, context):
             logger.warning(message)
             return build_error_response(status_code=400, message=message)
 
-        bucket_name = os.environ.get("S3_BUCKET_NAME")
-        unique_key = f"uploads/{uuid.uuid4()}/{filename}"
+        bucket = os.environ.get("S3_BUCKET_NAME")
+        key = f"uploads/{uuid.uuid4()}/{filename}"
         expiration = int(os.environ.get("PRESIGNED_URL_EXPIRATION", 3600))
 
         logger.info(
-            f"Generating presigned URL for bucket: {bucket_name}, key: {unique_key}"
+            f"Generating presigned URL for bucket: {bucket}, key: {key}"
         )
 
-        presigned_url = s3_client.generate_presigned_url(
-            "put_object",
-            Params={
-                "Bucket": bucket_name,
-                "Key": unique_key,
-                "ContentType": get_content_type(file_extension),
-            },
-            ExpiresIn=expiration,
+        presigned_url = s3_utils.generate_presigned_url(
+            bucket=bucket, key=key, content_type="put_object",
+            expires_in=PRESIGNED_URL_TTL
         )
 
         logger.info("Presigned URL generated successfully")

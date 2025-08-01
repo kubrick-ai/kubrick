@@ -62,16 +62,23 @@ def wait_for_file(
 
 
 def generate_presigned_url(
-    bucket: str, key: str, expires_in: int = 3600, client_method="get_object"
+    bucket: str,
+    key: str,
+    content_type: str = None,
+    expires_in: int = 3600,
+    client_method="get_object",
 ) -> str:
     return asyncio.run(
-        generate_presigned_url_async(bucket, key, expires_in, client_method)
+        generate_presigned_url_async(
+            bucket, key, content_type, expires_in, client_method
+        )
     )
 
 
 async def generate_presigned_url_async(
     bucket: str,
     key: str,
+    content_type: str = None,
     expires_in: int = 3600,
     client_method="get_object",
     session=aioboto3.Session(),
@@ -82,7 +89,11 @@ async def generate_presigned_url_async(
         try:
             url = await s3_client.generate_presigned_url(
                 ClientMethod=client_method,
-                Params={"Bucket": bucket, "Key": key},
+                Params=(
+                    {"Bucket": bucket, "Key": key, "ContentType": content_type}
+                    if content_type
+                    else {"Bucket": bucket, "Key": key}
+                ),
                 ExpiresIn=expires_in,
             )
 
