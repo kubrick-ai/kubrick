@@ -225,15 +225,20 @@ check_dependencies() {
 }
 
 build_lambdas() {
-  echo "🏗️  Building Lambda packages..."
+  read -p "Build Lambda packages? (Required for first deployment) (y/N): " -n 1 -r
+  echo ""
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "🏗️  Building Lambda packages..."
+    if [ ! -f "$ROOT_DIR/build-lambda-packages.sh" ]; then
+      echo -e "${RED}❌ build-lambda-packages.sh not found${NC}"
+      exit 1
+    fi
 
-  if [ ! -f "$ROOT_DIR/build-lambda-packages.sh" ]; then
-    echo -e "${RED}❌ build-lambda-packages.sh not found${NC}"
-    exit 1
+    bash "$ROOT_DIR/build-lambda-packages.sh"
+    echo -e "${GREEN}✅ Lambda packages built successfully${NC}"
+  else
+    echo -e "${YELLOW}Skipping Lambda package build.${NC}"
   fi
-
-  bash "$ROOT_DIR/build-lambda-packages.sh"
-  echo -e "${GREEN}✅ Lambda packages built successfully${NC}"
 }
 
 deploy_terraform() {
