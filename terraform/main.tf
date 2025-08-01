@@ -29,6 +29,7 @@ module "s3" {
   source = "./modules/s3"
 
   api_gateway_write_done = module.api_gateway.null_resource_write_api_url_to_env
+  cloudfront_domain      = module.cloudfront.cloudfront_domain_name
 }
 
 module "s3_notifications" {
