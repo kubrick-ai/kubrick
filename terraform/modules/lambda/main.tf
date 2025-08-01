@@ -335,7 +335,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     aws_lambda_layer_version.config_layer.arn,
   ]
 
-  # In our AWS one we have twelvelabs api key here, I think it needs to be taken out
+
   environment {
     variables = {
       DB_HOST     = var.db_host
@@ -350,7 +350,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
   }
 
-  timeout = 30 # 15 minutes timeout
+  timeout = 25 # 25s timeout for embedding tasks
 
 }
 
@@ -358,7 +358,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
 resource "aws_lambda_event_source_mapping" "sqs_embedding_task_consumer_trigger" {
   event_source_arn = var.queue_arn
   function_name    = aws_lambda_function.kubrick_sqs_embedding_task_consumer.arn
-  batch_size       = 10
+  batch_size       = 1
 
   function_response_types = ["ReportBatchItemFailures"]
 }

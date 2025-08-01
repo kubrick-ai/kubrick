@@ -7,4 +7,4 @@ requires-python = ">=3.13"
 dependencies = []
 
 [tool.pyright]
-extraPaths = ["../layers/response_utils_layer/"]
+extraPaths = ["../layers/response_utils_layer/", "../layers/s3_utils_layer/"]

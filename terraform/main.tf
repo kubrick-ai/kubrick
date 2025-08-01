@@ -1,11 +1,11 @@
 module "secrets_manager" {
-  source              = "./modules/secrets_manager"
-  name                = var.secrets_manager_name
-  description         = "Secret store for Kubrick application"
-  environment         = local.env
-  db_username         = var.db_username
-  db_password         = var.db_password
-  twelvelabs_api_key  = var.twelvelabs_api_key
+  source             = "./modules/secrets_manager"
+  name               = var.secrets_manager_name
+  description        = "Secret store for Kubrick application"
+  environment        = local.env
+  db_username        = var.db_username
+  db_password        = var.db_password
+  twelvelabs_api_key = var.twelvelabs_api_key
 }
 
 module "vpc_network" {
@@ -55,7 +55,7 @@ module "rds" {
 }
 
 module "lambda" {
-  source                                            = "./modules/lambda"
+  source = "./modules/lambda"
 
   aws_region                                        = local.region
   lambda_iam_db_bootstrap_role_arn                  = module.iam.db_bootstrap_role_arn
