@@ -252,17 +252,8 @@ deploy_terraform() {
     terraform init
   fi
 
-  # Plan the deployment
-  echo "📋 Planning Terraform deployment..."
-  terraform plan
-
-  # Ask for confirmation before applying
-  echo ""
-  read -p "Do you want to proceed with the deployment? (y/N): " -n 1 -r
-  echo ""
-
   if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "🚀 Applying Terraform configuration..."
+    echo "🚀 Deploying Terraform configuration..."
     terraform apply
     echo "✅ Infrastructure deployed successfully!"
   else
