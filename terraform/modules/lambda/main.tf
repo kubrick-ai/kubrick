@@ -230,8 +230,8 @@ resource "aws_lambda_function" "kubrick_api_video_upload_link_handler" {
 
   environment {
     variables = {
-      PRESIGNED_URL_EXPIRATION = 900 # This is a magic number, could prob go to locals
-      S3_BUCKET_NAME           = var.s3_bucket_name
+      PRESIGNED_URL_TTL = var.presigned_url_ttl
+      S3_BUCKET_NAME    = var.s3_bucket_name
     }
   }
 
@@ -297,7 +297,6 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
 
   environment {
     variables = {
-      S3_REGION              = var.aws_region
       DB_HOST                = var.db_host
       DEFAULT_CLIP_LENGTH    = var.clip_length
       EMBEDDING_MODEL_NAME   = var.embedding_model

@@ -19,7 +19,6 @@ VIDEO_EMBEDDING_SCOPES = json.loads(
     os.getenv("VIDEO_EMBEDDING_SCOPES", '["clip", "video"]')
 )
 QUEUE_URL = os.environ["QUEUE_URL"]
-S3_REGION = os.getenv("S3_REGION", "us-east-1")
 
 sqs = boto3.client("sqs")
 logger = setup_logging()
