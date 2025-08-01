@@ -13,7 +13,6 @@ variable "secrets_manager_name" {
 variable "db_username" {
   description = "Database username for the Kubrick application"
   type        = string
-  sensitive   = true
 }
 
 variable "db_password" {
