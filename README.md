@@ -40,7 +40,7 @@ Before deploying Kubrick, ensure you have the following:
 
 ### Required Software
 
-- **Terraform** (>= 1.0) -
+- **Terraform** (>= 1.8) -
   [Installation Guide](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 - **AWS CLI** (>= 2.15.0) -
   [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#getting-started-install-instructions)

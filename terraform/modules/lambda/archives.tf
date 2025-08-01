@@ -68,7 +68,7 @@ resource "null_resource" "build_db_bootstrap" {
   }
 
   provisioner "local-exec" {
-    command     = "bash ${local.build_script}"
+    command     = local.build_script
     working_dir = "${local.base_path}/db_bootstrap"
   }
 }
@@ -80,7 +80,7 @@ resource "null_resource" "build_api_fetch_tasks_handler" {
   }
 
   provisioner "local-exec" {
-    command     = "bash ${local.build_script}"
+    command     = local.build_script
     working_dir = "${local.base_path}/api_fetch_tasks_handler"
   }
 }
@@ -92,7 +92,7 @@ resource "null_resource" "build_api_fetch_videos_handler" {
   }
 
   provisioner "local-exec" {
-    command     = "bash ${local.build_script}"
+    command     = local.build_script
     working_dir = "${local.base_path}/api_fetch_videos_handler"
   }
 }
@@ -106,7 +106,7 @@ resource "null_resource" "build_api_search_handler" {
   }
 
   provisioner "local-exec" {
-    command     = "bash ${local.build_script}"
+    command     = local.build_script
     working_dir = "${local.base_path}/api_search_handler"
   }
 }
@@ -118,7 +118,7 @@ resource "null_resource" "build_api_video_upload_link_handler" {
   }
 
   provisioner "local-exec" {
-    command     = "bash ${local.build_script}"
+    command     = local.build_script
     working_dir = "${local.base_path}/api_video_upload_link_handler"
   }
 }
@@ -131,7 +131,7 @@ resource "null_resource" "build_s3_delete_handler" {
   }
 
   provisioner "local-exec" {
-    command     = "bash ${local.build_script}"
+    command     = local.build_script
     working_dir = "${local.base_path}/s3_delete_handler"
   }
 }
@@ -144,7 +144,7 @@ resource "null_resource" "build_sqs_embedding_task_producer" {
   }
 
   provisioner "local-exec" {
-    command     = "bash ${local.build_script}"
+    command     = local.build_script
     working_dir = "${local.base_path}/sqs_embedding_task_producer"
   }
 }
@@ -156,7 +156,7 @@ resource "null_resource" "build_sqs_embedding_task_consumer" {
   }
 
   provisioner "local-exec" {
-    command     = "bash ${local.build_script}"
+    command     = local.build_script
     working_dir = "${local.base_path}/sqs_embedding_task_consumer"
   }
 }
