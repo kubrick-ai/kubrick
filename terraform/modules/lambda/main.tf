@@ -226,6 +226,7 @@ resource "aws_lambda_function" "kubrick_api_video_upload_link_handler" {
 
   layers = [
     aws_lambda_layer_version.response_utils_layer.arn,
+    aws_lambda_layer_version.s3_utils_layer.arn
   ]
 
   environment {
@@ -344,14 +345,12 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     }
   }
 
-
-
   vpc_config {
     subnet_ids         = var.private_subnet_ids
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
   }
 
-  timeout = 900 # 15 minutes timeout
+  timeout = 30 # 15 minutes timeout
 
 }
 
