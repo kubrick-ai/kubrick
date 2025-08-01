@@ -150,6 +150,36 @@ check_aws_permissions() {
   fi
 }
 
+check_terraform_vars() {
+  echo "📝 Checking Terraform variables..."
+
+  local tfvars_file="$ROOT_DIR/terraform/terraform.tfvars"
+  local tfvars_example="$ROOT_DIR/terraform/terraform.tfvars.example"
+
+  if [[ ! -f "$tfvars_file" ]]; then
+    echo "⚠️  terraform.tfvars not found"
+    echo ""
+    echo "Terraform will prompt you for required variables during deployment."
+    echo "Note: Values entered will NOT be saved for future deployments."
+    echo ""
+    if [[ -f "$tfvars_example" ]]; then
+      echo "💡 To avoid this, copy terraform.tfvars.example to terraform.tfvars and fill in your values:"
+      echo "   cp terraform/terraform.tfvars.example terraform/terraform.tfvars"
+    else
+      echo "💡 To avoid this, create a terraform.tfvars file with your variable values."
+    fi
+    echo ""
+    read -p "Continue anyway? (y/N): " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "❌ Deployment cancelled by user"
+      exit 1
+    fi
+  else
+    echo "✅ Found terraform.tfvars"
+  fi
+}
+
 check_dependencies() {
   echo "🔍 Checking dependencies..."
 
@@ -212,6 +242,9 @@ deploy_terraform() {
     echo "❌ Terraform directory not found"
     exit 1
   fi
+
+  # Check and collect Terraform variables
+  check_terraform_vars
 
   # Initialize Terraform if not already initialized
   if [ ! -d ".terraform" ]; then
