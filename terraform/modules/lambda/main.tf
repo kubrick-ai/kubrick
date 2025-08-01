@@ -359,7 +359,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
 resource "aws_lambda_event_source_mapping" "sqs_embedding_task_consumer_trigger" {
   event_source_arn = var.queue_arn
   function_name    = aws_lambda_function.kubrick_sqs_embedding_task_consumer.arn
-  batch_size       = 10
+  batch_size       = 1
 
   function_response_types = ["ReportBatchItemFailures"]
 }
