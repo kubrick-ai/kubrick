@@ -3,6 +3,7 @@ import os
 import boto3
 import uuid
 from response_utils import ErrorCode, build_success_response, build_error_response
+import s3_utils
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

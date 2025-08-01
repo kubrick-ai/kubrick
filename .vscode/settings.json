@@ -3,12 +3,14 @@
     "./lambda/layers/vector_database_layer/",
     "./lambda/layers/embed_service_layer/",
     "./lambda/layers/response_utils_layer/",
-    "./lambda/layers/config_layer/"
+    "./lambda/layers/config_layer/",
+    "./lambda/layers/s3_utils_layer/"
   ],
   "python.autoComplete.extraPaths": [
     "./lambda/layers/vector_database_layer/",
     "./lambda/layers/embed_service_layer/",
     "./lambda/layers/response_utils_layer/",
-    "./lambda/layers/config_layer/"
+    "./lambda/layers/config_layer/",
+    "./lambda/layers/s3_utils_layer/"
   ]
 }
