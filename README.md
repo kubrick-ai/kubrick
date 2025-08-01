@@ -20,16 +20,19 @@ Terraform.
 
 ## Architecture
 
-Kubrick deploys a complete serverless architecture on AWS with the following components:
+Kubrick deploys a complete serverless architecture on AWS with the following
+components:
 
 - **AWS Lambda** - Serverless compute for video processing and API logic
-- **API Gateway** - REST API endpoints and request routing for frontend communication
+- **API Gateway** - REST API endpoints and request routing for frontend
+  communication
 - **CloudFront** - Content delivery network for fast global asset delivery
 - **S3 Buckets** - Object storage for video uploads and static content
 - **SQS Queues** - Message queuing for asynchronous video processing workflows
 - **RDS PostgreSQL** - Managed database for persistent application data
 - **Secrets Manager** - Encrypted storage for database credentials and API keys
-- **IAM Roles & Policies** - Security permissions and access control for all services
+- **IAM Roles & Policies** - Security permissions and access control for all
+  services
 
 ## Prerequisites
 
@@ -37,24 +40,29 @@ Before deploying Kubrick, ensure you have the following:
 
 ### Required Software
 
-- **Terraform** (>= 1.0) - [Installation Guide](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
-- **AWS CLI** (>= 2.15.0) - [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#getting-started-install-instructions)
+- **Terraform** (>= 1.0) -
+  [Installation Guide](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
+- **AWS CLI** (>= 2.15.0) -
+  [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#getting-started-install-instructions)
 - **Python** (>= 3.13) - [Installation Guide](https://www.python.org/downloads/)
-- **uv** - [Installation Guide](https://docs.astral.sh/uv/getting-started/installation/)
-- **Node.js** (>= 24.2.0) & **npm** (>= 11.4.2) - [Installation Guide](https://nodejs.org/)
+- **uv** -
+  [Installation Guide](https://docs.astral.sh/uv/getting-started/installation/)
+- **Node.js** (>= 24.2.0) & **npm** (>= 11.4.2) -
+  [Installation Guide](https://nodejs.org/)
 
 ### AWS Account Requirements
 
 - **AWS Account** with appropriate permissions
 - **AWS CLI configured** with credentials (`aws configure`)
-- **TwelveLabs API Key** - [Get your API key](https://docs.twelvelabs.io/docs/api-key)
+- **TwelveLabs API Key** -
+  [Get your API key](https://docs.twelvelabs.io/docs/api-key)
 
 ### Required AWS Permissions
 
 Your AWS user/role needs the following permissions to deploy Kubrick:
 
 - `AmazonS3FullAccess`
-- `AWSLambda_FullAccess` 
+- `AWSLambda_FullAccess`
 - `AmazonAPIGatewayAdministrator`
 - `CloudFrontFullAccess`
 - `AmazonSQSFullAccess`
@@ -62,7 +70,8 @@ Your AWS user/role needs the following permissions to deploy Kubrick:
 - `SecretsManagerReadWrite`
 - `IAMFullAccess`
 
-> **Note**: For production deployments, consider using more restrictive custom policies following the principle of least privilege.
+> **Note**: For production deployments, consider using more restrictive custom
+> policies following the principle of least privilege.
 
 ## Getting Started
 
@@ -118,17 +127,20 @@ steps:
 If you already have a secret named `kubrick_secret` in AWS Secrets Manager,
 you'll need to import it into Terraform's state:
 
-1. **Verify Secret Contents**: Ensure your existing secret contains the required keys:
+1. **Verify Secret Contents**: Ensure your existing secret contains the required
+   keys:
+
    ```bash
    aws secretsmanager get-secret-value --secret-id kubrick_secret --query SecretString --output text
    ```
-   
+
    The secret should contain these keys:
    - `DB_USERNAME`
    - `DB_PASSWORD`
    - `TWELVELABS_API_KEY`
-   
-   If your secret is missing any keys or has different key names, update it before importing.
+
+   If your secret is missing any keys or has different key names, update it
+   before importing.
 
 2. **Import Existing Secret**:
 
