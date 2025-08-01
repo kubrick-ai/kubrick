@@ -1,5 +1,15 @@
 resource "aws_api_gateway_rest_api" "api" {
   name = var.api_name
+  binary_media_types = [
+    "multipart/form-data",
+  ]
+}
+
+resource "aws_api_gateway_request_validator" "search_validator" {
+  name                        = "search-request-validator"
+  rest_api_id                 = aws_api_gateway_rest_api.api.id
+  validate_request_body       = true
+  validate_request_parameters = false
 }
 
 resource "aws_api_gateway_resource" "videos" {
@@ -58,6 +68,16 @@ resource "aws_api_gateway_method" "post_search" {
   http_method   = "POST"
   authorization = "NONE"
   api_key_required = false
+  request_validator_id = aws_api_gateway_request_validator.search_validator.id
+
+  request_parameters = {
+    "method.request.header.Content-Type" = true
+    "method.request.header.Accept"       = true
+  }
+
+    request_models = {
+    "multipart/form-data" = "Empty"
+  }
 }
 
 resource "aws_api_gateway_method" "options_generate_upload_link" {
@@ -306,7 +326,7 @@ resource "aws_api_gateway_integration_response" "options_search_cors" {
 
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Accept,Accept-Encoding'"
     "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
   }
 
