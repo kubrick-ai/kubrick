@@ -351,7 +351,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
   }
 
-  timeout = 30 # 30s timeout for embedding tasks
+  timeout = 25 # 25s timeout for embedding tasks
 
 }
 
