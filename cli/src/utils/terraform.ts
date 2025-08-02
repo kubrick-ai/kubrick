@@ -19,10 +19,12 @@ Values entered will NOT be saved for future deployments.
 To avoid this, create a ${color.yellow("terraform/terraform.tfvars")} file.`,
     );
 
-    const proceed = await p.confirm({
-      message: "Continue without terraform.tfvars?",
-      initialValue: false,
-    });
+    const proceed = handleCancel(
+      await p.confirm({
+        message: "Continue without terraform.tfvars?",
+        initialValue: false,
+      }),
+    );
 
     if (!proceed) {
       p.cancel("Please create terraform.tfvars and run again");
@@ -115,7 +117,7 @@ export const importSecret = async (
 
 export const removeSecret = async (terraformDir: string): Promise<void> => {
   const s = p.spinner();
-  s.start(`${symbols.key} Removing secret from Terraform state`);
+  s.start(`${symbols.key} Removing secret from deployment configuration`);
 
   const result = await runCommand(
     "terraform",
@@ -135,7 +137,7 @@ export const removeSecret = async (terraformDir: string): Promise<void> => {
     );
   } else {
     s.stop(
-      `${symbols.success} Secret removed from Terraform state successfully`,
+      `${symbols.success} Secret removed from deployment configuration successfully`,
     );
   }
 };
@@ -158,7 +160,7 @@ export const deployTerraform = async (
   }
 
   s.start(
-    `${symbols.process} Deploying Terraform configuration. (Grab a coffee, this may take a while)...`,
+    `${symbols.process} Deploying infrastructure. (Grab a coffee, this may take a while)...`,
   );
 
   const flags = ["-auto-approve", "-input-false"];
@@ -168,11 +170,58 @@ export const deployTerraform = async (
   });
 
   if (!result.success) {
-    s.stop(`${symbols.error} Terraform deployment failed`);
-    p.cancel(`Terraform apply failed: ${result.stderr}`);
+    s.stop(`${symbols.error} Infrastructure deployment failed`);
+    p.cancel(`Failed to deploy infrastructure: ${result.stderr}`);
     process.exit(1);
   }
 
   s.stop(`${symbols.success} Infrastructure deployed successfully`);
+  return result.stdout;
+};
+
+export const destroyTerraform = async (
+  terraformDir: string,
+  secretConfig: SecretConfig,
+  profile: string,
+  region: string,
+): Promise<string> => {
+  const s = p.spinner();
+
+  const env: Record<string, string> = {
+    AWS_PROFILE: profile,
+    AWS_DEFAULT_REGION: region,
+  };
+
+  const excludeSecret = handleCancel(
+    await p.confirm({
+      message:
+        "Exclude AWS secret from destroy? \
+    \nThis is useful if you are planning to redeploy with the same secret.\
+     You will have to choose the import existing secret option on your next deploy.",
+      initialValue: true,
+    }),
+  );
+
+  if (excludeSecret) {
+    await removeSecret(terraformDir);
+  }
+
+  s.start(
+    `${symbols.process} Destroying existing infrastructure. (Grab a coffee, this may take a while)...`,
+  );
+
+  const flags = ["-destroy", "-auto-approve", "-input-false"];
+  const result = await runCommand("terraform", ["apply", ...flags], {
+    cwd: terraformDir,
+    env,
+  });
+
+  if (!result.success) {
+    s.stop(`${symbols.error} Destroy operation failed`);
+    p.cancel(`Failed to destroy existing infrastructure: ${result.stderr}`);
+    process.exit(1);
+  }
+
+  s.stop(`${symbols.success} Infrastructure destroyed successfully`);
   return result.stdout;
 };
