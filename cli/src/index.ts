@@ -3,6 +3,7 @@ import { resolve } from "path";
 import * as p from "@clack/prompts";
 import { deployCommand } from "./commands/deploy.js";
 import { banner } from "./theme/index.js";
+import { destroyCommand } from "./commands/destroy.js";
 
 const main = async () => {
   console.clear();
@@ -18,27 +19,45 @@ const main = async () => {
   });
 
   const args = process.argv.slice(2);
+  const command = args[0];
 
-  // For now, we only have the deploy command
-  // In the future, we can add command parsing here
-  if (args.includes("--help") || args.includes("-h")) {
+  // Show help when no command is passed or help is requested
+  if (!command || args.includes("--help") || args.includes("-h")) {
     console.log(`
 Kubrick CLI - Deploy Kubrick infrastructure with Lambda packages and Terraform
 
 Usage:
-  kubrick [options]
+  kubrick <command> [options]
+
+Commands:
+  deploy        Deploy Kubrick infrastructure
+  destroy       Destroy Kubrick infrastructure
 
 Options:
   --help, -h    Show this help message
 
 Examples:
-  kubrick       Deploy with interactive prompts
+  kubrick deploy    Deploy with interactive prompts
+  kubrick --help    Show this help message
 `);
     process.exit(0);
   }
 
   const rootDir = resolve(process.cwd(), "..");
-  await deployCommand(rootDir);
+
+  // Handle commands
+  switch (command) {
+    case "deploy":
+      await deployCommand(rootDir);
+      break;
+    case "destroy":
+      await destroyCommand(rootDir);
+      break;
+    default:
+      console.error(`Unknown command: ${command}`);
+      console.log(`Run 'kubrick --help' for available commands.`);
+      process.exit(1);
+  }
 };
 
 main().catch((error) => {
