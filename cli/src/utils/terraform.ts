@@ -196,10 +196,22 @@ export const deployTerraform = async (
       ? parseInt(match[1], 10) + parseInt(match[2], 10)
       : "unknown";
 
+  let isUpdating = false;
   const id = setInterval(async () => {
-    const state = await getTerraformStateList(terraformDir);
-    s.message(`${deployMessage}\nCompleted: ${state.length}/${totalResources}`);
-  }, 1000);
+    if (isUpdating) return; // Skip if previous update still running
+    isUpdating = true;
+
+    try {
+      const state = await getTerraformStateList(terraformDir);
+      s.message(
+        `${deployMessage}\nCompleted: ${state.length}/${totalResources}`,
+      );
+    } catch (error) {
+      // Handle error silently or log
+    } finally {
+      isUpdating = false;
+    }
+  }, 10000);
 
   const flags = ["-auto-approve", "-input=false"];
   const result = await runCommand("terraform", ["apply", ...flags], {
@@ -256,12 +268,22 @@ export const destroyTerraform = async (
   const destroyMessage = `${symbols.process} Destroying existing infrastructure. (Grab a coffee, this may take a while)...`;
   s.start(destroyMessage);
 
+  let isUpdating = false;
   const id = setInterval(async () => {
-    const state = await getTerraformStateList(terraformDir);
-    s.message(
-      `${destroyMessage}\n${state.length} remaining:\n${state.join("\n")}`,
-    );
-  }, 1000);
+    if (isUpdating) return; // Skip if previous update still running
+    isUpdating = true;
+
+    try {
+      const state = await getTerraformStateList(terraformDir);
+      s.message(
+        `${destroyMessage}\n${state.length} remaining:\n${state.join("\n")}`,
+      );
+    } catch (error) {
+      // Handle error silently or log
+    } finally {
+      isUpdating = false;
+    }
+  }, 10000);
 
   const flags = ["-destroy", "-auto-approve", "-input=false"];
   const result = await runCommand("terraform", ["apply", ...flags], {
