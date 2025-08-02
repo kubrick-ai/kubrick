@@ -37,6 +37,8 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
   try {
     await checkDependencies();
 
+    await initializeTerraform(terraformDir);
+
     const tfvarsExists = tfvarsFileExists(terraformDir);
     const useExistingTfVars =
       !!tfvarsExists &&
@@ -75,9 +77,8 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
                 })),
               }),
             twelvelabs_api_key: () =>
-              p.text({
+              p.password({
                 message: "Enter your TwelveLabs API key",
-                placeholder: "your-api-key",
                 validate: (value) => {
                   if (!value?.trim()) return "TwelveLabs API key is required";
                 },
@@ -134,8 +135,6 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
     } else {
       p.log.warn(`${symbols.warning} Skipping Lambda package build`);
     }
-
-    await initializeTerraform(terraformDir);
 
     const confirmDeployStep = handleCancel(
       await p.confirm({
