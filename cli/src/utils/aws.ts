@@ -3,6 +3,7 @@ import color from "picocolors";
 import { runCommand, runCommandSilent } from "./shell.js";
 import type { AWSCredentials, ValidationResult } from "../types/index.js";
 import { symbols } from "../theme/index.js";
+import { handleCancel } from "./misc.js";
 
 export const getAWSProfiles = async (): Promise<Array<string>> => {
   // Get AWS profiles
@@ -153,10 +154,12 @@ export const checkAWSPermissions = async (
       `Missing permissions: ${color.yellow(failedChecks.join(", "))}\nThe deployment may fail. Consider reviewing your AWS permissions.`,
     );
 
-    const continueAnyway = await p.confirm({
-      message: "Continue deployment anyway?",
-      initialValue: false,
-    });
+    const continueAnyway = handleCancel(
+      await p.confirm({
+        message: "Continue deployment anyway?",
+        initialValue: false,
+      }),
+    );
 
     if (!continueAnyway) {
       p.cancel(

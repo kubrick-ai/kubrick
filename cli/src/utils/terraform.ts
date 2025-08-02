@@ -1,26 +1,44 @@
 import * as p from "@clack/prompts";
 import color from "picocolors";
-import { existsSync } from "fs";
+import { existsSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { runCommand } from "./shell.js";
-import type { SecretConfig } from "../types/index.js";
 import { symbols } from "../theme/index.js";
 import { handleCancel } from "./misc.js";
+import type { TerraformVarsConfig } from "../types/index.js";
 
-export const checkTerraformVars = async (rootDir: string): Promise<void> => {
-  const tfvarsFile = resolve(rootDir, "terraform", "terraform.tfvars");
+export const tfvarsFileExists = (terraformDir: string): boolean => {
+  const tfvarsFile = resolve(terraformDir, "terraform.tfvars");
+  return existsSync(tfvarsFile);
+};
 
-  // TODO: Handle creating tfvars file
-  if (!existsSync(tfvarsFile)) {
-    p.log.info(
-      `terraform.tfvars not found. Create a ${color.yellow("terraform/terraform.tfvars")} file.`,
-    );
+export const writeTerraformVars = (
+  terraformDir: string,
+  config: TerraformVarsConfig,
+): void => {
+  const tfvarsFile = resolve(terraformDir, "terraform.tfvars");
 
-    p.cancel("Please create terraform.tfvars and run again");
-    process.exit(1);
-  } else {
-    p.log.success("Found terraform.tfvars");
-  }
+  const content = `# Kubrick Terraform Variables
+# Generated automatically
+
+# Required:
+# TwelveLabs API Key
+twelvelabs_api_key = "${config.twelvelabs_api_key}"
+
+# AWS Configuration
+aws_profile = "${config.aws_profile}"
+aws_region = "${config.aws_region}"
+
+# Secrets Manager
+secrets_manager_name = "${config.secrets_manager_name}"
+
+# Database credentials - These will be stored securely in AWS Secrets Manager
+db_username = "${config.db_username}"
+db_password = "${config.db_password}"
+`;
+
+  writeFileSync(tfvarsFile, content, "utf8");
+  p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
 };
 
 export const initializeTerraform = async (
@@ -46,35 +64,35 @@ export const initializeTerraform = async (
   }
 };
 
-export const getSecretConfig = async (): Promise<SecretConfig> => {
+export const initSecret = async (terraformDir: string): Promise<string> => {
   const secretAction = handleCancel(
     await p.select({
       message: "AWS Secrets Manager configuration",
       options: [
         { value: "create", label: "Create new secret" },
         { value: "import", label: "Import existing secret" },
-        { value: "skip", label: "Skip for now" },
       ],
     }),
-  ) as "create" | "import" | "skip";
+  ) as "create" | "import";
+
+  const secretName = handleCancel(
+    await p.text({
+      message: `Enter ${secretAction === "import" ? "existing" : "new"} secret name`,
+      placeholder: "kubrick_secret",
+      defaultValue: "kubrick_secret",
+      validate: (value) => {
+        if (!value) return "Secret name is required";
+      },
+    }),
+  );
 
   if (secretAction === "import") {
-    const secretName = handleCancel(
-      await p.text({
-        message: "Enter existing secret name",
-        placeholder: "kubrick_secret",
-        defaultValue: "kubrick_secret",
-        validate: (value) => {
-          if (!value) return "Secret name is required";
-        },
-      }),
-    );
-
-    return { action: "import", name: secretName };
+    await importSecret(terraformDir, secretName);
   }
 
-  return { action: secretAction };
+  return secretName;
 };
+
 export const importSecret = async (
   terraformDir: string,
   secretName: string,
@@ -132,19 +150,17 @@ export const removeSecret = async (terraformDir: string): Promise<void> => {
 
 export const deployTerraform = async (
   terraformDir: string,
-  secretConfig: SecretConfig,
-  profile: string,
-  region: string,
+  profile?: string,
+  region?: string,
 ): Promise<string> => {
   const s = p.spinner();
 
-  const env: Record<string, string> = {
-    AWS_PROFILE: profile,
-    AWS_DEFAULT_REGION: region,
-  };
-
-  if (secretConfig.action === "import" && secretConfig.name) {
-    await importSecret(terraformDir, secretConfig.name);
+  const env: Record<string, string> = {};
+  if (profile) {
+    env.AWS_PROFILE = profile;
+  }
+  if (region) {
+    env.AWS_DEFAULT_REGION = region;
   }
 
   s.start(
@@ -169,15 +185,18 @@ export const deployTerraform = async (
 
 export const destroyTerraform = async (
   terraformDir: string,
-  profile: string,
-  region: string,
+  profile?: string,
+  region?: string,
 ): Promise<string> => {
   const s = p.spinner();
 
-  const env: Record<string, string> = {
-    AWS_PROFILE: profile,
-    AWS_DEFAULT_REGION: region,
-  };
+  const env: Record<string, string> = {};
+  if (profile) {
+    env.AWS_PROFILE = profile;
+  }
+  if (region) {
+    env.AWS_DEFAULT_REGION = region;
+  }
 
   const excludeSecret = handleCancel(
     await p.confirm({

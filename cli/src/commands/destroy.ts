@@ -2,16 +2,9 @@ import * as p from "@clack/prompts";
 import color from "picocolors";
 import { resolve } from "path";
 import { existsSync } from "fs";
-import type { OperationConfig } from "../types/index.js";
 import { handleCancel } from "../utils/misc.js";
 import { checkDependencies } from "../utils/dependencies.js";
 import { symbols } from "../theme/index.js";
-import {
-  getAWSProfiles,
-  getAWSRegions,
-  validateAWSCredentials,
-  checkAWSPermissions,
-} from "../utils/aws.js";
 import { destroyTerraform } from "../utils/terraform.js";
 
 export const destroyCommand = async (rootDir: string): Promise<void> => {
@@ -30,54 +23,20 @@ export const destroyCommand = async (rootDir: string): Promise<void> => {
   try {
     await checkDependencies();
 
-    const availableAWSProfiles = await getAWSProfiles();
-    const availableAWSRegions = await getAWSRegions();
-    const config: OperationConfig = await p.group(
-      {
-        profile: () =>
-          p.select({
-            message: "Select the AWS Profile to use for this operation",
-            options: availableAWSProfiles.map((profile) => ({
-              value: profile,
-              label: profile,
-            })),
-          }),
-        region: () =>
-          p.select({
-            message: "Select the AWS Region your infrastructure is deployed in",
-            options: availableAWSRegions.map((region) => ({
-              value: region,
-              label: region,
-            })),
-          }),
-        skipAuthCheck: () =>
-          p.confirm({
-            message: "Skip AWS authentication check?",
-            initialValue: false,
-          }),
-      },
-      {
-        onCancel: () => {
-          p.cancel(`${symbols.error} Destroy operation cancelled.`);
-          process.exit(0);
-        },
-      },
+    const confirmDeployStep = handleCancel(
+      await p.confirm({
+        message:
+          "Are you sure you want to destroy the deployed infrastructure?",
+        initialValue: false,
+      }),
     );
 
-    if (!config.skipAuthCheck) {
-      await validateAWSCredentials(config.profile, config.region);
-      await checkAWSPermissions(config.profile, config.region);
-    } else {
-      p.log.warn(`${symbols.warning} Skipping AWS authentication check`);
+    if (!confirmDeployStep) {
+      p.cancel(`Destroy operation cancelled by user.`);
+      process.exit(1);
     }
 
-    // TODO: Add confirmation step
-
-    const outputs = await destroyTerraform(
-      terraformDir,
-      config.profile,
-      config.region,
-    );
+    const outputs = await destroyTerraform(terraformDir);
 
     p.log.success(
       `${symbols.success} ${color.green("Kubrick infrastructure destroyed successfully!")}`,
