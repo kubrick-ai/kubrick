@@ -5,6 +5,7 @@ import { useSearchVideos } from "@/hooks/useKubrickAPI";
 import SearchResultList from "@/components/SearchResultList";
 import { SearchParams } from "@/types";
 import SearchForm from "@/components/SearchForm";
+import ErrorDisplay from "@/components/ErrorDisplay";
 
 const Search = () => {
   const [searchParams, setSearchParams] = useState<SearchParams>({
@@ -23,7 +24,7 @@ const Search = () => {
       />
 
       {isLoading && <p>Loading...</p>}
-      {error && <p className="text-red-500">Error: {error.message}</p>}
+      {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
       {results && (
         <div>

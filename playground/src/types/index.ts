@@ -142,3 +142,14 @@ export const VideoUploadResponseSchema = z.object({
 export type VideoUploadResponse = z.infer<
   typeof VideoUploadResponseSchema
 >;
+
+export interface DetailedError {
+  message: string;
+  statusCode?: number;
+  statusText?: string;
+  responseData?: unknown;
+  requestUrl?: string;
+  requestMethod?: string;
+  isNetworkError?: boolean;
+  originalError?: unknown;
+}
