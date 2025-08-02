@@ -63,11 +63,16 @@ export const initializeTerraform = async (
   }
 };
 
-export const secretExistsInTfState = async (terraformDir: string) => {
+export const getTerraformStateList = async (terraformDir: string) => {
   const result = await runCommand("terraform", ["state", "list"], {
     cwd: terraformDir,
   });
   const stateList = result.stdout.split("\n");
+  return stateList;
+};
+
+export const secretExistsInTfState = async (terraformDir: string) => {
+  const stateList = await getTerraformStateList(terraformDir);
   return stateList.includes(
     "module.secrets_manager.aws_secretsmanager_secret.kubrick_secret",
   );
@@ -172,15 +177,37 @@ export const deployTerraform = async (
     env.AWS_DEFAULT_REGION = region;
   }
 
-  s.start(
-    `${symbols.process} Deploying infrastructure. (Grab a coffee, this may take a while)...`,
-  );
+  const deployMessage = `${symbols.process} Deploying infrastructure. (Grab a coffee, this may take a while)...`;
+  s.start(deployMessage);
+
+  // TODO: Implement progress bar
+  const planResult = await runCommand("terraform", ["plan", "-out=tfplan"], {
+    cwd: terraformDir,
+    env,
+  });
+
+  const planOutput = planResult.stdout;
+  const match =
+    planOutput.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/) ??
+    [];
+
+  const totalResources =
+    match[1] && match[2]
+      ? parseInt(match[1], 10) + parseInt(match[2], 10)
+      : "unknown";
+
+  const id = setInterval(async () => {
+    const state = await getTerraformStateList(terraformDir);
+    s.message(`${deployMessage}\nCompleted: ${state.length}/${totalResources}`);
+  }, 1000);
 
   const flags = ["-auto-approve", "-input=false"];
   const result = await runCommand("terraform", ["apply", ...flags], {
     cwd: terraformDir,
     env,
   });
+
+  clearInterval(id);
 
   if (!result.success) {
     s.stop(`${symbols.error} Infrastructure deployment failed`);
@@ -226,15 +253,23 @@ export const destroyTerraform = async (
     }
   }
 
-  s.start(
-    `${symbols.process} Destroying existing infrastructure. (Grab a coffee, this may take a while)...`,
-  );
+  const destroyMessage = `${symbols.process} Destroying existing infrastructure. (Grab a coffee, this may take a while)...`;
+  s.start(destroyMessage);
+
+  const id = setInterval(async () => {
+    const state = await getTerraformStateList(terraformDir);
+    s.message(
+      `${destroyMessage}\n${state.length} remaining:\n${state.join("\n")}`,
+    );
+  }, 1000);
 
   const flags = ["-destroy", "-auto-approve", "-input=false"];
   const result = await runCommand("terraform", ["apply", ...flags], {
     cwd: terraformDir,
     env,
   });
+
+  clearInterval(id);
 
   if (!result.success) {
     s.stop(`${symbols.error} Destroy operation failed`);
