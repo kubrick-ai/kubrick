@@ -39,6 +39,19 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
     await initializeTerraform(terraformDir);
 
+    const shouldBuildLambdas = handleCancel(
+      await p.confirm({
+        message: "Build Lambda packages? (Required for first deployment)",
+        initialValue: true,
+      }),
+    );
+
+    if (shouldBuildLambdas) {
+      await buildLambdas(rootDir);
+    } else {
+      p.log.warn(`${symbols.warning} Skipping Lambda package build`);
+    }
+
     const tfvarsExists = tfvarsFileExists(terraformDir);
     const useExistingTfVars =
       !!tfvarsExists &&
@@ -130,19 +143,6 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
       p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
 
       deployConfig = tfvarsConfig;
-    }
-
-    const shouldBuildLambdas = handleCancel(
-      await p.confirm({
-        message: "Build Lambda packages? (Required for first deployment)",
-        initialValue: true,
-      }),
-    );
-
-    if (shouldBuildLambdas) {
-      await buildLambdas(rootDir);
-    } else {
-      p.log.warn(`${symbols.warning} Skipping Lambda package build`);
     }
 
     const confirmDeployStep = handleCancel(
