@@ -66,7 +66,7 @@ const TasksTable = ({
             <TooltipProvider>
               {tasks.map((task) => (
                 <TableRow key={task.id}>
-                  <TableCell className="align-middle">
+                  <TableCell className="align-top">
                     <div className="flex items-center gap-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -91,10 +91,10 @@ const TasksTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px]">
+                  <TableCell className="truncate max-w-[200px] align-top">
                     {task.s3_bucket}
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px]">
+                  <TableCell className="truncate max-w-[200px] align-top">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>{task.s3_key}</span>
@@ -102,13 +102,13 @@ const TasksTable = ({
                       <TooltipContent>{task.s3_key}</TooltipContent>
                     </Tooltip>
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px]">
+                  <TableCell className="truncate max-w-[200px] align-top">
                     {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px]">
+                  <TableCell className="truncate max-w-[200px] align-top">
                     {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
                   </TableCell>
-                  <TableCell className="align-middle">
+                  <TableCell className="align-top">
                     <div className="flex items-center gap-2 truncate max-w-[200px]">
                       {task.status === "completed" ? (
                         <IconCircleCheckFilled className="size-4 fill-green-500 dark:fill-green-400" />
