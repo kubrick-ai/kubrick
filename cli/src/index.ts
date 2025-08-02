@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { resolve } from "path";
+import color from "picocolors";
 import * as p from "@clack/prompts";
 import { deployCommand } from "./commands/deploy.js";
 import { banner } from "./theme/index.js";
@@ -24,21 +25,21 @@ const main = async () => {
   // Show help when no command is passed or help is requested
   if (!command || args.includes("--help") || args.includes("-h")) {
     console.log(`
-Kubrick CLI - Deploy Kubrick infrastructure with Lambda packages and Terraform
+${color.cyan(color.bold("Kubrick CLI"))} - Deploy Kubrick infrastructure with Lambda packages and Terraform
 
-Usage:
-  kubrick <command> [options]
+${color.yellow("Usage:")}
+  ${color.green("kubrick")} ${color.blue("<command>")} ${color.gray("[options]")}
 
-Commands:
-  deploy        Deploy Kubrick infrastructure
-  destroy       Destroy Kubrick infrastructure
+${color.yellow("Commands:")}
+  ${color.green("deploy")}        Deploy Kubrick infrastructure
+  ${color.green("destroy")}       Destroy Kubrick infrastructure
 
-Options:
-  --help, -h    Show this help message
+${color.yellow("Options:")}
+  ${color.gray("--help, -h")}    Show this help message
 
-Examples:
-  kubrick deploy    Deploy with interactive prompts
-  kubrick --help    Show this help message
+${color.yellow("Examples:")}
+  ${color.green("kubrick deploy")}    Deploy with interactive prompts
+  ${color.green("kubrick --help")}    Show this help message
 `);
     process.exit(0);
   }
