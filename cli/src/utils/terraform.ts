@@ -10,26 +10,14 @@ import { handleCancel } from "./misc.js";
 export const checkTerraformVars = async (rootDir: string): Promise<void> => {
   const tfvarsFile = resolve(rootDir, "terraform", "terraform.tfvars");
 
-  // TODO: Handle creating tfvars
+  // TODO: Handle creating tfvars file
   if (!existsSync(tfvarsFile)) {
     p.log.info(
-      `terraform.tfvars not found.
-Terraform will prompt for required variables during deployment.
-Values entered will NOT be saved for future deployments.
-To avoid this, create a ${color.yellow("terraform/terraform.tfvars")} file.`,
+      `terraform.tfvars not found. Create a ${color.yellow("terraform/terraform.tfvars")} file.`,
     );
 
-    const proceed = handleCancel(
-      await p.confirm({
-        message: "Continue without terraform.tfvars?",
-        initialValue: false,
-      }),
-    );
-
-    if (!proceed) {
-      p.cancel("Please create terraform.tfvars and run again");
-      process.exit(1);
-    }
+    p.cancel("Please create terraform.tfvars and run again");
+    process.exit(1);
   } else {
     p.log.success("Found terraform.tfvars");
   }
@@ -181,7 +169,6 @@ export const deployTerraform = async (
 
 export const destroyTerraform = async (
   terraformDir: string,
-  secretConfig: SecretConfig,
   profile: string,
   region: string,
 ): Promise<string> => {
