@@ -199,10 +199,9 @@ export const destroyTerraform = async (
 
   const excludeSecret = handleCancel(
     await p.confirm({
-      message:
-        "Exclude AWS secret from destroy? \
-    \nThis is useful if you are planning to redeploy with the same secret.\
-     You will have to choose the import existing secret option on your next deploy.",
+      message: `Exclude AWS secret from destroy?
+      This is useful if you are planning to redeploy with the same secret.
+      You will have to choose the import existing secret option on your next deploy.`,
       initialValue: true,
     }),
   );
@@ -215,7 +214,7 @@ export const destroyTerraform = async (
     `${symbols.process} Destroying existing infrastructure. (Grab a coffee, this may take a while)...`,
   );
 
-  const flags = ["-destroy", "-auto-approve", "-input-false"];
+  const flags = ["-destroy", "-auto-approve", "-input=false"];
   const result = await runCommand("terraform", ["apply", ...flags], {
     cwd: terraformDir,
     env,
