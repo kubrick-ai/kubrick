@@ -177,8 +177,8 @@ export const deployTerraform = async (
     env.AWS_DEFAULT_REGION = region;
   }
 
-  const deployMessage = `${symbols.process} Deploying infrastructure. (Grab a coffee, this may take a while)...`;
-  s.start(deployMessage);
+  const deployMessage = `${symbols.process} Deploying infrastructure`;
+  s.start(`${deployMessage} (Grab a coffee, this may take a while)...`);
 
   // TODO: Implement progress bar
   const planResult = await runCommand("terraform", ["plan"], {
@@ -264,8 +264,8 @@ export const destroyTerraform = async (
     }
   }
 
-  const destroyMessage = `${symbols.process} Destroying existing infrastructure. (Grab a coffee, this may take a while)...`;
-  s.start(destroyMessage);
+  const destroyMessage = `${symbols.process} Destroying existing infrastructure`;
+  s.start(`${destroyMessage} (Grab a coffee, this may take a while)...`);
 
   let isUpdating = false;
   const id = setInterval(async () => {
