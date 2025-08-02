@@ -63,6 +63,16 @@ export const initializeTerraform = async (
   }
 };
 
+export const secretExistsInTfState = async (terraformDir: string) => {
+  const result = await runCommand("terraform", ["state", "list"], {
+    cwd: terraformDir,
+  });
+  const stateList = result.stdout.split("\n");
+  return stateList.includes(
+    "module.secrets_manager.aws_secretsmanager_secret.kubrick_secret",
+  );
+};
+
 export const initSecret = async (terraformDir: string): Promise<string> => {
   const secretAction = handleCancel(
     await p.select({
@@ -197,17 +207,19 @@ export const destroyTerraform = async (
     env.AWS_DEFAULT_REGION = region;
   }
 
-  const excludeSecret = handleCancel(
-    await p.confirm({
-      message: `Exclude AWS secret from destroy?
-      This is useful if you are planning to redeploy with the same secret.
-      You will have to choose the import existing secret option on your next deploy.`,
-      initialValue: true,
-    }),
-  );
+  if (await secretExistsInTfState(terraformDir)) {
+    const excludeSecret = handleCancel(
+      await p.confirm({
+        message: `Existing AWS secret found. Exclude it from the destroy operation?
+    This is useful if you are planning to redeploy with the same secret.
+    You will have to choose the import existing secret option on your next deploy.`,
+        initialValue: true,
+      }),
+    );
 
-  if (excludeSecret) {
-    await removeSecret(terraformDir);
+    if (excludeSecret) {
+      await removeSecret(terraformDir);
+    }
   }
 
   s.start(
