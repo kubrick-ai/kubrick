@@ -71,6 +71,7 @@ const SearchForm = ({
   });
 
   const queryType = form.watch("query_type");
+  const selectedFile = form.watch("query_media_file");
 
   useEffect(() => {
     if (queryType !== "text") {
@@ -134,7 +135,7 @@ const SearchForm = ({
               <FormItem className="flex-1">
                 <FormControl>
                   <Input
-                    className="min-w-90"
+                    className="min-w-90 cursor-text"
                     placeholder="Enter search query..."
                     {...field}
                   />
@@ -143,18 +144,23 @@ const SearchForm = ({
               </FormItem>
             )}
           />
-          <Button type="submit">Search</Button>
+          <Button className="cursor-pointer" type="submit">
+            Search
+          </Button>
         </div>
 
         <Collapsible open={isOptionsOpen} onOpenChange={setIsOptionsOpen}>
           <CollapsibleTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 cursor-pointer"
+            >
               {isOptionsOpen ? (
                 <ChevronDown size={16} />
               ) : (
                 <ChevronRight size={16} />
               )}
-              Options
+              Advanced Search
             </Button>
           </CollapsibleTrigger>
 
@@ -171,7 +177,7 @@ const SearchForm = ({
                       value={field.value || ""}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="cursor-pointer">
                           <SelectValue placeholder="Select query type" />
                         </SelectTrigger>
                       </FormControl>
@@ -208,12 +214,24 @@ const SearchForm = ({
                     <FormItem>
                       <FormLabel>Media File</FormLabel>
                       <FormControl>
-                        <Input
-                          type="file"
-                          accept={getAcceptType()}
-                          onChange={(e) => field.onChange(e.target.files?.[0])}
-                          disabled={queryType === "text"}
-                        />
+                        <div className="relative">
+                          <Input
+                            type="file"
+                            accept={getAcceptType()}
+                            onChange={(e) =>
+                              field.onChange(e.target.files?.[0])
+                            }
+                            disabled={queryType === "text"}
+                            className="cursor-pointer file:cursor-pointer"
+                          />
+                          {selectedFile && (
+                            <div className="absolute inset-0 flex items-center px-3 pointer-events-none bg-background border rounded-md">
+                              <span className="text-sm text-foreground truncate">
+                                {selectedFile.name}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -229,7 +247,7 @@ const SearchForm = ({
                     <FormLabel>Media Url</FormLabel>
                     <FormControl>
                       <Input
-                        className="min-w-40"
+                        className="min-w-40 cursor-text"
                         placeholder="Enter media url..."
                         {...field}
                         disabled={queryType === "text"}
@@ -265,7 +283,7 @@ const SearchForm = ({
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="outline"
-                              className="justify-between w-42 "
+                              className="justify-between w-42 cursor-pointer"
                               disabled={queryType !== "video"}
                             >
                               {field.value && field.value.length > 0
@@ -330,9 +348,11 @@ const SearchForm = ({
                   <FormItem>
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <FormLabel>Scope</FormLabel>
-                        </TooltipTrigger>
+                        <FormLabel>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help">Scope</span>
+                          </TooltipTrigger>
+                        </FormLabel>
                         <TooltipContent>
                           <p>Filter search results by their embedding scope.</p>
                           <p>
@@ -349,7 +369,7 @@ const SearchForm = ({
                       value={field.value || ""}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="cursor-pointer">
                           <SelectValue placeholder="Select scope" />
                         </SelectTrigger>
                       </FormControl>
@@ -371,9 +391,11 @@ const SearchForm = ({
                   <FormItem>
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <FormLabel>Search Modality</FormLabel>
-                        </TooltipTrigger>
+                        <FormLabel>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help">Search Modality</span>
+                          </TooltipTrigger>
+                        </FormLabel>
                         <TooltipContent>
                           <p>
                             Filter search results by their embedding modality
@@ -386,7 +408,7 @@ const SearchForm = ({
                       value={field.value || ""}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="cursor-pointer">
                           <SelectValue placeholder="Select modality to search" />
                         </SelectTrigger>
                       </FormControl>
@@ -410,9 +432,13 @@ const SearchForm = ({
                   <FormItem>
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <FormLabel>Min Similarity: {field.value}</FormLabel>
-                        </TooltipTrigger>
+                        <FormLabel>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help">
+                              Min Similarity: {field.value}
+                            </span>
+                          </TooltipTrigger>
+                        </FormLabel>
                         <TooltipContent>
                           <p>
                             Threshold for minimum Cosine Similarity of a search
@@ -443,9 +469,13 @@ const SearchForm = ({
                 <FormItem>
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <FormLabel>Advanced Filter (JSON)</FormLabel>
-                      </TooltipTrigger>
+                      <FormLabel>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help">
+                            Advanced Filter (JSON)
+                          </span>
+                        </TooltipTrigger>
+                      </FormLabel>
                       <TooltipContent>
                         <p>Filter on metadata using a JSON</p>
                       </TooltipContent>
@@ -453,7 +483,7 @@ const SearchForm = ({
                   </TooltipProvider>
                   <FormControl>
                     <textarea
-                      className="w-md p-2 border rounded-md"
+                      className="w-md p-2 border rounded-md cursor-text"
                       rows={3}
                       placeholder='{"key": "value"}'
                       {...field}
@@ -464,7 +494,12 @@ const SearchForm = ({
               )}
             />
 
-            <Button type="button" variant="outline" onClick={reset}>
+            <Button
+              className="cursor-pointer"
+              type="button"
+              variant="outline"
+              onClick={reset}
+            >
               Reset
             </Button>
           </CollapsibleContent>
@@ -475,4 +510,3 @@ const SearchForm = ({
 };
 
 export default SearchForm;
-

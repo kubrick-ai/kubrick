@@ -50,7 +50,7 @@ const ErrorDisplay = ({ error, className = ''}: ErrorDisplayProps) => {
       if (detailedError.statusCode === 400) {
           return "Invalid request.";
       } else if (detailedError.statusCode === 422) {
-          return "Media Processing error";
+          return "Media processing error";
       } else if (detailedError.statusCode === 503) {
         return "Database Error"
       } else if (detailedError.statusCode < 500) {
@@ -86,7 +86,7 @@ const ErrorDisplay = ({ error, className = ''}: ErrorDisplayProps) => {
   };
 
   return (
-    <div className={`bg-red-50 border border-red-200 rounded-lg p-4 ${className} mt-4`}>
+    <div className={`bg-red-50 border border-red-200 rounded-lg p-4 ${className}`}>
       <div className="flex items-start">
         <div className="flex-shrink-0">
           <AlertCircle className="h-5 w-5 text-red-400" />

@@ -24,7 +24,7 @@ const Search = () => {
       />
 
       {isLoading && <p>Loading...</p>}
-      {error && <ErrorDisplay error={error} className="mb-4" />}
+      {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
       {results && (
         <div>
