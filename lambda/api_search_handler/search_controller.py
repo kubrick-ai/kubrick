@@ -332,7 +332,7 @@ class SearchController:
         """Extract embedding from either file or URL"""
         try:
             media_url = search_request.query_media_url
-            media_file = search_request.get_query_media_file_bytestream()
+            media_file = search_request.query_media_file
             query_modality = getattr(search_request, "query_modality", None)
 
             extract_fn = {
@@ -369,12 +369,14 @@ class SearchController:
                         else ""
                     )
                 )
+
+                media_file_bytestream = search_request.get_query_media_file_bytestream()
                 if media_type == "video":
                     embeddings = extract_fn(
-                        file=media_file, query_modality=query_modality
+                        file=media_file_bytestream, query_modality=query_modality
                     )
                 else:
-                    embeddings = extract_fn(file=media_file)
+                    embeddings = extract_fn(file=media_file_bytestream)
             else:
                 self.logger.exception(
                     f"Could not extract media_url or media_file from search_request: {search_request}"

@@ -9,7 +9,9 @@ resource "aws_secretsmanager_secret" "kubrick_secret" {
   }
 
   lifecycle {
-    ignore_changes = [name]
+    # the secret will not be destroyed on terraform destroy
+    # if var.name is changed, the secret will not be created and destroyed
+    ignore_changes = all
   }
 }
 

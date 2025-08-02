@@ -1,0 +1,30 @@
+{
+  "name": "kubrick-cli",
+  "version": "1.0.0",
+  "description": "Kubrick CLI tool",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "npx tsc --noEmit",
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "build": "npm install && tsc && chmod +x ./dist/index.js && npm link"
+  },
+  "bin": {
+    "kubrick": "./dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "execa": "^8.0.0",
+    "gradient-string": "^3.0.0",
+    "picocolors": "^1.1.1"
+  }
+}
