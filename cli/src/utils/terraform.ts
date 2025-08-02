@@ -204,7 +204,7 @@ export const deployTerraform = async (
     try {
       const state = await getTerraformStateList(terraformDir);
       s.message(
-        `${deployMessage}\nCompleted: ${state.length}/${totalResources}`,
+        `${deployMessage} | Completed: ${state.length}/${totalResources}`,
       );
     } catch (error) {
       // Handle error silently or log
@@ -276,7 +276,7 @@ export const destroyTerraform = async (
     try {
       const state = await getTerraformStateList(terraformDir);
       s.message(
-        `${destroyMessage}\n${state.length} remaining:\n${state.join("\n")}`,
+        `${destroyMessage} | ${state.length} remaining: ${state.join(", ")}`,
       );
     } catch (error) {
       // Handle error silently or log
