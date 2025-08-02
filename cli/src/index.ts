@@ -1,9 +1,12 @@
 // #!/usr/bin/env node
+import { resolve } from "path";
 import * as p from "@clack/prompts";
 import { deployCommand } from "./commands/deploy.js";
+import { banner } from "./theme/index.js";
 
 const main = async () => {
   console.clear();
+  console.log(banner);
 
   p.updateSettings({
     aliases: {
@@ -34,7 +37,8 @@ Examples:
     process.exit(0);
   }
 
-  await deployCommand();
+  const rootDir = resolve(process.cwd(), "..");
+  await deployCommand(rootDir);
 };
 
 main().catch((error) => {

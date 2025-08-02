@@ -5,6 +5,7 @@ import { existsSync } from "fs";
 import type { DeployConfig } from "../types/index.js";
 import { handleCancel } from "../utils/misc.js";
 import { checkDependencies } from "../utils/dependencies.js";
+import { symbols } from "../theme/index.js";
 import {
   getAWSProfiles,
   getAWSRegions,
@@ -19,15 +20,14 @@ import {
   deployTerraform,
 } from "../utils/terraform.js";
 
-export const deployCommand = async (): Promise<void> => {
+export const deployCommand = async (rootDir: string): Promise<void> => {
   p.intro(`${color.bgBlue(color.white(" Kubrick Deployment "))}`);
 
   // Find project root directory
-  const rootDir = resolve(process.cwd(), "..");
   const terraformDir = resolve(rootDir, "terraform");
 
   if (!existsSync(terraformDir)) {
-    p.cancel("Terraform directory not found. Please run from project root.");
+    p.cancel(`${symbols.error} Terraform directory not found. Please run from project root.`);
     process.exit(1);
   }
 
@@ -62,7 +62,7 @@ export const deployCommand = async (): Promise<void> => {
       },
       {
         onCancel: () => {
-          p.cancel("Deployment cancelled.");
+          p.cancel(`${symbols.error} Deployment cancelled.`);
           process.exit(0);
         },
       },
@@ -72,7 +72,7 @@ export const deployCommand = async (): Promise<void> => {
       await validateAWSCredentials(deployConfig.profile, deployConfig.region);
       await checkAWSPermissions(deployConfig.profile, deployConfig.region);
     } else {
-      p.log.warn("Skipping AWS authentication check");
+      p.log.warn(`${symbols.warning} Skipping AWS authentication check`);
     }
 
     const shouldBuildLambdas = handleCancel(
@@ -85,7 +85,7 @@ export const deployCommand = async (): Promise<void> => {
     if (shouldBuildLambdas) {
       await buildLambdas(rootDir);
     } else {
-      p.log.warn("Skipping Lambda package build");
+      p.log.warn(`${symbols.warning} Skipping Lambda package build`);
     }
 
     await checkTerraformVars(rootDir);
@@ -101,7 +101,7 @@ export const deployCommand = async (): Promise<void> => {
     );
 
     p.log.success(
-      `${color.green("Kubrick deployment completed successfully!")}`,
+      `${symbols.success} ${color.green("Kubrick deployment completed successfully!")}`,
     );
 
     const showOutput = handleCancel(
@@ -116,9 +116,9 @@ export const deployCommand = async (): Promise<void> => {
     p.outro("Exiting...");
   } catch (error) {
     if (error instanceof Error) {
-      p.cancel(`Deployment failed: ${error.message}`);
+      p.cancel(`${symbols.error} Deployment failed: ${error.message}`);
     } else {
-      p.cancel("Deployment failed with unknown error");
+      p.cancel(`${symbols.error} Deployment failed with unknown error`);
     }
     process.exit(1);
   }

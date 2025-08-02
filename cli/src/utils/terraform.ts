@@ -4,7 +4,7 @@ import { existsSync } from "fs";
 import { resolve } from "path";
 import { runCommand } from "./shell.js";
 import type { SecretConfig } from "../types/index.js";
-import { symbols } from "./symbols.js";
+import { symbols } from "../theme/index.js";
 import { handleCancel } from "./misc.js";
 
 export const checkTerraformVars = async (rootDir: string): Promise<void> => {
@@ -30,6 +30,29 @@ To avoid this, create a ${color.yellow("terraform/terraform.tfvars")} file.`,
     }
   } else {
     p.log.success("Found terraform.tfvars");
+  }
+};
+
+export const initializeTerraform = async (
+  terraformDir: string,
+): Promise<void> => {
+  const terraformStateDir = resolve(terraformDir, ".terraform");
+
+  if (!existsSync(terraformStateDir)) {
+    const s = p.spinner();
+    s.start(`${symbols.process} Initializing Terraform...`);
+
+    const result = await runCommand("terraform", ["init"], {
+      cwd: terraformDir,
+    });
+
+    if (!result.success) {
+      s.stop(`${symbols.error} Terraform initialization failed`);
+      p.cancel(`Terraform init failed: ${result.stderr}`);
+      process.exit(1);
+    }
+
+    s.stop(`${symbols.success} Initialized Terraform`);
   }
 };
 
@@ -62,30 +85,6 @@ export const getSecretConfig = async (): Promise<SecretConfig> => {
 
   return { action: secretAction };
 };
-
-export const initializeTerraform = async (
-  terraformDir: string,
-): Promise<void> => {
-  const terraformStateDir = resolve(terraformDir, ".terraform");
-
-  if (!existsSync(terraformStateDir)) {
-    const s = p.spinner();
-    s.start(`${symbols.process} Initializing Terraform...`);
-
-    const result = await runCommand("terraform", ["init"], {
-      cwd: terraformDir,
-    });
-
-    if (!result.success) {
-      s.stop(`${symbols.error} Terraform initialization failed`);
-      p.cancel(`Terraform init failed: ${result.stderr}`);
-      process.exit(1);
-    }
-
-    s.stop(`${symbols.success} Initialized Terraform`);
-  }
-};
-
 export const importSecret = async (
   terraformDir: string,
   secretName: string,
@@ -114,6 +113,33 @@ export const importSecret = async (
   }
 };
 
+export const removeSecret = async (terraformDir: string): Promise<void> => {
+  const s = p.spinner();
+  s.start(`${symbols.key} Removing secret from Terraform state`);
+
+  const result = await runCommand(
+    "terraform",
+    [
+      "state",
+      "rm",
+      "module.secrets_manager.aws_secretsmanager_secret.kubrick_secret",
+    ],
+    { cwd: terraformDir },
+  );
+
+  if (!result.success) {
+    s.stop(`${symbols.error} Terraform state mutation failed`);
+    p.note(
+      `Failed to remove secret: ${result.stderr}\nThis may be normal if the secret resource was never created.`,
+      `${symbols.warning} Warning`,
+    );
+  } else {
+    s.stop(
+      `${symbols.success} Secret removed from Terraform state successfully`,
+    );
+  }
+};
+
 export const deployTerraform = async (
   terraformDir: string,
   secretConfig: SecretConfig,
@@ -131,9 +157,12 @@ export const deployTerraform = async (
     await importSecret(terraformDir, secretConfig.name);
   }
 
-  s.start(`${symbols.process} Deploying Terraform configuration...`);
+  s.start(
+    `${symbols.process} Deploying Terraform configuration. (Grab a coffee, this may take a while)...`,
+  );
 
-  const result = await runCommand("terraform", ["apply"], {
+  const flags = ["-auto-approve", "-input-false"];
+  const result = await runCommand("terraform", ["apply", ...flags], {
     cwd: terraformDir,
     env,
   });

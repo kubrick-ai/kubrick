@@ -2,6 +2,7 @@ import * as p from "@clack/prompts";
 import color from "picocolors";
 import { runCommand, runCommandSilent } from "./shell.js";
 import type { AWSCredentials, ValidationResult } from "../types/index.js";
+import { symbols } from "../theme/index.js";
 
 export const getAWSProfiles = async (): Promise<Array<string>> => {
   // Get AWS profiles
@@ -11,7 +12,7 @@ export const getAWSProfiles = async (): Promise<Array<string>> => {
   ]);
 
   if (!profilesResult.success) {
-    p.cancel("Could not retrieve AWS profiles");
+    p.cancel(`${symbols.error} Could not retrieve AWS profiles`);
     process.exit(1);
   }
 
@@ -31,7 +32,7 @@ export const getAWSRegions = async (): Promise<Array<string>> => {
   ]);
 
   if (!regionsResult.success) {
-    p.cancel("Could not retrieve AWS regions");
+    p.cancel(`${symbols.error} Could not retrieve AWS regions`);
     process.exit(1);
   }
 
@@ -44,7 +45,7 @@ export const validateAWSCredentials = async (
   region: string,
 ): Promise<AWSCredentials> => {
   const s = p.spinner();
-  s.start("Validating AWS credentials...");
+  s.start(`${symbols.process} Validating AWS credentials...`);
 
   const env: Record<string, string> = {
     AWS_PROFILE: profile,
@@ -58,7 +59,7 @@ export const validateAWSCredentials = async (
     { env },
   );
   if (!identityResult.success) {
-    s.stop("Failed to get AWS identity");
+    s.stop(`${symbols.error} Failed to get AWS identity`);
     p.cancel(
       `Please ensure AWS CLI is authenticated and your profile: ${env.AWS_PROFILE} is configured and valid.`,
     );
@@ -79,12 +80,12 @@ export const validateAWSCredentials = async (
     { env },
   );
   if (!regionResult) {
-    s.stop("AWS region validation failed");
+    s.stop(`${symbols.error} AWS region validation failed`);
     p.cancel(`Cannot access AWS region: ${region}`);
     process.exit(1);
   }
 
-  s.stop("✓ AWS credentials validated");
+  s.stop(`${symbols.success} AWS credentials validated`);
 
   // Display AWS configuration
   p.note(
@@ -100,7 +101,7 @@ export const checkAWSPermissions = async (
   region: string,
 ): Promise<ValidationResult> => {
   const s = p.spinner();
-  s.start("🔍 Checking AWS permissions...");
+  s.start(`${symbols.process} Checking AWS permissions...`);
 
   const env: Record<string, string> = {
     AWS_PROFILE: profile,
@@ -145,7 +146,7 @@ export const checkAWSPermissions = async (
     failedChecks.push("API Gateway");
   }
 
-  s.stop("Checked AWS account permissions");
+  s.stop(`${symbols.success} Checked AWS account permissions`);
 
   if (failedChecks.length > 0) {
     p.log.warn(
@@ -158,11 +159,13 @@ export const checkAWSPermissions = async (
     });
 
     if (!continueAnyway) {
-      p.cancel("Deployment cancelled due to insufficient permissions");
+      p.cancel(
+        `${symbols.error} Deployment cancelled due to insufficient permissions`,
+      );
       process.exit(1);
     }
   } else {
-    p.log.success("AWS permissions validated");
+    p.log.success(`${symbols.success} AWS permissions validated`);
   }
 
   return {
