@@ -207,10 +207,14 @@ export const destroyTerraform = async (
     env.AWS_DEFAULT_REGION = region;
   }
 
-  if (await secretExistsInTfState(terraformDir)) {
+  s.start(`${symbols.process} Checking for existing AWS secret`);
+  const secretExists = await secretExistsInTfState(terraformDir);
+  s.stop(`${secretExists ? "Existing" : "No existing"} AWS secret found. `);
+
+  if (secretExists) {
     const excludeSecret = handleCancel(
       await p.confirm({
-        message: `Existing AWS secret found. Exclude it from the destroy operation?
+        message: `Exclude existing AWS secret from the destroy operation?
     This is useful if you are planning to redeploy with the same secret.
     You will have to choose the import existing secret option on your next deploy.`,
         initialValue: true,
