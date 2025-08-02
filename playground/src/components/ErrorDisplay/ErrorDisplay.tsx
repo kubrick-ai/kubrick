@@ -86,7 +86,7 @@ const ErrorDisplay = ({ error, className = ''}: ErrorDisplayProps) => {
   };
 
   return (
-    <div className={`bg-red-50 border border-red-200 rounded-lg p-4 ${className} mt-4ç`}>
+    <div className={`bg-red-50 border border-red-200 rounded-lg p-4 ${className} mt-4`}>
       <div className="flex items-start">
         <div className="flex-shrink-0">
           <AlertCircle className="h-5 w-5 text-red-400" />
