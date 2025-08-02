@@ -57,8 +57,8 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
       const availableAWSProfiles = await getAWSProfiles();
       const availableAWSRegions = await getAWSRegions();
 
-      const tfvarsConfig: TerraformVarsConfig = {
-        ...(await p.group(
+      const tfvarsPartial: Omit<TerraformVarsConfig, "secrets_manager_name"> =
+        await p.group(
           {
             aws_profile: () =>
               p.select({
@@ -105,21 +105,30 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
               process.exit(0);
             },
           },
-        )),
+        );
 
+      await validateAWSCredentials(
+        tfvarsPartial.aws_profile,
+        tfvarsPartial.aws_region,
+      );
+      await checkAWSPermissions(
+        tfvarsPartial.aws_profile,
+        tfvarsPartial.aws_region,
+      );
+
+      writeTerraformVars(terraformDir, {
+        ...tfvarsPartial,
+        secrets_manager_name: "kubrick_secret",
+      });
+
+      const tfvarsConfig: TerraformVarsConfig = {
+        ...tfvarsPartial,
         secrets_manager_name: await initSecret(terraformDir),
       };
 
-      await validateAWSCredentials(
-        tfvarsConfig.aws_profile,
-        tfvarsConfig.aws_region,
-      );
-      await checkAWSPermissions(
-        tfvarsConfig.aws_profile,
-        tfvarsConfig.aws_region,
-      );
-
       writeTerraformVars(terraformDir, tfvarsConfig);
+      p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
+
       deployConfig = tfvarsConfig;
     }
 

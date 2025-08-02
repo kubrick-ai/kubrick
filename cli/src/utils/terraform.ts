@@ -38,7 +38,6 @@ db_password = "${config.db_password}"
 `;
 
   writeFileSync(tfvarsFile, content, "utf8");
-  p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
 };
 
 export const initializeTerraform = async (
