@@ -181,15 +181,14 @@ export const deployTerraform = async (
   s.start(deployMessage);
 
   // TODO: Implement progress bar
-  const planResult = await runCommand("terraform", ["plan", "-out=tfplan"], {
+  const planResult = await runCommand("terraform", ["plan"], {
     cwd: terraformDir,
     env,
   });
 
-  const planOutput = planResult.stdout;
+  const planOutput = planResult.stdout.split("Plan:").at(-1) ?? "";
   const match =
-    planOutput.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/) ??
-    [];
+    planOutput.match(/(\d+) to add, (\d+) to change, (\d+) to destroy/) ?? [];
 
   const totalResources =
     match[1] && match[2]
