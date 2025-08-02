@@ -55,7 +55,7 @@ export const initializeTerraform = async (
 
     if (!result.success) {
       s.stop(`${symbols.error} Terraform initialization failed`);
-      p.cancel(`Terraform init failed: ${result.stderr}`);
+      p.cancel(`Terraform init failed: \n${result.stderr}`);
       process.exit(1);
     }
 
@@ -112,7 +112,7 @@ export const importSecret = async (
   if (!result.success) {
     s.stop(`${symbols.error} Secret import failed`);
     p.note(
-      `Failed to import secret: ${result.stderr}\nThis may be normal if the secret is already imported.`,
+      `Failed to import secret: \n${result.stderr}\nThis may be normal if the secret is already imported.`,
       `${symbols.warning} Import Warning`,
     );
   } else {
@@ -137,7 +137,7 @@ export const removeSecret = async (terraformDir: string): Promise<void> => {
   if (!result.success) {
     s.stop(`${symbols.error} Terraform state mutation failed`);
     p.note(
-      `Failed to remove secret: ${result.stderr}\nThis may be normal if the secret resource was never created.`,
+      `Failed to remove secret: \n${result.stderr}\nThis may be normal if the secret resource was never created.`,
       `${symbols.warning} Warning`,
     );
   } else {
@@ -174,7 +174,7 @@ export const deployTerraform = async (
 
   if (!result.success) {
     s.stop(`${symbols.error} Infrastructure deployment failed`);
-    p.cancel(`Failed to deploy infrastructure: ${result.stderr}`);
+    p.cancel(`Failed to deploy infrastructure: \n${result.stderr}`);
     process.exit(1);
   }
 
@@ -222,7 +222,7 @@ export const destroyTerraform = async (
 
   if (!result.success) {
     s.stop(`${symbols.error} Destroy operation failed`);
-    p.cancel(`Failed to destroy existing infrastructure: ${result.stderr}`);
+    p.cancel(`Failed to destroy existing infrastructure: \n${result.stderr}`);
     process.exit(1);
   }
 
