@@ -274,9 +274,7 @@ export const destroyTerraform = async (
 
     try {
       const state = await getTerraformStateList(terraformDir);
-      s.message(
-        `${destroyMessage} | ${state.length} remaining: ${state.join(", ")}`,
-      );
+      s.message(`${destroyMessage} | ${state.length} remaining`);
     } catch (error) {
       // Handle error silently or log
     } finally {
