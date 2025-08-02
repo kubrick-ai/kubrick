@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useEffect, useState } from "react";
 import {
   SearchParams,
@@ -11,47 +11,80 @@ import {
   TasksResponseSchema,
   VideoUploadResponse,
   VideoUploadResponseSchema,
+  DetailedError,
 } from "@/types";
+
 
 // TODO: Move to config?
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:5000";
+const createDetailedError = (error: unknown): DetailedError => {
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError;
+    return {
+      message: axiosError.message,
+      statusCode: axiosError.response?.status,
+      statusText: axiosError.response?.statusText,
+      responseData: axiosError.response?.data,
+      requestUrl: axiosError.config?.url,
+      requestMethod: axiosError.config?.method?.toUpperCase(),
+      isNetworkError: axiosError.code === 'NETWORK_ERROR' || !axiosError.response,
+      originalError: axiosError,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      originalError: error,
+    };
+  }
+
+  return {
+    message: 'An unexpected error occurred',
+    originalError: error,
+  };
+};
 
 const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
-  const formData = new FormData();
-  if (params.query_text) {
-    formData.append("query_text", params.query_text);
-  }
-
-  formData.append("query_type", params.query_type);
-
-  if (params.query_type !== "text") {
-    if (params.query_media_url) {
-      formData.append("query_media_url", params.query_media_url);
-    } else if (params.query_media_file) {
-      formData.append("query_media_file", params.query_media_file);
+  try {
+    const formData = new FormData();
+    if (params.query_text) {
+      formData.append("query_text", params.query_text);
     }
-  }
 
-  if (params.page_limit) {
-    formData.append("page_limit", params.page_limit.toString());
-  }
-  if (params.min_similarity) {
-    formData.append("min_similarity", params.min_similarity.toString());
-  }
-  if (params.filter) {
-    formData.append("filter", params.filter);
-  }
-  if (params.query_modality) {
-    formData.append("query_modality", params.query_modality);
-  }
+    formData.append("query_type", params.query_type);
 
-  const response = await axios.post(`${API_BASE}/search`, formData);
-  const parsedVideos = SearchResultSchema.array().parse(response.data.data);
-  return parsedVideos;
+    if (params.query_type !== "text") {
+      if (params.query_media_url) {
+        formData.append("query_media_url", params.query_media_url);
+      } else if (params.query_media_file) {
+        formData.append("query_media_file", params.query_media_file);
+      }
+    }
+
+    if (params.page_limit) {
+      formData.append("page_limit", params.page_limit.toString());
+    }
+    if (params.min_similarity) {
+      formData.append("min_similarity", params.min_similarity.toString());
+    }
+    if (params.filter) {
+      formData.append("filter", params.filter);
+    }
+    if (params.query_modality) {
+      formData.append("query_modality", params.query_modality);
+    }
+
+    const response = await axios.post(`${API_BASE}/search`, formData);
+    const parsedVideos = SearchResultSchema.array().parse(response.data.data);
+    return parsedVideos;
+  } catch (error) {
+    throw createDetailedError(error)
+  }
 };
 
 export const useSearchVideos = (params: SearchParams) => {
-  return useQuery<Array<SearchResult>, Error>({
+  return useQuery<Array<SearchResult>, DetailedError>({
     queryKey: [
       "searchVideos",
       params.query_text,
