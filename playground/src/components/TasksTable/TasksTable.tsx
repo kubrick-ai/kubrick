@@ -95,9 +95,7 @@ const TasksTable = ({
                   <TableCell className="truncate max-w-[200px]">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span>
-                          {task.s3_key}
-                        </span>
+                        <span>{task.s3_key}</span>
                       </TooltipTrigger>
                       <TooltipContent>{task.s3_key}</TooltipContent>
                     </Tooltip>
@@ -106,7 +104,7 @@ const TasksTable = ({
                     {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
                   </TableCell>
                   <TableCell className="truncate max-w-[200px]">
-                    {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
+                    {dayjs(task.updated_at).format("YYYY:MM:DD HH:mm:ss")}
                   </TableCell>
                   <TableCell className="flex items-center gap-2 truncate max-w-[200px]">
                     {task.status === "completed" ? (

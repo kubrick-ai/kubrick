@@ -127,21 +127,17 @@ export const useGetAndPrefetchVideos = (page: number, limit: number) => {
   });
 
   useEffect(() => {
-    if (!query.data) return;
+    if (!query.data?.metadata.total) return;
 
     const totalPages = Math.ceil(query.data.metadata.total / limit);
 
-    queryClient.prefetchQuery({
-      queryKey: ["data", page, limit],
-      queryFn: () => fetchVideos(page, limit),
-    });
     if (page + 1 < totalPages) {
       queryClient.prefetchQuery({
         queryKey: ["data", page + 1, limit],
         queryFn: () => fetchVideos(page + 1, limit),
       });
     }
-  }, [query, page, limit, queryClient]);
+  }, [query.data?.metadata.total, page, limit, queryClient]);
 
   return query;
 };
@@ -175,14 +171,9 @@ export const useGetAndPrefetchTasks = (
   });
 
   useEffect(() => {
-    if (!isAccordionOpen || !query.data) return;
+    if (!isAccordionOpen || !query.data?.metadata.total) return;
 
     const totalPages = Math.ceil(query.data.metadata.total / limit);
-
-    queryClient.prefetchQuery({
-      queryKey: ["data", page, limit],
-      queryFn: () => fetchTasks(page, limit),
-    });
 
     if (page + 1 < totalPages) {
       queryClient.prefetchQuery({
@@ -190,7 +181,7 @@ export const useGetAndPrefetchTasks = (
         queryFn: () => fetchTasks(page + 1, limit),
       });
     }
-  }, [query, page, limit, isAccordionOpen, queryClient]);
+  }, [query.data?.metadata.total, page, limit, isAccordionOpen, queryClient]);
 
   return query;
 };
