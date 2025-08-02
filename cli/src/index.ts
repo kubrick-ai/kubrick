@@ -39,7 +39,7 @@ ${color.yellow("Options:")}
 
 ${color.yellow("Examples:")}
   ${color.green("kubrick deploy")}    Deploy with interactive prompts
-  ${color.green("kubrick destroy")}   Destory with interactive prompts
+  ${color.green("kubrick destroy")}   Destroy with interactive prompts
   ${color.green("kubrick --help")}    Show this help message
 `);
     process.exit(0);
