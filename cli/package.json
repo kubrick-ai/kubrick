@@ -7,10 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "npx tsc --noEmit",
     "dev": "node --loader ts-node/esm src/index.ts",
-    "build": "tsc"
+    "build": "tsc && npm link"
   },
   "bin": {
-    "kubrick": "./src/index.ts"
+    "kubrick": "./dist/index.js"
   },
   "keywords": [],
   "author": "",
