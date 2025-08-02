@@ -1,18 +1,21 @@
 # Example terraform.tfvars file
 # Copy this to terraform.tfvars and customize for your deployment
 
+# Required:
+# TwelveLabs API Key - Get this from your TwelveLabs account
+twelvelabs_api_key = "<twelvelabs api key>"
+
+
+# Defaults provided:
+# AWS CLI Profile - Update to match your AWS CLI profile name
+aws_profile = "default"
+
 # AWS Region - Update to match where your secrets and resources should be deployed
-aws_region = "ap-northeast-2"  # or us-east-1, us-west-2, etc.
+aws_region = "us-east-1" # or ap-northeast-2, us-west-2, etc.
 
 # Secrets Manager - Name of your secret containing API keys and RDS credentials
 secrets_manager_name = "kubrick_secret"
 
 # Database credentials - These will be stored securely in AWS Secrets Manager
 db_username = "postgres"
-db_password = "<your database password>"
-
-# TwelveLabs API Key - Get this from your TwelveLabs account
-twelvelabs_api_key = "<twelvelabs api key>"
-
-# AWS CLI Profile - Update to match your AWS CLI profile name
-aws_profile = "<your profile name>"
+db_password = "password"

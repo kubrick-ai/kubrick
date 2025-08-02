@@ -213,6 +213,7 @@ mise.toml
 # Terraform
 # Local .terraform directories
 **/.terraform/*
+terraform/tfplan
 
 # .tfstate files
 *.tfstate
