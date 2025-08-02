@@ -166,7 +166,7 @@ export const deployTerraform = async (
     `${symbols.process} Deploying infrastructure. (Grab a coffee, this may take a while)...`,
   );
 
-  const flags = ["-auto-approve", "-input-false"];
+  const flags = ["-auto-approve", "-input=false"];
   const result = await runCommand("terraform", ["apply", ...flags], {
     cwd: terraformDir,
     env,
