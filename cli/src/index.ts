@@ -1,4 +1,4 @@
-// #!/usr/bin/env node
+#!/usr/bin/env node
 import { resolve } from "path";
 import * as p from "@clack/prompts";
 import { deployCommand } from "./commands/deploy.js";

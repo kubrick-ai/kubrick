@@ -1,4 +1,4 @@
-export interface DeployConfig {
+export interface OperationConfig {
   profile: string;
   region: string;
   skipAuthCheck: boolean;

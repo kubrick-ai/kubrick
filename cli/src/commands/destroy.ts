@@ -12,16 +12,10 @@ import {
   validateAWSCredentials,
   checkAWSPermissions,
 } from "../utils/aws.js";
-import { buildLambdas } from "../utils/lambda.js";
-import {
-  checkTerraformVars,
-  getSecretConfig,
-  initializeTerraform,
-  deployTerraform,
-} from "../utils/terraform.js";
+import { destroyTerraform } from "../utils/terraform.js";
 
-export const deployCommand = async (rootDir: string): Promise<void> => {
-  p.intro(`${color.bgBlue(color.white(" Kubrick Deployment "))}`);
+export const destroyCommand = async (rootDir: string): Promise<void> => {
+  p.intro(`${color.bgBlue(color.white(" Kubrick Destroy "))}`);
 
   // Find project root directory
   const terraformDir = resolve(rootDir, "terraform");
@@ -38,11 +32,11 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
     const availableAWSProfiles = await getAWSProfiles();
     const availableAWSRegions = await getAWSRegions();
-    const deployConfig: OperationConfig = await p.group(
+    const config: OperationConfig = await p.group(
       {
         profile: () =>
           p.select({
-            message: "Select the AWS Profile to use for this deployment",
+            message: "Select the AWS Profile to use for this operation",
             options: availableAWSProfiles.map((profile) => ({
               value: profile,
               label: profile,
@@ -50,7 +44,7 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
           }),
         region: () =>
           p.select({
-            message: "Select an AWS Region to deploy in",
+            message: "Select the AWS Region your infrastructure is deployed in",
             options: availableAWSRegions.map((region) => ({
               value: region,
               label: region,
@@ -64,48 +58,29 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
       },
       {
         onCancel: () => {
-          p.cancel(`${symbols.error} Deployment cancelled.`);
+          p.cancel(`${symbols.error} Destroy operation cancelled.`);
           process.exit(0);
         },
       },
     );
 
-    if (!deployConfig.skipAuthCheck) {
-      await validateAWSCredentials(deployConfig.profile, deployConfig.region);
-      await checkAWSPermissions(deployConfig.profile, deployConfig.region);
+    if (!config.skipAuthCheck) {
+      await validateAWSCredentials(config.profile, config.region);
+      await checkAWSPermissions(config.profile, config.region);
     } else {
       p.log.warn(`${symbols.warning} Skipping AWS authentication check`);
     }
 
-    const shouldBuildLambdas = handleCancel(
-      await p.confirm({
-        message: "Build Lambda packages? (Required for first deployment)",
-        initialValue: true,
-      }),
-    );
+    // TODO: Add confirmation step
 
-    if (shouldBuildLambdas) {
-      await buildLambdas(rootDir);
-    } else {
-      p.log.warn(`${symbols.warning} Skipping Lambda package build`);
-    }
-
-    await checkTerraformVars(rootDir);
-    await initializeTerraform(terraformDir);
-
-    const secretConfig = await getSecretConfig();
-
-    // TODO: Add confirmation step w terraform validate or plan
-
-    const outputs = await deployTerraform(
+    const outputs = await destroyTerraform(
       terraformDir,
-      secretConfig,
-      deployConfig.profile,
-      deployConfig.region,
+      config.profile,
+      config.region,
     );
 
     p.log.success(
-      `${symbols.success} ${color.green("Kubrick deployment completed successfully!")}`,
+      `${symbols.success} ${color.green("Kubrick infrastructure destroyed successfully!")}`,
     );
 
     const showOutput = handleCancel(
