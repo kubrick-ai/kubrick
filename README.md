@@ -6,6 +6,7 @@
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
+- [CLI Tool](#cli-tool)
 - [Deploying Kubrick](#deploying-kubrick)
 - [Working with Existing Secrets](#working-with-existing-secrets)
 - [Troubleshooting](#troubleshooting)
@@ -87,10 +88,67 @@ Your AWS user/role needs the following permissions to deploy Kubrick:
    ./build-all-packages.sh
    ```
 
-### Deploying Kubrick
+## CLI Tool
 
-The Kubrick deployment process is fully managed by Terraform. Follow these
-steps:
+Kubrick includes a command-line interface tool that simplifies deployment and
+management. The CLI provides interactive prompts and handles Terraform
+operations automatically.
+
+### Installation
+
+1. **Navigate to CLI directory:**
+
+   ```bash
+   cd kubrick/cli
+   ```
+
+2. **Build the CLI:**
+
+   ```bash
+   npm run build
+   ```
+
+### CLI Commands
+
+- `kubrick deploy` - Deploy new or existing Kubrick infrastructure with
+  interactive prompts
+- `kubrick destroy` - Destroy existing Kubrick infrastructure with interactive
+  prompts
+- `kubrick --help` - Show help message
+
+### CLI Usage
+
+The CLI provides an interactive experience for infrastructure management:
+
+```bash
+kubrick deploy    # Deploy with guided prompts
+kubrick destroy   # Destroy with guided prompts
+```
+
+The CLI will prompt you for required configuration values and handle the
+Terraform deployment process automatically.
+
+## Deploying Kubrick
+
+You can deploy Kubrick using either the CLI tool (recommended) or manual
+Terraform commands.
+
+### Option A: Using the CLI Tool (Recommended)
+
+The easiest way to deploy Kubrick is using the CLI tool:
+
+1. **Build and use the CLI** (see [CLI Tool](#cli-tool) section above)
+2. **Run deployment:**
+
+   ```bash
+   kubrick deploy
+   ```
+
+3. **Follow the interactive prompts** to configure your deployment
+
+### Option B: Manual Terraform Deployment
+
+For advanced users who prefer direct Terraform control:
 
 1. **Initialize Terraform**:
 
@@ -104,18 +162,18 @@ steps:
 
    ```hcl
    # Required variables
-   aws_region = "us-east-2"  # Your AWS region
+   aws_region = "us-east-1"  # Your AWS region
 
    # Database credentials
    db_username = "postgres"  # Your PostgreSQL username
-   db_password = "your-secure-password"  # Your PostgreSQL password
+   db_password = "your-password"  # Your PostgreSQL password
 
    # API keys
    twelvelabs_api_key = "your-twelvelabs-api-key"  # Your TwelveLabs API key
 
    # Optional: Override default values
-   # secrets_manager_name = "kubrick_secret"
-   # aws_profile = "default"
+   aws_profile = "default"
+   secrets_manager_name = "kubrick_secret"
    ```
 
    If you don't create a `terraform.tfvars` file, Terraform will prompt you for
@@ -151,7 +209,7 @@ you'll need to import it into Terraform's state:
 2. **Import Existing Secret**:
 
    ```bash
-   terraform import module.secrets_manager.aws_secretsmanager_secret.kubrick_secret kubrick_secret
+   terraform import module.secrets_manager.aws_secretsmanager_secret.kubrick_secret <secret_name>
    ```
 
 3. **Verify Import**:
@@ -164,5 +222,3 @@ you'll need to import it into Terraform's state:
 
 - **ResourceExistsException**: If you get an error that the secret already
   exists, follow the "Working with Existing Secrets" section above to import it.
-- **Missing Variables**: Terraform will prompt for any required variables not
-  specified in `terraform.tfvars`.
