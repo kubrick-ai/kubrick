@@ -35,13 +35,13 @@ const main = async () => {
     },
   });
 
-  // Show help when no command is passed or help is requested
-  if (!command || args.includes("--help") || args.includes("-h")) {
-    helpCommand();
-  }
-
-  // Handle commands
+  // basic single command handling for now
   switch (command) {
+    case undefined:
+    case "-h":
+    case "--help":
+      helpCommand();
+      break;
     case "deploy":
       await deployCommand(rootDir);
       break;

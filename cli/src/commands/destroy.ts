@@ -12,10 +12,29 @@ export const destroyCommand = async (rootDir: string): Promise<void> => {
 
   // Find project root directory
   const terraformDir = resolve(rootDir, "terraform");
-
   if (!existsSync(terraformDir)) {
     p.cancel(
-      `${symbols.error} Terraform directory not found. Please run from within the Kubrick project.`,
+      `${symbols.error} Terraform directory not found.
+      Please run from within the Kubrick project.`,
+    );
+    process.exit(1);
+  }
+
+  if (
+    !existsSync(resolve(terraformDir, ".terraform")) ||
+    !existsSync(resolve(terraformDir, "terraform.tfstate"))
+  ) {
+    p.cancel(
+      `${symbols.error} Existing terraform configuration or state not found.
+      Nothing found to destroy.`,
+    );
+    process.exit(1);
+  }
+
+  if (!existsSync(resolve(terraformDir, "terraform.tfvars"))) {
+    p.cancel(
+      `${symbols.error} Existing ${color.blue("terraform.tfvars")} file not found.
+      Please tear down manually with ${color.blue("terraform destroy")}`,
     );
     process.exit(1);
   }
@@ -23,7 +42,7 @@ export const destroyCommand = async (rootDir: string): Promise<void> => {
   try {
     await checkDependencies();
 
-    const confirmDeployStep = handleCancel(
+    const confirmDestroyStep = handleCancel(
       await p.confirm({
         message:
           "Are you sure you want to destroy the deployed infrastructure?",
@@ -31,7 +50,7 @@ export const destroyCommand = async (rootDir: string): Promise<void> => {
       }),
     );
 
-    if (!confirmDeployStep) {
+    if (!confirmDestroyStep) {
       p.cancel(`Destroy operation cancelled by user.`);
       process.exit(1);
     }
@@ -54,9 +73,9 @@ export const destroyCommand = async (rootDir: string): Promise<void> => {
     p.outro("Exiting...");
   } catch (error) {
     if (error instanceof Error) {
-      p.cancel(`${symbols.error} Deployment failed: ${error.message}`);
+      p.cancel(`${symbols.error} Destroy operation failed: ${error.message}`);
     } else {
-      p.cancel(`${symbols.error} Deployment failed with unknown error`);
+      p.cancel(`${symbols.error} Destroy operation failed with unknown error`);
     }
     process.exit(1);
   }
