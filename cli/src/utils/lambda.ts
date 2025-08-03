@@ -66,8 +66,6 @@ export const buildLambdas = async (rootDir: string): Promise<void> => {
     if (!result.success) {
       throw new Error(result.stderr);
     }
-
-    s.message(`${packageName} built successfully`);
   }
 
   s.stop("Lambda packages built successfully");
