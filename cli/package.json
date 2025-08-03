@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "npx tsc --noEmit",
-    "dev": "node --loader ts-node/esm src/index.ts",
+    "dev": "tsx ./src/index.ts",
     "build": "npm install && tsc && chmod +x ./dist/index.js && npm link"
   },
   "bin": {
@@ -19,11 +19,13 @@
   "devDependencies": {
     "@types/node": "^24.1.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
     "typescript": "^5.9.2"
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
     "execa": "^8.0.0",
+    "find-up": "^7.0.0",
     "gradient-string": "^3.0.0",
     "picocolors": "^1.1.1"
   }

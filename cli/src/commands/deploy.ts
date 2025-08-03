@@ -29,7 +29,7 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
   if (!existsSync(terraformDir)) {
     p.cancel(
-      `${symbols.error} Terraform directory not found. Please run from project root.`,
+      `${symbols.error} Terraform directory not found. Please run from within the Kubrick project.`,
     );
     process.exit(1);
   }
