@@ -11,7 +11,7 @@ resource "aws_cloudfront_distribution" "kubrick_playground" {
   default_root_object = "index.html"
 
   origin {
-    domain_name = "${var.kubrick_playground_bucket_name}.s3-website-${var.aws_region}.amazonaws.com"
+    domain_name = var.kubrick_playground_bucket_website_endpoint
     origin_id   = "s3-static-website"
 
     custom_origin_config {
@@ -26,8 +26,8 @@ resource "aws_cloudfront_distribution" "kubrick_playground" {
     target_origin_id       = "s3-static-website"
     viewer_protocol_policy = "redirect-to-https"
 
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods  = ["GET", "HEAD"]
 
     forwarded_values {
       query_string = true
@@ -49,14 +49,15 @@ resource "aws_cloudfront_distribution" "kubrick_playground" {
   }
 
   custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
+    error_code         = 404
+    response_code      = 200
+    response_page_path = "/index.html"
   }
 
   custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
+    error_code         = 403
+    response_code      = 200
+    response_page_path = "/index.html"
   }
 }
+

@@ -119,9 +119,6 @@ module "api_gateway" {
 }
 
 module "cloudfront" {
-  source                         = "./modules/cloudfront"
-  s3_bucket_regional_domain_name = module.s3.kubrick_playground_bucket_regional_domain_name
-  s3_bucket_arn                  = module.s3.kubrick_playground_bucket_arn
-  aws_region                     = local.region
-  kubrick_playground_bucket_name = module.s3.kubrick_playground_bucket_name
+  source                                     = "./modules/cloudfront"
+  kubrick_playground_bucket_website_endpoint = module.s3.kubrick_playground_bucket_website_endpoint
 }
