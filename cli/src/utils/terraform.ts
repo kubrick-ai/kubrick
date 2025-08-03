@@ -334,5 +334,6 @@ export const destroyTerraform = async (
   }
 
   s.stop(`${symbols.success} Infrastructure destroyed successfully`);
+
   return result.stdout;
 };

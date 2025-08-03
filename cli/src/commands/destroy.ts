@@ -2,7 +2,7 @@ import * as p from "@clack/prompts";
 import color from "picocolors";
 import { resolve } from "path";
 import { existsSync } from "fs";
-import { handleCancel } from "../utils/misc.js";
+import { handleCancel, extractOutputs } from "../utils/misc.js";
 import { checkDependencies } from "../utils/dependencies.js";
 import { symbols } from "../theme/index.js";
 import { destroyTerraform } from "../utils/terraform.js";
@@ -55,7 +55,7 @@ export const destroyCommand = async (rootDir: string): Promise<void> => {
       process.exit(1);
     }
 
-    const outputs = await destroyTerraform(terraformDir);
+    const stdout = await destroyTerraform(terraformDir);
 
     p.log.success(
       `${symbols.success} ${color.green("Kubrick infrastructure destroyed successfully!")}`,
@@ -63,13 +63,18 @@ export const destroyCommand = async (rootDir: string): Promise<void> => {
 
     const showOutput = handleCancel(
       await p.confirm({
-        message: "Show outputs?",
+        message: "Print outputs?",
       }),
     );
-    if (showOutput) {
-      p.note(outputs, "Output");
-    }
 
+    if (showOutput) {
+      const output = extractOutputs(stdout);
+      if (output) {
+        p.log.message(output, { symbol: color.cyan("~") });
+      } else {
+        p.log.error("Could not extract outputs");
+      }
+    }
     p.outro("Exiting...");
   } catch (error) {
     if (error instanceof Error) {
