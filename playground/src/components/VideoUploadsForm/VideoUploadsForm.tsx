@@ -57,7 +57,6 @@ const VideoUploadsForm = () => {
           data.files.map((file) => uploadVideo(file, file.name))
         );
         form.reset({ files: [] });
-        toast.success("Videos uploaded successfully!");
       } catch (error) {
         const detailedError = error as DetailedError;
         setUploadError(detailedError);
