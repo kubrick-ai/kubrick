@@ -20,8 +20,6 @@ module "iam" {
   secret_arn               = module.secrets_manager.secret_arn
   environment              = local.env
   embedding_task_queue_arn = module.sqs.queue_arn
-
-  depends_on = [module.secrets_manager]
 }
 
 # Public S3 bucket depends on API_Gateway
@@ -40,8 +38,6 @@ module "s3_notifications" {
   delete_lambda_function_arn  = module.lambda.kubrick_s3_delete_handler_arn
   delete_lambda_function_name = module.lambda.kubrick_s3_delete_handler_function_name
   bucket_arn                  = module.s3.bucket_arn
-
-  depends_on = [module.lambda, module.s3]
 }
 
 module "rds" {
@@ -89,10 +85,6 @@ module "lambda" {
   queue_arn                                         = module.sqs.queue_arn
   secrets_manager_name                              = var.secrets_manager_name
   aws_profile                                       = var.aws_profile
-
-  depends_on = [
-    module.rds, module.iam, module.sqs
-  ]
 }
 
 module "sqs" {
@@ -114,8 +106,6 @@ module "api_gateway" {
   upload_link_lambda_function_name  = module.lambda.kubrick_api_video_upload_link_handler_function_name
   fetch_tasks_lambda_function_name  = module.lambda.kubrick_api_fetch_tasks_handler_function_name
   aws_region                        = local.region
-
-  depends_on = [module.lambda]
 }
 
 module "cloudfront" {
