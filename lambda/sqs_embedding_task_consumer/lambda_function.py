@@ -1,11 +1,13 @@
 import json
 import os
+import boto3
 from embed_service import EmbedService, VideoEmbeddingMetadata
 from config import get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 
 # Environment variables
 SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
+QUEUE_URL = os.environ["QUEUE_URL"]
 
 
 def get_video_metadata(tl_metadata: VideoEmbeddingMetadata | None, message_body):
@@ -32,6 +34,7 @@ def lambda_handler(event, context):
         logger=logger,
     )
     vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
+    sqs = boto3.client("sqs")
 
     pending_message_ids = []
 
@@ -69,10 +72,15 @@ def lambda_handler(event, context):
                 logger.info("Successfully updated task status in DB")
 
             elif task_status == "processing":
-                # If status is "processing", add to pending list for re-queuing
-                pending_message_ids.append({"itemIdentifier": message_id})
                 logger.info(
                     f"TwelveLabs video embedding task {tl_task_id} is still processing. Re-queueing."
+                )
+                # If status is "processing", add to pending list for re-queuing
+                pending_message_ids.append({"itemIdentifier": message_id})
+                sqs.change_message_visibility(
+                    QueueUrl=QUEUE_URL,
+                    ReceiptHandle=receipt_handle,
+                    VisibilityTimeout=25,
                 )
                 vector_db_service.update_task_status(message_id, "processing")
                 logger.info("Successfully updated task status in DB")
@@ -82,6 +90,11 @@ def lambda_handler(event, context):
         except Exception as e:
             logger.error(f"Error processing task {message_id}: {e}")
             pending_message_ids.append({"itemIdentifier": message_id})
+            sqs.change_message_visibility(
+                QueueUrl=QUEUE_URL,
+                ReceiptHandle=receipt_handle,
+                VisibilityTimeout=25,
+            )
             vector_db_service.update_task_status(message_id, "retrying")
             logger.info("Successfully updated task status in DB")
 

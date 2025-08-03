@@ -341,6 +341,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
       DB_HOST     = var.db_host
       DB_PASSWORD = var.db_password
       SECRET_NAME = var.secrets_manager_name
+      QUEUE_URL   = var.queue_url
       LOG_LEVEL   = "INFO"
     }
   }
@@ -350,7 +351,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
   }
 
-  timeout = 25 # 25s timeout for embedding tasks
+  timeout = 300 # 5 mins timeout for embedding tasks
 
 }
 
