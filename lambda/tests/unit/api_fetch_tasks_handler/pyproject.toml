@@ -1,0 +1,14 @@
+[project]
+name = "kubrick_api_fetch_videos_handler_tests"
+version = "0.1.0"
+description = "Tests for api_fetch_videos_handler"
+requires-python = ">=3.13"
+dependencies = ["pytest", "moto", "psycopg2-binary"]
+
+[tool.pyright]
+extraPaths = [
+  "../../../layers/vector_database_layer/",
+  "../../../layers/response_utils_layer/",
+  "../../../layers/s3_utils_layer/",
+  "../../../layers/config_layer/",
+]
