@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+const MIN_FILES = 1;
+const MAX_FILES = 5;
+const MB = 1024 ** 2;
+const GB = 1024 ** 3;
+const MEDIA_SEARCH_MAX_SIZE = 6 * MB; // 6MB
+const VIDEO_UPLOAD_MAX_SIZE = 2 * GB;
+
 export const MediaTypeSchema = z.enum(["image", "video", "audio", "text"]);
 export type MediaType = z.infer<typeof MediaTypeSchema>;
 
@@ -58,7 +65,15 @@ export const SearchFormDataSchema = z.object({
     .optional(),
   query_type: MediaTypeSchema,
   query_media_url: z.url().optional(),
-  query_media_file: z.instanceof(File).optional(),
+  query_media_file: z
+    .custom<File>((val) => val instanceof File, {
+      message: "Please upload a valid file",
+    })
+    .optional()
+    .refine((file) => !file || file.size <= MEDIA_SEARCH_MAX_SIZE, {
+      message: `File size must be less than ${MEDIA_SEARCH_MAX_SIZE / MB}MB`,
+      path: ["query_media_file"],
+    }),
   query_modality: EmbeddingModalitySchema.array().optional(),
   search_scope: z.union([EmbeddingScopeSchema, z.literal("all")]).optional(),
   search_modality: z
@@ -108,19 +123,18 @@ export const TasksResponseSchema = z.object({
 
 export type TasksResponse = z.infer<typeof TasksResponseSchema>;
 
-const MIN_FILES = 1;
-const MAX_FILES = 5;
-const MAX_SIZE = 2 * 1024 * 1024 * 1024;
-
 export const UploadVideosFormDataSchema = z.object({
   files: z
     .array(z.custom<File>())
     .min(MIN_FILES, `Please select at least ${MIN_FILES} file(s)`)
     .max(MAX_FILES, `Please select up to ${MAX_FILES} files`)
-    .refine((files) => files.every((file) => file.size <= MAX_SIZE), {
-      message: `File size must be less than ${MAX_SIZE / 1024 ** 3}GB`,
-      path: ["files"],
-    }),
+    .refine(
+      (files) => files.every((file) => file.size <= VIDEO_UPLOAD_MAX_SIZE),
+      {
+        message: `File size must be less than ${VIDEO_UPLOAD_MAX_SIZE / GB}GB`,
+        path: ["files"],
+      }
+    ),
 });
 
 export type UploadVideosFormData = z.infer<typeof UploadVideosFormDataSchema>;
@@ -139,9 +153,7 @@ export const VideoUploadResponseSchema = z.object({
   metadata: z.object({}).optional(),
 });
 
-export type VideoUploadResponse = z.infer<
-  typeof VideoUploadResponseSchema
->;
+export type VideoUploadResponse = z.infer<typeof VideoUploadResponseSchema>;
 
 export interface DetailedError {
   message: string;
