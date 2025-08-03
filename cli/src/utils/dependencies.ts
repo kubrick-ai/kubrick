@@ -27,8 +27,6 @@ export const checkDependencies = async (): Promise<void> => {
     }
   }
 
-  s.stop(`${symbols.success} All required dependencies are installed`);
-
   if (missingDeps.length > 0) {
     p.note(
       `Missing dependencies:
@@ -40,4 +38,6 @@ See README.md for installation instructions.`,
     p.cancel(`${symbols.error} Cannot proceed without required dependencies`);
     process.exit(1);
   }
+
+  s.stop(`${symbols.success} All required dependencies are installed`);
 };

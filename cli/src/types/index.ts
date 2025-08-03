@@ -1,15 +1,14 @@
-export interface DeploymentConfig {
-  aws_profile?: string;
-  aws_region?: string;
-}
-
-export interface TerraformVarsConfig {
+export interface TFVarsConfigCore {
   twelvelabs_api_key: string;
   aws_profile: string;
   aws_region: string;
-  secrets_manager_name: string;
   db_username: string;
   db_password: string;
+  secrets_manager_name?: string;
+}
+
+export interface TFVarsConfig extends TFVarsConfigCore {
+  secrets_manager_name: string;
 }
 
 export interface AWSCredentials {

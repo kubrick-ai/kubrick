@@ -13,13 +13,71 @@ import {
 } from "../utils/aws.js";
 import { buildLambdas } from "../utils/lambda.js";
 import {
-  initSecret,
+  determineSecretName,
+  importSecret,
+  parseTerraformVars,
   writeTerraformVars,
   initializeTerraform,
   deployTerraform,
   tfvarsFileExists,
 } from "../utils/terraform.js";
-import type { TerraformVarsConfig, DeploymentConfig } from "../types/index.js";
+import type { TFVarsConfig, TFVarsConfigCore } from "../types/index.js";
+
+export const promptTfVars = async () => {
+  const availableAWSProfiles = await getAWSProfiles();
+  const availableAWSRegions = await getAWSRegions();
+
+  const tfvarsConfigCore: TFVarsConfigCore = await p.group(
+    {
+      aws_profile: () =>
+        p.select({
+          message: "Select the AWS Profile to use for this deployment",
+          options: availableAWSProfiles.map((profile) => ({
+            value: profile,
+            label: profile,
+          })),
+        }),
+      aws_region: () =>
+        p.select({
+          message: "Select an AWS Region to deploy in",
+          options: availableAWSRegions.map((region) => ({
+            value: region,
+            label: region,
+          })),
+        }),
+      twelvelabs_api_key: () =>
+        p.password({
+          message: "Enter your TwelveLabs API key",
+          validate: (value) => {
+            if (!value?.trim()) return "TwelveLabs API key is required";
+          },
+        }),
+      db_username: () =>
+        p.text({
+          message: "Enter a username for your database ",
+          placeholder: "postgres",
+          defaultValue: "postgres",
+        }),
+      db_password: () =>
+        p.password({
+          message: "Enter a password for your database",
+          validate: (value) => {
+            if (!value?.trim()) return "Database password is required";
+            if (value.length < 8)
+              return "Password must be at least 8 characters";
+          },
+        }),
+    },
+    {
+      onCancel: () => {
+        p.cancel(`${symbols.error} Deploy operation cancelled.`);
+        process.exit(0);
+      },
+    },
+  );
+
+  return tfvarsConfigCore;
+};
 
 export const deployCommand = async (rootDir: string): Promise<void> => {
   p.intro(`${color.bgBlue(color.white(" Kubrick Deployment "))}`);
@@ -29,14 +87,13 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
   if (!existsSync(terraformDir)) {
     p.cancel(
-      `${symbols.error} Terraform directory not found. Please run from project root.`,
+      `${symbols.error} Terraform directory not found. Please run from within the Kubrick project.`,
     );
     process.exit(1);
   }
 
   try {
     await checkDependencies();
-
     await initializeTerraform(terraformDir);
 
     const shouldBuildLambdas = handleCancel(
@@ -62,87 +119,31 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
         }),
       );
 
-    let deployConfig: DeploymentConfig = {};
+    // build tfvarsConfig
+    const tfvarsConfig: TFVarsConfigCore = useExistingTfVars
+      ? parseTerraformVars(terraformDir)
+      : await promptTfVars();
 
-    if (useExistingTfVars) {
-      // TODO: parse values from tfvars?
-    } else {
-      const availableAWSProfiles = await getAWSProfiles();
-      const availableAWSRegions = await getAWSRegions();
+    await validateAWSCredentials(
+      tfvarsConfig.aws_profile,
+      tfvarsConfig.aws_region,
+    );
+    await checkAWSPermissions(
+      tfvarsConfig.aws_profile,
+      tfvarsConfig.aws_region,
+    );
 
-      const tfvarsPartial: Omit<TerraformVarsConfig, "secrets_manager_name"> =
-        await p.group(
-          {
-            aws_profile: () =>
-              p.select({
-                message: "Select the AWS Profile to use for this deployment",
-                options: availableAWSProfiles.map((profile) => ({
-                  value: profile,
-                  label: profile,
-                })),
-              }),
-            aws_region: () =>
-              p.select({
-                message: "Select an AWS Region to deploy in",
-                options: availableAWSRegions.map((region) => ({
-                  value: region,
-                  label: region,
-                })),
-              }),
-            twelvelabs_api_key: () =>
-              p.password({
-                message: "Enter your TwelveLabs API key",
-                validate: (value) => {
-                  if (!value?.trim()) return "TwelveLabs API key is required";
-                },
-              }),
-            db_username: () =>
-              p.text({
-                message: "Enter a username for your database ",
-                placeholder: "postgres",
-                defaultValue: "postgres",
-              }),
-            db_password: () =>
-              p.password({
-                message: "Enter a password for your database",
-                validate: (value) => {
-                  if (!value?.trim()) return "Database password is required";
-                  if (value.length < 8)
-                    return "Password must be at least 8 characters";
-                },
-              }),
-          },
-          {
-            onCancel: () => {
-              p.cancel(`${symbols.error} Deploy operation cancelled.`);
-              process.exit(0);
-            },
-          },
-        );
+    if (!useExistingTfVars) {
+      const { secretName, shouldImport } = await determineSecretName();
+      tfvarsConfig.secrets_manager_name = secretName;
 
-      await validateAWSCredentials(
-        tfvarsPartial.aws_profile,
-        tfvarsPartial.aws_region,
-      );
-      await checkAWSPermissions(
-        tfvarsPartial.aws_profile,
-        tfvarsPartial.aws_region,
-      );
+      writeTerraformVars(terraformDir, tfvarsConfig as TFVarsConfig);
 
-      writeTerraformVars(terraformDir, {
-        ...tfvarsPartial,
-        secrets_manager_name: "kubrick_secret",
-      });
-
-      const tfvarsConfig: TerraformVarsConfig = {
-        ...tfvarsPartial,
-        secrets_manager_name: await initSecret(terraformDir),
-      };
-
-      writeTerraformVars(terraformDir, tfvarsConfig);
+      // Import secret to tfstate if needed (this operation requires terraform.tfvars to exist)
+      if (shouldImport) {
+        await importSecret(terraformDir, secretName);
+      }
       p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
-
-      deployConfig = tfvarsConfig;
     }
 
     const confirmDeployStep = handleCancel(
@@ -159,8 +160,8 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
     const outputs = await deployTerraform(
       terraformDir,
-      deployConfig.aws_profile,
-      deployConfig.aws_region,
+      tfvarsConfig.aws_profile,
+      tfvarsConfig.aws_region,
     );
 
     p.log.success(
