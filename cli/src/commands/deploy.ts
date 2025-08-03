@@ -2,7 +2,7 @@ import * as p from "@clack/prompts";
 import color from "picocolors";
 import { resolve } from "path";
 import { existsSync } from "fs";
-import { handleCancel } from "../utils/misc.js";
+import { handleCancel, extractOutputs } from "../utils/misc.js";
 import { checkDependencies } from "../utils/dependencies.js";
 import { symbols } from "../theme/index.js";
 import {
@@ -121,7 +121,7 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
     // build tfvarsConfig
     const tfvarsConfig: TFVarsConfigCore = useExistingTfVars
-      ? parseTerraformVars(terraformDir)
+      ? (parseTerraformVars(terraformDir) as TFVarsConfig)
       : await promptTfVars();
 
     await validateAWSCredentials(
@@ -135,15 +135,19 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
     if (!useExistingTfVars) {
       const { secretName, shouldImport } = await determineSecretName();
+
       tfvarsConfig.secrets_manager_name = secretName;
 
       writeTerraformVars(terraformDir, tfvarsConfig as TFVarsConfig);
+      p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
 
       // Import secret to tfstate if needed (this operation requires terraform.tfvars to exist)
       if (shouldImport) {
-        await importSecret(terraformDir, secretName);
+        await importSecret(
+          terraformDir,
+          (tfvarsConfig as TFVarsConfig).secrets_manager_name,
+        );
       }
-      p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
     }
 
     const confirmDeployStep = handleCancel(
@@ -158,7 +162,7 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
       process.exit(1);
     }
 
-    const outputs = await deployTerraform(
+    const stdout = await deployTerraform(
       terraformDir,
       tfvarsConfig.aws_profile,
       tfvarsConfig.aws_region,
@@ -170,11 +174,17 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
     const showOutput = handleCancel(
       await p.confirm({
-        message: "Show outputs?",
+        message: "Print outputs?",
       }),
     );
+
     if (showOutput) {
-      p.note(outputs, "Output");
+      const output = extractOutputs(stdout);
+      if (output) {
+        p.log.message(output, { symbol: color.cyan("~") });
+      } else {
+        p.log.error("Could not extract outputs");
+      }
     }
 
     p.outro("Exiting...");

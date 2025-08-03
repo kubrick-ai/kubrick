@@ -105,7 +105,7 @@ export const getTerraformStateList = async (terraformDir: string) => {
   const result = await runCommand("terraform", ["state", "list"], {
     cwd: terraformDir,
   });
-  const stateList = result.stdout.split("\n");
+  const stateList = result.stdout.split("\n").map((s) => s.trim());
   return stateList;
 };
 
@@ -227,10 +227,7 @@ export const deployTerraform = async (
   const match =
     planOutput.match(/(\d+) to add, (\d+) to change, (\d+) to destroy/) ?? [];
 
-  const totalResources =
-    match[1] && match[2]
-      ? parseInt(match[1], 10) + parseInt(match[2], 10)
-      : "unknown";
+  const toAdd = parseInt(match[1] ?? "0", 10);
 
   let isUpdating = false;
   const id = setInterval(async () => {
@@ -240,7 +237,7 @@ export const deployTerraform = async (
     try {
       const state = await getTerraformStateList(terraformDir);
       s.message(
-        `${deployMessage} | Completed: ${state.length}/${totalResources}`,
+        `${deployMessage} | deploying: ${state.length} / ${state.length + toAdd}`,
       );
     } catch (error) {
       // Handle error silently or log
@@ -334,5 +331,6 @@ export const destroyTerraform = async (
   }
 
   s.stop(`${symbols.success} Infrastructure destroyed successfully`);
+
   return result.stdout;
 };

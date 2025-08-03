@@ -48,23 +48,25 @@ export const buildLambdas = async (rootDir: string): Promise<void> => {
 
   const buildScript = resolve(rootDir, "lambda/build-package.sh");
 
-  const tasks = packageDirectories.map((packageDir) => {
+  if (!existsSync(buildScript)) {
+    throw new Error(`Build script not found: ${buildScript}`);
+  }
+
+  const s = p.spinner();
+  s.start("Building lambda packages");
+
+  for (const packageDir of packageDirectories) {
     const packageName = color.blue(packageDir.replace(rootDir + "/", ""));
-    return {
-      title: `Building ${packageName}`,
-      task: async () => {
-        const result = await runCommand("bash", [buildScript], {
-          cwd: packageDir,
-        });
+    s.message(`Building ${packageName}`);
 
-        if (!result.success) {
-          throw new Error(result.stderr);
-        }
+    const result = await runCommand("bash", [buildScript], {
+      cwd: packageDir,
+    });
 
-        return `${packageName} built successfully`;
-      },
-    };
-  });
+    if (!result.success) {
+      throw new Error(result.stderr);
+    }
+  }
 
-  await p.tasks(tasks);
+  s.stop("Lambda packages built successfully");
 };
