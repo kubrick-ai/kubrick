@@ -6,7 +6,6 @@ with Lambda packages and Terraform.
 ## Installation
 
 ```bash
-npm install
 npm run build
 ```
 
@@ -32,4 +31,3 @@ management:
 kubrick deploy    # Deploy with prompts
 kubrick destroy   # Destroy with prompts
 ```
-

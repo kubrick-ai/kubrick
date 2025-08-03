@@ -1,20 +1,58 @@
 import * as p from "@clack/prompts";
 import color from "picocolors";
-import { existsSync, writeFileSync } from "fs";
+import { existsSync, writeFileSync, readFileSync } from "fs";
 import { resolve } from "path";
 import { runCommand } from "./shell.js";
 import { symbols } from "../theme/index.js";
 import { handleCancel } from "./misc.js";
-import type { TerraformVarsConfig } from "../types/index.js";
+import type { TFVarsConfig } from "../types/index.js";
 
 export const tfvarsFileExists = (terraformDir: string): boolean => {
   const tfvarsFile = resolve(terraformDir, "terraform.tfvars");
   return existsSync(tfvarsFile);
 };
 
+export const parseTerraformVars = (terraformDir: string): TFVarsConfig => {
+  const tfvarsFile = resolve(terraformDir, "terraform.tfvars");
+
+  if (!existsSync(tfvarsFile)) {
+    throw new Error("terraform.tfvars file not found");
+  }
+
+  const content = readFileSync(tfvarsFile, "utf8");
+  const config: Partial<TFVarsConfig> = {};
+
+  // Parse each variable from the tfvars file
+  const parseVar = (varName: string): string => {
+    const regex = new RegExp(`^${varName}\\s*=\\s*"([^"]*)"`, "m");
+    const match = content.match(regex);
+    if (!match || !match[1]) {
+      throw new Error(
+        `Required variable '${varName}' not found in terraform.tfvars`,
+      );
+    }
+    return match[1];
+  };
+
+  try {
+    config.twelvelabs_api_key = parseVar("twelvelabs_api_key");
+    config.aws_profile = parseVar("aws_profile");
+    config.aws_region = parseVar("aws_region");
+    config.secrets_manager_name = parseVar("secrets_manager_name");
+    config.db_username = parseVar("db_username");
+    config.db_password = parseVar("db_password");
+  } catch (error) {
+    throw new Error(
+      `Failed to parse terraform.tfvars: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+
+  return config as TFVarsConfig;
+};
+
 export const writeTerraformVars = (
   terraformDir: string,
-  config: TerraformVarsConfig,
+  config: TFVarsConfig,
 ): void => {
   const tfvarsFile = resolve(terraformDir, "terraform.tfvars");
 
@@ -67,7 +105,7 @@ export const getTerraformStateList = async (terraformDir: string) => {
   const result = await runCommand("terraform", ["state", "list"], {
     cwd: terraformDir,
   });
-  const stateList = result.stdout.split("\n");
+  const stateList = result.stdout.split("\n").map((s) => s.trim());
   return stateList;
 };
 
@@ -78,7 +116,10 @@ export const secretExistsInTfState = async (terraformDir: string) => {
   );
 };
 
-export const initSecret = async (terraformDir: string): Promise<string> => {
+export const determineSecretName = async (): Promise<{
+  secretName: string;
+  shouldImport: boolean;
+}> => {
   const secretAction = handleCancel(
     await p.select({
       message: "AWS Secrets Manager configuration",
@@ -100,11 +141,7 @@ export const initSecret = async (terraformDir: string): Promise<string> => {
     }),
   );
 
-  if (secretAction === "import") {
-    await importSecret(terraformDir, secretName);
-  }
-
-  return secretName;
+  return { secretName, shouldImport: secretAction === "import" };
 };
 
 export const importSecret = async (
@@ -190,10 +227,7 @@ export const deployTerraform = async (
   const match =
     planOutput.match(/(\d+) to add, (\d+) to change, (\d+) to destroy/) ?? [];
 
-  const totalResources =
-    match[1] && match[2]
-      ? parseInt(match[1], 10) + parseInt(match[2], 10)
-      : "unknown";
+  const toAdd = parseInt(match[1] ?? "0", 10);
 
   let isUpdating = false;
   const id = setInterval(async () => {
@@ -203,7 +237,7 @@ export const deployTerraform = async (
     try {
       const state = await getTerraformStateList(terraformDir);
       s.message(
-        `${deployMessage} | Completed: ${state.length}/${totalResources}`,
+        `${deployMessage} | deploying: ${state.length} / ${state.length + toAdd}`,
       );
     } catch (error) {
       // Handle error silently or log
@@ -297,5 +331,6 @@ export const destroyTerraform = async (
   }
 
   s.stop(`${symbols.success} Infrastructure destroyed successfully`);
+
   return result.stdout;
 };
