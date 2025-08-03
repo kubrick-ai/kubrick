@@ -14,7 +14,6 @@ import {
   DetailedError,
 } from "@/types";
 
-
 // TODO: Move to config?
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:5000";
 const createDetailedError = (error: unknown): DetailedError => {
@@ -27,7 +26,8 @@ const createDetailedError = (error: unknown): DetailedError => {
       responseData: axiosError.response?.data,
       requestUrl: axiosError.config?.url,
       requestMethod: axiosError.config?.method?.toUpperCase(),
-      isNetworkError: axiosError.code === 'NETWORK_ERROR' || !axiosError.response,
+      isNetworkError:
+        axiosError.code === "NETWORK_ERROR" || !axiosError.response,
       originalError: axiosError,
     };
   }
@@ -40,7 +40,7 @@ const createDetailedError = (error: unknown): DetailedError => {
   }
 
   return {
-    message: 'An unexpected error occurred',
+    message: "An unexpected error occurred",
     originalError: error,
   };
 };
@@ -79,7 +79,7 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
     const parsedVideos = SearchResultSchema.array().parse(response.data.data);
     return parsedVideos;
   } catch (error) {
-    throw createDetailedError(error)
+    throw createDetailedError(error);
   }
 };
 
@@ -107,53 +107,64 @@ export const useSearchVideos = (params: SearchParams) => {
 };
 
 export const uploadVideo = async (file: File, filename: string) => {
-  const videoLinkResponse = await generateVideoUploadLink(filename);
-  const presignedUrl = videoLinkResponse.data.presigned_url;
-  const contentType = videoLinkResponse.data.content_type;
-  const response = await axios.put(presignedUrl, file, {
-    headers: {
-      "Content-Type": contentType,
-    },
-  });
+  try {
+    const videoLinkResponse = await generateVideoUploadLink(filename);
+    const presignedUrl = videoLinkResponse.data.presigned_url;
+    const contentType = videoLinkResponse.data.content_type;
+    const response = await axios.put(presignedUrl, file, {
+      headers: {
+        "Content-Type": contentType,
+      },
+    });
 
-  if (response.status !== 200 && response.status !== 204) {
-    throw new Error("Upload failed");
+    if (response.status !== 200 && response.status !== 204) {
+      throw new Error("Upload failed");
+    }
+
+    return {
+      url: presignedUrl.split("?")[0],
+    };
+  } catch (error) {
+    throw createDetailedError(error);
   }
-
-  return {
-    url: presignedUrl.split("?")[0],
-  };
 };
 
 export const generateVideoUploadLink = async (
-  filename: string
+  filename: string,
 ): Promise<VideoUploadResponse> => {
-  const response = await axios.get(`${API_BASE}/generate-upload-link`, {
-    params: { filename },
-  });
+  try {
+    const response = await axios.get(`${API_BASE}/generate-upload-link`, {
+      params: { filename },
+    });
 
-  const parsedVideoUploadLink = VideoUploadResponseSchema.parse(response.data);
-
-  return parsedVideoUploadLink;
+    const parsedVideoUploadLink = VideoUploadResponseSchema.parse(response.data);
+    return parsedVideoUploadLink;
+  } catch (error) {
+    throw createDetailedError(error);
+  }
 };
 
 export const fetchVideos = async (
   page = 0,
-  limit: number
+  limit: number,
 ): Promise<VideosResponse> => {
-  const response = await axios.get(`${API_BASE}/videos`, {
-    params: { page, limit },
-  });
+  try {
+    const response = await axios.get(`${API_BASE}/videos`, {
+      params: { page, limit },
+    });
 
-  const parsedVideos = VideosResponseSchema.parse(response.data);
-  return parsedVideos;
+    const parsedVideos = VideosResponseSchema.parse(response.data);
+    return parsedVideos;
+  } catch (error) {
+    throw createDetailedError(error);
+  }
 };
 
 // React Query hook for videos
 export const useGetAndPrefetchVideos = (page: number, limit: number) => {
   const queryClient = useQueryClient();
 
-  const query = useQuery<VideosResponse, Error>({
+  const query = useQuery<VideosResponse, DetailedError>({
     queryKey: ["data", page, limit],
     queryFn: () => fetchVideos(page, limit),
     placeholderData: (prev) => prev,
@@ -177,30 +188,38 @@ export const useGetAndPrefetchVideos = (page: number, limit: number) => {
 
 export const fetchTasks = async (
   page = 0,
-  limit: number
+  limit: number,
 ): Promise<TasksResponse> => {
-  const response = await axios.get(`${API_BASE}/tasks`, {
-    params: { page, limit },
-  });
+  try {
+    const response = await axios.get(`${API_BASE}/tasks`, {
+      params: { page, limit },
+    });
 
-  const parsedTasks = TasksResponseSchema.parse(response.data);
-  return parsedTasks;
+    const parsedTasks = TasksResponseSchema.parse(response.data);
+    return parsedTasks;
+  } catch (error) {
+    throw createDetailedError(error);
+  }
 };
 
 // React Query hook for tasks
 export const useGetAndPrefetchTasks = (
   page: number,
   limit: number,
-  isAccordionOpen: boolean
+  isAccordionOpen: boolean,
 ) => {
   const queryClient = useQueryClient();
 
-  const query = useQuery<TasksResponse, Error>({
+  const query = useQuery<TasksResponse, DetailedError>({
     queryKey: ["data", page, limit],
     queryFn: () => fetchTasks(page, limit),
     placeholderData: (prev) => prev,
-    refetchInterval: 5000,
+    refetchInterval: (query) => {
+      // Stop polling if there's an error, otherwise poll every 5 seconds
+      return query.state.error ? false : 5000;
+    },
     enabled: isAccordionOpen,
+    retry: 3,
   });
 
   useEffect(() => {

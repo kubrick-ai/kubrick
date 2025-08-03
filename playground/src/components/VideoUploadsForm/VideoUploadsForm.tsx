@@ -26,8 +26,13 @@ import {
   FileUploadTrigger,
 } from "@/components/ui/file-upload";
 import { toast } from "sonner";
-import { UploadVideosFormData, UploadVideosFormDataSchema } from "@/types";
+import {
+  DetailedError,
+  UploadVideosFormData,
+  UploadVideosFormDataSchema,
+} from "@/types";
 import { uploadVideo } from "@/hooks/useKubrickAPI";
+import ErrorDisplay from "../ErrorDisplay";
 
 const MAX_FILES = 5;
 const MAX_SIZE = 2 * 1024 * 1024 * 1024;
@@ -40,10 +45,12 @@ const VideoUploadsForm = () => {
     },
   });
   const [isSending, setIsSending] = useState(false);
+  const [uploadError, setUploadError] = useState<DetailedError | null>(null);
 
   const onSubmit = useCallback(
     async (data: UploadVideosFormData) => {
       setIsSending(true);
+      setUploadError(null);
 
       try {
         await Promise.all(
@@ -51,7 +58,8 @@ const VideoUploadsForm = () => {
         );
         form.reset({ files: [] });
       } catch (error) {
-        toast.error("An error occurred while uploading the videos.");
+        const detailedError = error as DetailedError;
+        setUploadError(detailedError);
         console.error(error);
       } finally {
         setIsSending(false); // always stop sending, even if there was an error
@@ -137,6 +145,11 @@ const VideoUploadsForm = () => {
       {isSending && (
         <div className="pt-2">
           <p>Hang on! Uploading your video(s)...</p>
+        </div>
+      )}
+      {uploadError && (
+        <div className="mt-4">
+          <ErrorDisplay error={uploadError} />
         </div>
       )}
     </>

@@ -10,6 +10,7 @@ import TasksTable from "@/components/TasksTable";
 import VideoUploadsForm from "@/components/VideoUploadsForm";
 import { useGetAndPrefetchTasks } from "@/hooks/useKubrickAPI";
 import { useState } from "react";
+import ErrorDisplay from "@/components/ErrorDisplay";
 
 const PAGE_LIMIT = 10;
 
@@ -19,7 +20,7 @@ const Embed = () => {
   const { data, isLoading, error } = useGetAndPrefetchTasks(
     page - 1,
     PAGE_LIMIT,
-    isAccordionOpen
+    isAccordionOpen,
   );
   const tasks = data?.data ?? [];
   const total = data?.metadata?.total ?? 0;
@@ -50,11 +51,7 @@ const Embed = () => {
             </AccordionTrigger>
             <AccordionContent className="w-full flex flex-col gap-4 text-balance">
               {isLoading && <p>Loading embedding tasks...</p>}
-              {error && (
-                <p className="text-red-500">
-                  Error loading embedding tasks: {error.message}
-                </p>
-              )}
+              {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
               {tasks && tasks.length > 0 ? (
                 <TasksTable
                   tasks={tasks}
