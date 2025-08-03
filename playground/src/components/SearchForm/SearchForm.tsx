@@ -119,9 +119,7 @@ const SearchForm = ({
         ...(values.filter ? JSON.parse(values.filter) : {}),
       };
       params.filter = JSON.stringify(filter);
-    } catch (error) {
-      toast.error("An error occurred while searching.");
-      console.error(error);
+    } catch {
       const filter = {
         scope: values.search_scope === "all" ? undefined : values.search_scope,
         modality:
