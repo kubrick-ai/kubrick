@@ -163,7 +163,7 @@ export const checkAWSPermissions = async (
 
     if (!continueAnyway) {
       p.cancel(
-        `${symbols.error} Deployment cancelled due to insufficient permissions`,
+        `${symbols.error} Operation cancelled due to insufficient permissions`,
       );
       process.exit(1);
     }
