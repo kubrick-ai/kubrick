@@ -121,7 +121,7 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
     // build tfvarsConfig
     const tfvarsConfig: TFVarsConfigCore = useExistingTfVars
-      ? parseTerraformVars(terraformDir)
+      ? (parseTerraformVars(terraformDir) as TFVarsConfig)
       : await promptTfVars();
 
     await validateAWSCredentials(
@@ -135,15 +135,19 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
 
     if (!useExistingTfVars) {
       const { secretName, shouldImport } = await determineSecretName();
+
       tfvarsConfig.secrets_manager_name = secretName;
 
       writeTerraformVars(terraformDir, tfvarsConfig as TFVarsConfig);
+      p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
 
       // Import secret to tfstate if needed (this operation requires terraform.tfvars to exist)
       if (shouldImport) {
-        await importSecret(terraformDir, secretName);
+        await importSecret(
+          terraformDir,
+          (tfvarsConfig as TFVarsConfig).secrets_manager_name,
+        );
       }
-      p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
     }
 
     const confirmDeployStep = handleCancel(
