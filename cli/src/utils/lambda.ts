@@ -48,6 +48,10 @@ export const buildLambdas = async (rootDir: string): Promise<void> => {
 
   const buildScript = resolve(rootDir, "lambda/build-package.sh");
 
+  if (!existsSync(buildScript)) {
+    throw new Error(`Build script not found: ${buildScript}`);
+  }
+
   const tasks = packageDirectories.map((packageDir) => {
     const packageName = color.blue(packageDir.replace(rootDir + "/", ""));
     return {
