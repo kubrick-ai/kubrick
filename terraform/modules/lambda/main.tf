@@ -46,8 +46,8 @@ resource "aws_lambda_layer_version" "s3_utils_layer" {
 
 # Security Group
 resource "aws_security_group" "lambda_private_egress_all_sg" {
-  name        = "kubrick_api_search_handler_sg"
-  description = "Security group for kubrick_api_search_handler Lambda"
+  name        = "kubrick_lambda_vpc_egress_sg"
+  description = "Security group for Lambda that need to send requests/responses outside the VPC"
   vpc_id      = var.vpc_id
 
   # Allows all traffic leaving the lambda (outbound traffic)

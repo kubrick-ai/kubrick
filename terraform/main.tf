@@ -20,8 +20,6 @@ module "iam" {
   secret_arn               = module.secrets_manager.secret_arn
   environment              = local.env
   embedding_task_queue_arn = module.sqs.queue_arn
-
-  depends_on = [module.secrets_manager]
 }
 
 # Public S3 bucket depends on API_Gateway
@@ -40,8 +38,6 @@ module "s3_notifications" {
   delete_lambda_function_arn  = module.lambda.kubrick_s3_delete_handler_arn
   delete_lambda_function_name = module.lambda.kubrick_s3_delete_handler_function_name
   bucket_arn                  = module.s3.bucket_arn
-
-  depends_on = [module.lambda, module.s3]
 }
 
 module "rds" {
@@ -89,17 +85,13 @@ module "lambda" {
   queue_arn                                         = module.sqs.queue_arn
   secrets_manager_name                              = var.secrets_manager_name
   aws_profile                                       = var.aws_profile
-
-  depends_on = [
-    module.rds, module.iam, module.sqs
-  ]
 }
 
 module "sqs" {
   source                  = "./modules/sqs"
   environment             = local.env
   enable_queue_policy     = true
-  queue_policy_principals = ["arn:aws:iam::791237609017:root"]
+  queue_policy_principals = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
   queue_policy_actions    = ["SQS:*"]
 }
 
@@ -114,14 +106,9 @@ module "api_gateway" {
   upload_link_lambda_function_name  = module.lambda.kubrick_api_video_upload_link_handler_function_name
   fetch_tasks_lambda_function_name  = module.lambda.kubrick_api_fetch_tasks_handler_function_name
   aws_region                        = local.region
-
-  depends_on = [module.lambda]
 }
 
 module "cloudfront" {
-  source                         = "./modules/cloudfront"
-  s3_bucket_regional_domain_name = module.s3.kubrick_playground_bucket_regional_domain_name
-  s3_bucket_arn                  = module.s3.kubrick_playground_bucket_arn
-  aws_region                     = local.region
-  kubrick_playground_bucket_name = module.s3.kubrick_playground_bucket_name
+  source                                     = "./modules/cloudfront"
+  kubrick_playground_bucket_website_endpoint = module.s3.kubrick_playground_bucket_website_endpoint
 }
