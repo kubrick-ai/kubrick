@@ -114,6 +114,7 @@ module "api_gateway" {
   upload_link_lambda_function_name  = module.lambda.kubrick_api_video_upload_link_handler_function_name
   fetch_tasks_lambda_function_name  = module.lambda.kubrick_api_fetch_tasks_handler_function_name
   aws_region                        = local.region
+  stage_name                        = var.stage_name
 
   depends_on = [module.lambda]
 }
