@@ -18,6 +18,7 @@ interface VideoThumbnailProps {
   width?: number;
   height?: number;
   children?: React.ReactNode;
+  enableChapters?: boolean;
 }
 
 const VideoThumbnail = ({
@@ -26,13 +27,83 @@ const VideoThumbnail = ({
   width = 300,
   height = 300,
   children,
+  enableChapters = false,
 }: VideoThumbnailProps) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const clipLength = 6;
+
+  useEffect(() => {
+    const mediaElement = videoRef.current;
+    if (!mediaElement || !enableChapters) return;
+
+    const handleLoadedMetadata = () => {
+      // Remove any existing chapter tracks
+      const existingTracks = Array.from(mediaElement.textTracks).filter(
+        (track) => track.kind === "chapters"
+      );
+      existingTracks.forEach((track) => {
+        // Clear existing cues
+        while (track.cues && track.cues.length > 0) {
+          track.removeCue(track.cues[0]);
+        }
+      });
+
+      const chapterTrack = mediaElement.addTextTrack(
+        "chapters",
+        "Chapters",
+        "en"
+      );
+      chapterTrack.mode = "hidden";
+
+      const duration = mediaElement.duration;
+      const clipEndTime = startTime + clipLength;
+
+      if (startTime > 0) {
+        const preclipCue = new VTTCue(0, startTime, "");
+        chapterTrack.addCue(preclipCue);
+      }
+
+      const clipCue = new VTTCue(
+        startTime,
+        Math.min(clipEndTime, duration),
+        "Result"
+      );
+      chapterTrack.addCue(clipCue);
+
+      if (clipEndTime < duration) {
+        const postclipCue = new VTTCue(clipEndTime, duration, "");
+        chapterTrack.addCue(postclipCue);
+      }
+    };
+
+    if (mediaElement.readyState >= 1) {
+      handleLoadedMetadata();
+    } else {
+      mediaElement.addEventListener("loadedmetadata", handleLoadedMetadata);
+    }
+
+    return () => {
+      mediaElement.removeEventListener("loadedmetadata", handleLoadedMetadata);
+    };
+  }, [startTime, enableChapters]);
 
   useEffect(() => {
     const curVideo = videoRef.current;
     if (!curVideo) return;
-    curVideo.currentTime = startTime;
+
+    const setInitialTime = () => {
+      curVideo.currentTime = startTime;
+    };
+
+    if (curVideo.readyState >= 1) {
+      setInitialTime();
+    } else {
+      curVideo.addEventListener("loadedmetadata", setInitialTime);
+    }
+
+    return () => {
+      curVideo.removeEventListener("loadedmetadata", setInitialTime);
+    };
   }, [startTime]);
 
   return (
@@ -72,7 +143,7 @@ const VideoThumbnail = ({
               </div>
             </div>
 
-            <MediaPlayer.Seek />
+            <MediaPlayer.Seek withoutChapter={!enableChapters} />
           </MediaPlayer.Controls>
         </MediaPlayer.Root>
       </CardContent>
