@@ -31,6 +31,7 @@ const SearchResultList = ({ results }: SearchResultListProps) => {
             key={result.id}
             video={result.video}
             startTime={result.start_time ?? 0}
+            enableChapters={true}
           >
             {result.modality && <p>Modality: {result.modality}</p>}
             {result.scope && <p>Scope: {result.scope}</p>}

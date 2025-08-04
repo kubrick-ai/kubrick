@@ -76,5 +76,4 @@ variable "aws_region" {
 variable "stage_name" {
   description = "API Gateway deployment stage name"
   type        = string
-  default     = "v1_0"
 }

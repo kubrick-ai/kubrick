@@ -41,15 +41,16 @@ locals {
     kubrick_api_video_upload_link_handler = ["lambda_basic_execution", "lambda_vpc_access", "s3_full_access"]
     kubrick_api_fetch_tasks_handler       = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access"]
     kubrick_sqs_embedding_task_producer   = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_full_access", "sqs_full_access"]
-    kubrick_sqs_embedding_task_consumer   = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "lambda_sqs_execution"]
+    kubrick_sqs_embedding_task_consumer   = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "lambda_sqs_execution", "sqs_change_message_visibility"]
   }
 
   # Merge managed + custom policy ARNs
   all_policy_arns = merge(
     local.managed_policy_arns,
     {
-      secrets_access    = aws_iam_policy.secrets_access.arn
-      lambda_vpc_access = aws_iam_policy.lambda_vpc_access.arn
+      secrets_access                   = aws_iam_policy.secrets_access.arn
+      lambda_vpc_access                = aws_iam_policy.lambda_vpc_access.arn
+      sqs_change_message_visibility    = aws_iam_policy.sqs_change_message_visibility_policy.arn
     }
   )
 }
