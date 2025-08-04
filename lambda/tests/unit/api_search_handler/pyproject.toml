@@ -1,0 +1,15 @@
+[project]
+name = "kubrick_api_searc_handler_tests"
+version = "0.1.0"
+description = "Tests for api_search_handler"
+requires-python = ">=3.13"
+dependencies = ["pytest", "moto", "psycopg2-binary", "multipart>=1.2.1", "pydantic>=2.11.7", "twelvelabs>=1.0.0b0", "httpx==0.28.1", "aioboto3"]
+
+[tool.pyright]
+extraPaths = [
+  "../../../layers/vector_database_layer/",
+  "../../../layers/response_utils_layer/",
+  "../../../layers/embed_service_layer/",
+  "../../../layers/s3_utils_layer/",
+  "../../../layers/config_layer/",
+]

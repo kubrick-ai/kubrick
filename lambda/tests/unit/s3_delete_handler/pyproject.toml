@@ -1,0 +1,12 @@
+[project]
+name = "Kubrick_s3_delete_handler_test"
+version = "0.1.0"
+description = "Tests for s3_delete_handler lambda function"
+requires-python = ">=3.13"
+dependencies = ["pytest", "moto", "psycopg2-binary"]
+
+[tool.pyright]
+extraPaths = [
+  "../../../layers/vector_database_layer/",
+  "../../../layers/config_layer/",
+]
