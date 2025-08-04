@@ -38,7 +38,7 @@ export const parseTerraformVars = (terraformDir: string): TFVarsConfig => {
     config.twelvelabs_api_key = parseVar("twelvelabs_api_key");
     config.aws_profile = parseVar("aws_profile");
     config.aws_region = parseVar("aws_region");
-    config.secrets_manager_name = parseVar("secrets_manager_name");
+    config.secret_name = parseVar("secret_name");
     config.db_username = parseVar("db_username");
     config.db_password = parseVar("db_password");
   } catch (error) {
@@ -68,7 +68,7 @@ aws_profile = "${config.aws_profile}"
 aws_region = "${config.aws_region}"
 
 # Secrets Manager
-secrets_manager_name = "${config.secrets_manager_name}"
+secret_name = "${config.secret_name}"
 
 # Database credentials - These will be stored securely in AWS Secrets Manager
 db_username = "${config.db_username}"
@@ -116,34 +116,6 @@ export const secretExistsInTfState = async (terraformDir: string) => {
   );
 };
 
-export const determineSecretName = async (): Promise<{
-  secretName: string;
-  shouldImport: boolean;
-}> => {
-  const secretAction = handleCancel(
-    await p.select({
-      message: "AWS Secrets Manager configuration",
-      options: [
-        { value: "create", label: "Create new secret" },
-        { value: "import", label: "Import existing secret" },
-      ],
-    }),
-  ) as "create" | "import";
-
-  const secretName = handleCancel(
-    await p.text({
-      message: `Enter ${secretAction === "import" ? "existing" : "new"} secret name`,
-      placeholder: "kubrick_secret",
-      defaultValue: "kubrick_secret",
-      validate: (value) => {
-        if (!value) return "Secret name is required";
-      },
-    }),
-  );
-
-  return { secretName, shouldImport: secretAction === "import" };
-};
-
 export const importSecret = async (
   terraformDir: string,
   secretName: string,
@@ -164,7 +136,7 @@ export const importSecret = async (
   if (!result.success) {
     s.stop(`${symbols.error} Secret import failed`);
     p.note(
-      `Failed to import secret: \n${result.stderr}\nThis may be normal if the secret is already imported.`,
+      `Failed to import secret: \n${result.stderr}\nThis may be normal if the secret already exists in terraform state.`,
       `${symbols.warning} Import Warning`,
     );
   } else {

@@ -14,7 +14,7 @@ aws_profile = "default"
 aws_region = "us-east-1" # or ap-northeast-2, us-west-2, etc.
 
 # Secrets Manager - Name of your secret containing API keys and RDS credentials
-secrets_manager_name = "kubrick_secret"
+secret_name = "kubrick_secret"
 
 # Database credentials - These will be stored securely in AWS Secrets Manager
 db_username = "postgres"

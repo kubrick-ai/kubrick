@@ -10,24 +10,25 @@ import {
   getAWSRegions,
   validateAWSCredentials,
   checkAWSPermissions,
+  secretExistsInAWS,
 } from "../utils/aws.js";
 import { buildLambdas } from "../utils/lambda.js";
 import {
-  determineSecretName,
   importSecret,
   parseTerraformVars,
   writeTerraformVars,
   initializeTerraform,
   deployTerraform,
   tfvarsFileExists,
+  secretExistsInTfState,
 } from "../utils/terraform.js";
 import type { TFVarsConfig, TFVarsConfigCore } from "../types/index.js";
 
-export const promptTfVars = async () => {
+const promptTfVars = async () => {
   const availableAWSProfiles = await getAWSProfiles();
   const availableAWSRegions = await getAWSRegions();
 
-  const tfvarsConfigCore: TFVarsConfigCore = await p.group(
+  const tfvarsConfig: TFVarsConfig = await p.group(
     {
       aws_profile: () =>
         p.select({
@@ -67,6 +68,12 @@ export const promptTfVars = async () => {
               return "Password must be at least 8 characters";
           },
         }),
+      secret_name: () =>
+        p.text({
+          message: "Enter a name for your AWS Secret",
+          placeholder: "kubrick_secret",
+          defaultValue: "kubrick_secret",
+        }),
     },
     {
       onCancel: () => {
@@ -76,7 +83,7 @@ export const promptTfVars = async () => {
     },
   );
 
-  return tfvarsConfigCore;
+  return tfvarsConfig;
 };
 
 export const deployCommand = async (rootDir: string): Promise<void> => {
@@ -120,9 +127,14 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
       );
 
     // build tfvarsConfig
-    const tfvarsConfig: TFVarsConfigCore = useExistingTfVars
-      ? (parseTerraformVars(terraformDir) as TFVarsConfig)
+    const tfvarsConfig: TFVarsConfig = useExistingTfVars
+      ? parseTerraformVars(terraformDir)
       : await promptTfVars();
+
+    if (!useExistingTfVars) {
+      writeTerraformVars(terraformDir, tfvarsConfig);
+      p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
+    }
 
     await validateAWSCredentials(
       tfvarsConfig.aws_profile,
@@ -133,21 +145,15 @@ export const deployCommand = async (rootDir: string): Promise<void> => {
       tfvarsConfig.aws_region,
     );
 
-    if (!useExistingTfVars) {
-      const { secretName, shouldImport } = await determineSecretName();
-
-      tfvarsConfig.secrets_manager_name = secretName;
-
-      writeTerraformVars(terraformDir, tfvarsConfig as TFVarsConfig);
-      p.log.success(`Created ${color.yellow("terraform/terraform.tfvars")}`);
-
-      // Import secret to tfstate if needed (this operation requires terraform.tfvars to exist)
-      if (shouldImport) {
-        await importSecret(
-          terraformDir,
-          (tfvarsConfig as TFVarsConfig).secrets_manager_name,
-        );
-      }
+    // Import secret to tfstate if needed (this operation requires terraform.tfvars to exist)
+    const shouldImportSecret = await secretExistsInAWS(
+      tfvarsConfig.secret_name,
+      tfvarsConfig.aws_profile,
+      tfvarsConfig.aws_region,
+    );
+    if (shouldImportSecret) {
+      p.log.info(`Existing AWS Secret ${tfvarsConfig.secret_name} found`);
+      await importSecret(terraformDir, tfvarsConfig.secret_name);
     }
 
     const confirmDeployStep = handleCancel(
