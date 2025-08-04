@@ -130,16 +130,14 @@ export const uploadVideo = async (file: File, filename: string) => {
 };
 
 export const generateVideoUploadLink = async (
-  filename: string
+  filename: string,
 ): Promise<VideoUploadResponse> => {
   try {
     const response = await axios.get(`${API_BASE}/generate-upload-link`, {
       params: { filename },
     });
 
-    const parsedVideoUploadLink = VideoUploadResponseSchema.parse(
-      response.data
-    );
+    const parsedVideoUploadLink = VideoUploadResponseSchema.parse(response.data);
     return parsedVideoUploadLink;
   } catch (error) {
     throw createDetailedError(error);
@@ -148,7 +146,7 @@ export const generateVideoUploadLink = async (
 
 export const fetchVideos = async (
   page = 0,
-  limit: number
+  limit: number,
 ): Promise<VideosResponse> => {
   try {
     const response = await axios.get(`${API_BASE}/videos`, {
@@ -190,7 +188,7 @@ export const useGetAndPrefetchVideos = (page: number, limit: number) => {
 
 export const fetchTasks = async (
   page = 0,
-  limit: number
+  limit: number,
 ): Promise<TasksResponse> => {
   try {
     const response = await axios.get(`${API_BASE}/tasks`, {
@@ -208,7 +206,7 @@ export const fetchTasks = async (
 export const useGetAndPrefetchTasks = (
   page: number,
   limit: number,
-  isAccordionOpen: boolean
+  isAccordionOpen: boolean,
 ) => {
   const queryClient = useQueryClient();
 

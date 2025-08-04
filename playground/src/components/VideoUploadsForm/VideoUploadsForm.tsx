@@ -22,7 +22,6 @@ import {
   FileUploadItemDelete,
   FileUploadItemMetadata,
   FileUploadItemPreview,
-  FileUploadItemProgress,
   FileUploadList,
   FileUploadTrigger,
 } from "@/components/ui/file-upload";
@@ -44,12 +43,12 @@ const VideoUploadsForm = () => {
       files: [],
     },
   });
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [uploadError, setUploadError] = useState<DetailedError | null>(null);
 
   const onSubmit = useCallback(
     async (data: UploadVideosFormData) => {
-      setIsUploading(true);
+      setIsSending(true);
       setUploadError(null);
 
       try {
@@ -62,7 +61,7 @@ const VideoUploadsForm = () => {
         setUploadError(detailedError);
         console.error(error);
       } finally {
-        setIsUploading(false); // always stop uploading, even if there was an error
+        setIsSending(false); // always stop sending, even if there was an error
       }
     },
     [form]
@@ -136,15 +135,15 @@ const VideoUploadsForm = () => {
           <Button
             type="submit"
             className="mt-4"
-            disabled={!form.formState.isValid || isUploading}
+            disabled={!form.formState.isValid || isSending}
           >
             Submit
           </Button>
         </form>
       </Form>
-      {isUploading && (
+      {isSending && (
         <div className="pt-2">
-          <p>Hang on! Uploading your video(s)...</p>
+          <p>Please don&apos;t leave this page! Uploading your video(s)...</p>
         </div>
       )}
       {uploadError && (
