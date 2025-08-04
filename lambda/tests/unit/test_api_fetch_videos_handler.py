@@ -1,6 +1,5 @@
 import sys
 import os
-import pytest
 import boto3
 import json
 from moto import mock_aws
@@ -15,22 +14,19 @@ sys.path.insert(0, os.path.join(layers_dir, "vector_database_layer"))
 sys.path.insert(0, os.path.join(layers_dir, "s3_utils_layer"))
 sys.path.insert(0, os.path.join(layers_dir, "config_layer"))
 
-# Lambda handler path
+# Insert lambda src into path
 sys.path.insert(
     0,
-    os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "../../../api_fetch_videos_handler")
-    ),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src/")),
 )
 
-from lambda_function import lambda_handler
+from api_fetch_videos_handler.lambda_function import lambda_handler  # noqa: E402
 
 
 class TestLambdaHandler:
-
     @mock_aws
-    @patch("lambda_function.VectorDBService")
-    @patch("lambda_function.add_presigned_urls")
+    @patch("api_fetch_videos_handler.lambda_function.VectorDBService")
+    @patch("api_fetch_videos_handler.lambda_function.add_presigned_urls")
     def test_lambda_handler_success(
         self, mock_add_presigned_urls, mock_vector_db_service
     ):
@@ -82,7 +78,7 @@ class TestLambdaHandler:
         mock_add_presigned_urls.assert_called_once()
 
     @mock_aws
-    @patch("lambda_function.VectorDBService")
+    @patch("api_fetch_videos_handler.lambda_function.VectorDBService")
     def test_lambda_handler_default_params(self, mock_vector_db_service):
         mock_vector_db = MagicMock()
         mock_vector_db.fetch_videos.return_value = ([], 0)
@@ -108,7 +104,7 @@ class TestLambdaHandler:
         mock_vector_db.fetch_videos.assert_called_once_with(page=0, limit=12)
 
     @mock_aws
-    @patch("lambda_function.VectorDBService")
+    @patch("api_fetch_videos_handler.lambda_function.VectorDBService")
     def test_lambda_handler_database_error(self, mock_vector_db_service):
         mock_vector_db = MagicMock()
         mock_vector_db.fetch_videos.side_effect = Exception(
@@ -133,7 +129,7 @@ class TestLambdaHandler:
         assert "error" in body
         assert body["error"]["message"] == "Internal server error"
 
-    @patch("lambda_function.get_secret")
+    @patch("api_fetch_videos_handler.lambda_function.get_secret")
     def test_lambda_handler_secrets_error(self, mock_get_secret):
         mock_get_secret.side_effect = Exception("Failed to retrieve secret")
 
@@ -148,7 +144,7 @@ class TestLambdaHandler:
         assert body["error"]["message"] == "Internal server error"
 
     @mock_aws
-    @patch("lambda_function.VectorDBService")
+    @patch("api_fetch_videos_handler.lambda_function.VectorDBService")
     def test_lambda_handler_invalid_params(self, mock_vector_db_service):
         mock_vector_db = MagicMock()
         mock_vector_db.fetch_videos.return_value = ([], 0)
@@ -171,15 +167,19 @@ class TestLambdaHandler:
         assert "error" in body
 
     @mock_aws
-    @patch("lambda_function.add_presigned_urls")
-    @patch("lambda_function.get_secret")
+    @patch("api_fetch_videos_handler.lambda_function.add_presigned_urls")
+    @patch("api_fetch_videos_handler.lambda_function.get_secret")
     def test_lambda_handler_with_environment_variables(
         self, mock_get_secret, mock_add_presigned_urls
     ):
         # Mock the SECRET_NAME at module level
-        with patch("lambda_function.SECRET_NAME", "custom_secret"), patch(
-            "lambda_function.PRESIGNED_URL_EXPIRY", 7200
-        ), patch("lambda_function.VectorDBService") as mock_vector_db_service:
+        with patch(
+            "api_fetch_videos_handler.lambda_function.SECRET_NAME", "custom_secret"
+        ), patch(
+            "api_fetch_videos_handler.lambda_function.PRESIGNED_URL_EXPIRY", 7200
+        ), patch(
+            "api_fetch_videos_handler.lambda_function.VectorDBService"
+        ) as mock_vector_db_service:
 
             mock_vector_db = MagicMock()
             mock_vector_db.fetch_videos.return_value = ([], 0)
@@ -198,4 +198,3 @@ class TestLambdaHandler:
 
         mock_get_secret.assert_called_once_with("custom_secret")
         mock_add_presigned_urls.assert_called_once_with([], 7200)
-
