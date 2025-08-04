@@ -25,7 +25,6 @@ import {
   FileUploadList,
   FileUploadTrigger,
 } from "@/components/ui/file-upload";
-import { toast } from "sonner";
 import {
   DetailedError,
   UploadVideosFormData,
@@ -144,7 +143,7 @@ const VideoUploadsForm = () => {
       </Form>
       {isSending && (
         <div className="pt-2">
-          <p>Hang on! Uploading your video(s)...</p>
+          <p>Please don&apos;t leave this page! Uploading your video(s)...</p>
         </div>
       )}
       {uploadError && (
