@@ -30,6 +30,7 @@ const VideoThumbnail = ({
   enableChapters = false,
 }: VideoThumbnailProps) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const clipLength = 6;
 
   useEffect(() => {
     const mediaElement = videoRef.current;
@@ -55,7 +56,7 @@ const VideoThumbnail = ({
       chapterTrack.mode = "hidden";
 
       const duration = mediaElement.duration;
-      const clipEndTime = startTime + 6; // 6-second clip
+      const clipEndTime = startTime + clipLength;
 
       if (startTime > 0) {
         const preclipCue = new VTTCue(0, startTime, "");
