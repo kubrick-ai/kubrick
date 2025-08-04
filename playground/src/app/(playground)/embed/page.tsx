@@ -46,7 +46,7 @@ const Embed = () => {
           onClick={onClick}
         >
           <AccordionItem value="embedding-tasks-table" className="w-full">
-            <AccordionTrigger className="w-full">
+            <AccordionTrigger className="w-full cursor-pointer">
               Embedding Tasks
             </AccordionTrigger>
             <AccordionContent className="w-full flex flex-col gap-4 text-balance">

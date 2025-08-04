@@ -53,6 +53,7 @@ const VideoList = ({
       {/* Pagination controls */}
       <div className="mt-6 flex justify-center items-center gap-4">
         <Button
+          className="cursor-pointer"
           variant="outline"
           disabled={page <= 1}
           onClick={() => onPageChange(Math.max(1, page - 1))}
@@ -65,6 +66,7 @@ const VideoList = ({
         </span>
 
         <Button
+          className="cursor-pointer"
           variant="outline"
           disabled={page >= totalPages}
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
