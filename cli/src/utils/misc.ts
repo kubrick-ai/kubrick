@@ -12,5 +12,8 @@ export const handleCancel = <T>(result: T): Exclude<T, symbol> => {
 };
 
 export const extractOutputs = (stdout: string) => {
-  return (stdout.match(/(?<=Outputs:\s*\n).*/s) ?? [])[0];
+  return stdout
+    .split(/Outputs:\s*\n/)
+    .at(-1)
+    ?.trimEnd();
 };

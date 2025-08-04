@@ -10,7 +10,7 @@
     "test:watch": "vitest --watch",
     "lint": "npx tsc --noEmit",
     "dev": "tsx ./src/index.ts",
-    "build": "npm install && tsc && chmod +x ./dist/index.js && npm link"
+    "build": "npm install && tsc && chmod +x ./dist/index.js && npm link > /dev/null && node scripts/setup-completion.js"
   },
   "bin": {
     "kubrick": "./dist/index.js"

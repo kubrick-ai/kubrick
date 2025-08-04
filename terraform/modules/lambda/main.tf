@@ -46,8 +46,8 @@ resource "aws_lambda_layer_version" "s3_utils_layer" {
 
 # Security Group
 resource "aws_security_group" "lambda_private_egress_all_sg" {
-  name        = "kubrick_api_search_handler_sg"
-  description = "Security group for kubrick_api_search_handler Lambda"
+  name        = "kubrick_lambda_vpc_egress_sg"
+  description = "Security group for Lambda that need to send requests/responses outside the VPC"
   vpc_id      = var.vpc_id
 
   # Allows all traffic leaving the lambda (outbound traffic)
@@ -77,7 +77,7 @@ resource "aws_lambda_function" "kubrick_db_bootstrap" {
   environment {
     variables = {
       DB_HOST     = var.db_host
-      SECRET_NAME = var.secrets_manager_name
+      SECRET_NAME = var.secret_name
       LOG_LEVEL   = "INFO"
     }
   }
@@ -136,7 +136,7 @@ resource "aws_lambda_function" "kubrick_api_search_handler" {
       DEFAULT_PAGE_LIMIT          = var.page_limit
       EMBEDDING_MODEL_NAME        = var.embedding_model
       QUERY_MEDIA_FILE_SIZE_LIMIT = var.query_media_file_size_limit
-      SECRET_NAME                 = var.secrets_manager_name
+      SECRET_NAME                 = var.secret_name
       LOG_LEVEL                   = "INFO"
     }
   }
@@ -167,7 +167,7 @@ resource "aws_lambda_function" "kubrick_s3_delete_handler" {
   environment {
     variables = {
       DB_HOST     = var.db_host
-      SECRET_NAME = var.secrets_manager_name
+      SECRET_NAME = var.secret_name
       LOG_LEVEL   = "INFO"
     }
   }
@@ -201,7 +201,7 @@ resource "aws_lambda_function" "kubrick_api_fetch_videos_handler" {
     variables = {
       DB_HOST              = var.db_host
       PRESIGNED_URL_EXPIRY = var.presigned_url_expiry
-      SECRET_NAME          = var.secrets_manager_name
+      SECRET_NAME          = var.secret_name
       LOG_LEVEL            = "INFO"
     }
   }
@@ -266,7 +266,7 @@ resource "aws_lambda_function" "kubrick_api_fetch_tasks_handler" {
       DEFAULT_TASK_LIMIT = var.default_task_limit
       MAX_TASK_LIMIT     = var.max_task_limit
       DEFAULT_TASK_PAGE  = var.default_task_page
-      SECRET_NAME        = var.secrets_manager_name
+      SECRET_NAME        = var.secret_name
       LOG_LEVEL          = "INFO"
     }
   }
@@ -306,7 +306,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_producer" {
       FILE_CHECK_RETRIES     = var.file_check_retries
       FILE_CHECK_DELAY_SEC   = var.file_check_delay_sec
       VIDEO_EMBEDDING_SCOPES = jsonencode(var.video_embedding_scopes)
-      SECRET_NAME            = var.secrets_manager_name
+      SECRET_NAME            = var.secret_name
       LOG_LEVEL              = "INFO"
     }
   }
@@ -338,10 +338,12 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
 
   environment {
     variables = {
-      DB_HOST     = var.db_host
-      DB_PASSWORD = var.db_password
-      SECRET_NAME = var.secrets_manager_name
-      LOG_LEVEL   = "INFO"
+      DB_HOST                        = var.db_host
+      DB_PASSWORD                    = var.db_password
+      SECRET_NAME                    = var.secret_name
+      QUEUE_URL                      = var.queue_url
+      SQS_MESSAGE_VISIBILITY_TIMEOUT = var.sqs_message_visibility_timeout
+      LOG_LEVEL                      = "INFO"
     }
   }
 
@@ -350,7 +352,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
     security_group_ids = [aws_security_group.lambda_private_egress_all_sg.id]
   }
 
-  timeout = 25 # 25s timeout for embedding tasks
+  timeout = 300 # 5 mins timeout for embedding tasks
 
 }
 

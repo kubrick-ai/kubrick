@@ -176,3 +176,25 @@ export const checkAWSPermissions = async (
     failedChecks,
   };
 };
+
+export const secretExistsInAWS = async (
+  secretName: string,
+  profile?: string,
+  region?: string,
+): Promise<boolean> => {
+  const env: Record<string, string> = {};
+
+  if (profile) {
+    env.AWS_PROFILE = profile;
+  }
+
+  if (region) {
+    env.AWS_DEFAULT_REGION = region;
+  }
+
+  return await runCommandSilent(
+    "aws",
+    ["secretsmanager", "describe-secret", "--secret-id", secretName],
+    { env },
+  );
+};

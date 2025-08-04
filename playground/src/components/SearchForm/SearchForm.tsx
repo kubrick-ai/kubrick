@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
+import { FieldError, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SearchParams, SearchFormData, SearchFormDataSchema } from "@/types";
 import {
@@ -40,6 +40,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface SearchFormParams {
   setSearchParams: (params: SearchParams) => void;
@@ -82,6 +83,22 @@ const SearchForm = ({
     }
   }, [queryType, form]);
 
+  useEffect(() => {
+    if (!selectedFile) return;
+
+    form.trigger("query_media_file").then((isValid) => {
+      if (!isValid) {
+        const fieldState = form.getFieldState("query_media_file");
+        const err = fieldState.error as { query_media_file?: FieldError };
+
+        const message = err.query_media_file?.message;
+        if (message) {
+          toast.error(message, { id: "file-size-error" });
+        }
+      }
+    });
+  }, [selectedFile, form]);
+
   const onSubmit = (values: SearchFormData) => {
     const params: SearchParams = {
       query_text: values.query_text,
@@ -103,7 +120,6 @@ const SearchForm = ({
       };
       params.filter = JSON.stringify(filter);
     } catch {
-      console.error("Invalid JSON in filter field");
       const filter = {
         scope: values.search_scope === "all" ? undefined : values.search_scope,
         modality:
@@ -218,9 +234,10 @@ const SearchForm = ({
                           <Input
                             type="file"
                             accept={getAcceptType()}
-                            onChange={(e) =>
-                              field.onChange(e.target.files?.[0])
-                            }
+                            onChange={(e) => {
+                              field.onChange(e.target.files?.[0]);
+                              form.trigger("query_media_file");
+                            }}
                             disabled={queryType === "text"}
                             className="cursor-pointer file:cursor-pointer"
                           />
@@ -308,8 +325,8 @@ const SearchForm = ({
                               } else {
                                 field.onChange(
                                   currentValues.filter(
-                                    (v) => v !== "visual-text",
-                                  ),
+                                    (v) => v !== "visual-text"
+                                  )
                                 );
                               }
                             }}
@@ -324,7 +341,7 @@ const SearchForm = ({
                                 field.onChange([...currentValues, "audio"]);
                               } else {
                                 field.onChange(
-                                  currentValues.filter((v) => v !== "audio"),
+                                  currentValues.filter((v) => v !== "audio")
                                 );
                               }
                             }}
