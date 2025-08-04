@@ -33,7 +33,7 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -73,6 +73,7 @@ const SearchForm = ({
 
   const queryType = form.watch("query_type");
   const selectedFile = form.watch("query_media_file");
+  const mediaFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (queryType !== "text") {
@@ -138,6 +139,9 @@ const SearchForm = ({
     form.reset({
       ...defaultValues,
     });
+    if (mediaFileInputRef.current) {
+      mediaFileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -233,6 +237,7 @@ const SearchForm = ({
                         <div className="relative">
                           <Input
                             type="file"
+                            ref={mediaFileInputRef}
                             accept={getAcceptType()}
                             onChange={(e) => {
                               field.onChange(e.target.files?.[0]);
@@ -266,7 +271,8 @@ const SearchForm = ({
                       <Input
                         className="min-w-40 cursor-text"
                         placeholder="Enter media url..."
-                        {...field}
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
                         disabled={queryType === "text"}
                       />
                     </FormControl>
