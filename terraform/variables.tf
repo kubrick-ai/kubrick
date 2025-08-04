@@ -32,3 +32,9 @@ variable "aws_profile" {
   type        = string
   default     = "default"
 }
+
+variable "stage_name" {
+  description = "API Gateway deployment stage name"
+  type        = string
+  default     = "v1_0"
+}

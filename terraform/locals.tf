@@ -2,8 +2,8 @@ locals {
   region = var.aws_region
   env    = "dev"
   secret = {
-    DB_USERNAME         = var.db_username
-    DB_PASSWORD         = var.db_password
+    DB_USERNAME        = var.db_username
+    DB_PASSWORD        = var.db_password
     TWELVELABS_API_KEY = var.twelvelabs_api_key
   }
 
