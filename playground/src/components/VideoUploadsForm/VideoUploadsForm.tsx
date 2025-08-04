@@ -82,6 +82,7 @@ const VideoUploadsForm = () => {
                 <FormLabel>Attachments</FormLabel>
                 <FormControl>
                   <FileUpload
+                    className="cursor-pointer"
                     value={field.value}
                     onValueChange={field.onChange}
                     accept="video/*"
@@ -134,7 +135,7 @@ const VideoUploadsForm = () => {
           />
           <Button
             type="submit"
-            className="mt-4"
+            className="mt-4 cursor-pointer"
             disabled={!form.formState.isValid || isSending}
           >
             Submit
