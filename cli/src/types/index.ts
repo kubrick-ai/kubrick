@@ -4,11 +4,11 @@ export interface TFVarsConfigCore {
   aws_region: string;
   db_username: string;
   db_password: string;
-  secrets_manager_name?: string;
+  secret_name?: string;
 }
 
 export interface TFVarsConfig extends TFVarsConfigCore {
-  secrets_manager_name: string;
+  secret_name: string;
 }
 
 export interface AWSCredentials {

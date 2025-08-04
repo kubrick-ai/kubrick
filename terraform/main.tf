@@ -1,6 +1,6 @@
 module "secrets_manager" {
   source             = "./modules/secrets_manager"
-  name               = var.secrets_manager_name
+  name               = var.secret_name
   description        = "Secret store for Kubrick application"
   environment        = local.env
   db_username        = var.db_username
@@ -83,7 +83,7 @@ module "lambda" {
   s3_bucket_name                                    = module.s3.kubrick_video_upload_bucket_name
   queue_url                                         = module.sqs.queue_url
   queue_arn                                         = module.sqs.queue_arn
-  secrets_manager_name                              = var.secrets_manager_name
+  secret_name                                       = var.secret_name
   aws_profile                                       = var.aws_profile
 }
 

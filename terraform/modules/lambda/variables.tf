@@ -154,7 +154,7 @@ variable "queue_arn" {
   type        = string
 }
 
-variable "secrets_manager_name" {
+variable "secret_name" {
   description = "Name of the AWS Secrets Manager secret"
   type        = string
   default     = "kubrick_secret"
@@ -170,3 +170,4 @@ variable "sqs_message_visibility_timeout" {
   type        = number
   default     = 25
 }
+

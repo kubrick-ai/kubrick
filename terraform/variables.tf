@@ -4,7 +4,7 @@ variable "aws_region" {
   default     = "us-east-2"
 }
 
-variable "secrets_manager_name" {
+variable "secret_name" {
   description = "The name of the AWS Secrets Manager secret containing API keys and RDS credentials"
   type        = string
   default     = "kubrick_secret"
