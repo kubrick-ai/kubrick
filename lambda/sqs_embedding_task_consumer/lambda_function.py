@@ -8,6 +8,7 @@ from vector_db_service import VectorDBService
 # Environment variables
 SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
 QUEUE_URL = os.environ["QUEUE_URL"]
+SQS_MESSAGE_VISIBILITY_TIMEOUT = int(os.getenv("SQS_MESSAGE_VISIBILITY_TIMEOUT", "25"))
 
 
 def get_video_metadata(tl_metadata: VideoEmbeddingMetadata | None, message_body):
@@ -39,12 +40,12 @@ def lambda_handler(event, context):
     pending_message_ids = []
 
     for record in event["Records"]:
-        message_id = record["messageId"]
+        message_id = record.get("messageId")
+        receipt_handle = record.get("receiptHandle")
         try:
             message_body = json.loads(record["body"])
             tl_task_id = message_body.get("twelvelabs_video_embedding_task_id")
             # use receipt_handle to distinguish between different records representing the same message
-            receipt_handle = record["receiptHandle"]
             logger.info(f"Record receiptHandle: {receipt_handle}")
 
             task_status = embed_service.get_embedding_request_status(tl_task_id)
@@ -80,7 +81,7 @@ def lambda_handler(event, context):
                 sqs.change_message_visibility(
                     QueueUrl=QUEUE_URL,
                     ReceiptHandle=receipt_handle,
-                    VisibilityTimeout=25,
+                    VisibilityTimeout=SQS_MESSAGE_VISIBILITY_TIMEOUT,
                 )
                 vector_db_service.update_task_status(message_id, "processing")
                 logger.info("Successfully updated task status in DB")
@@ -93,7 +94,7 @@ def lambda_handler(event, context):
             sqs.change_message_visibility(
                 QueueUrl=QUEUE_URL,
                 ReceiptHandle=receipt_handle,
-                VisibilityTimeout=25,
+                VisibilityTimeout=SQS_MESSAGE_VISIBILITY_TIMEOUT,
             )
             vector_db_service.update_task_status(message_id, "retrying")
             logger.info("Successfully updated task status in DB")

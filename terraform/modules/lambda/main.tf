@@ -342,6 +342,7 @@ resource "aws_lambda_function" "kubrick_sqs_embedding_task_consumer" {
       DB_PASSWORD = var.db_password
       SECRET_NAME = var.secrets_manager_name
       QUEUE_URL   = var.queue_url
+      SQS_MESSAGE_VISIBILITY_TIMEOUT = var.sqs_message_visibility_timeout
       LOG_LEVEL   = "INFO"
     }
   }
