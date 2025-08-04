@@ -1,0 +1,25 @@
+[project]
+name = "lambda_unit_tests"
+version = "0.1.0"
+description = "Tests for Lambda functions"
+requires-python = ">=3.13"
+dependencies = ["pytest", "moto", "psycopg2-binary", "aioboto3"]
+
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "../../src/api_fetch_videos_handler/",
+  "../../src/layers/vector_database_layer/",
+  "../../src/layers/embed_service_layer/",
+  "../../src/layers/response_utils_layer/",
+  "../../src/layers/s3_utils_layer/",
+  "../../src/layers/config_layer/",
+]
+[tool.pyright]
+extraPaths = [
+  "../../src/layers/vector_database_layer/",
+  "../../src/layers/embed_service_layer/",
+  "../../src/layers/response_utils_layer/",
+  "../../src/layers/s3_utils_layer/",
+  "../../src/layers/config_layer/",
+]
