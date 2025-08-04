@@ -106,7 +106,7 @@ const TasksTable = ({
                     {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
                   </TableCell>
                   <TableCell className="truncate max-w-[200px] align-top">
-                    {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
+                    {dayjs(task.updated_at).format("YYYY:MM:DD HH:mm:ss")}
                   </TableCell>
                   <TableCell className="align-top">
                     <div className="flex items-center gap-2 truncate max-w-[200px]">

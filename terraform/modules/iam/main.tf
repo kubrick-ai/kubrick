@@ -32,22 +32,21 @@ resource "aws_iam_policy" "lambda_vpc_access" {
   })
 }
 
-# Once this is merged I can extract the ARN from the SQS module
-# resource "aws_iam_policy" "sqs_send_message_policy" {
-#   name        = "SqsSendMessageOnlyPolicy"
-#   description = "Allows Lambda to send messages to a specific SQS queue"
+resource "aws_iam_policy" "sqs_change_message_visibility_policy" {
+  name        = "SqsChangeMessageVisibilityPolicy"
+  description = "Allows Lambda to change message visibility in SQS queue"
 
-#   policy = jsonencode({
-#     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Effect   = "Allow",
-#         Action   = ["sqs:SendMessage"],
-#         Resource = var.embedding_task_queue_arn
-#       }
-#     ]
-#   })
-# }
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = ["sqs:ChangeMessageVisibility"],
+        Resource = var.embedding_task_queue_arn
+      }
+    ]
+  })
+}
 
 # Creates the IAM Role for each lambda
 resource "aws_iam_role" "lambda_roles" {
