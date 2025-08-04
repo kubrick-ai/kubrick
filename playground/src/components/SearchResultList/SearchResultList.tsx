@@ -45,6 +45,7 @@ const SearchResultList = ({ results }: SearchResultListProps) => {
       {/* Pagination controls */}
       <div className="mt-6 flex justify-center items-center gap-4">
         <Button
+          className="cursor-pointer"
           variant="outline"
           disabled={!page}
           onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -57,6 +58,7 @@ const SearchResultList = ({ results }: SearchResultListProps) => {
         </span>
 
         <Button
+          className="cursor-pointer"
           variant="outline"
           disabled={page === maxPage}
           onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
