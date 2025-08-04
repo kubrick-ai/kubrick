@@ -164,3 +164,9 @@ variable "aws_profile" {
   description = "AWS CLI profile to use for local-exec provisioners"
   type        = string
 }
+
+variable "sqs_message_visibility_timeout" {
+  description = "Visibility timeout for a message being re-queued"
+  type        = number
+  default     = 25
+}
