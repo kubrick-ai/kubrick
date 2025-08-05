@@ -238,6 +238,94 @@ def test_lambda_handler_unexpected_error(mock_search_controller, kubrick_secret)
     assert body_data["error"]["code"] == "INTERNAL_ERROR"
 
 
+def test_lambda_handler_media_processing_error(mock_search_controller, kubrick_secret):
+    """Test 422 error when media processing fails."""
+    from search_errors import MediaProcessingError
+
+    mock_search_controller.process_search_request.side_effect = MediaProcessingError(
+        "Failed to process uploaded media file"
+    )
+    body, boundary = create_multipart_form_data(
+        {
+            "query_type": "image",
+            "query_media_file": {
+                "content": b"invalid_image_data",
+                "filename": "test.jpg",
+                "content_type": "image/jpeg",
+            },
+        }
+    )
+    event = {
+        "httpMethod": "POST",
+        "headers": {"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        "body": base64.b64encode(body).decode("utf-8"),
+        "isBase64Encoded": True,
+    }
+
+    response = lambda_handler(event, {})
+
+    assert response["statusCode"] == 422
+    body_data = json.loads(response["body"])
+    assert body_data["error"]["code"] == "MEDIA_PROCESSING_ERROR"
+
+
+def test_lambda_handler_search_error(mock_search_controller, kubrick_secret):
+    """Test 500 error for generic search errors."""
+    from search_errors import SearchError
+
+    mock_search_controller.process_search_request.side_effect = SearchError(
+        "Generic search service error"
+    )
+    body, boundary = create_multipart_form_data(
+        {"query_type": "text", "query_text": "test"}
+    )
+    event = {
+        "httpMethod": "POST",
+        "headers": {"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        "body": base64.b64encode(body).decode("utf-8"),
+        "isBase64Encoded": True,
+    }
+
+    response = lambda_handler(event, {})
+
+    assert response["statusCode"] == 500
+    body_data = json.loads(response["body"])
+    assert body_data["error"]["code"] == "INTERNAL_ERROR"
+
+
+def test_lambda_handler_validation_error(mock_search_controller, kubrick_secret):
+    """Test 400 error for Pydantic validation failures."""
+    from pydantic import ValidationError
+
+    # Create a ValidationError using the correct InitErrorDetails structure
+    from pydantic_core import InitErrorDetails
+
+    error_details: list[InitErrorDetails] = [
+        {
+            "type": "missing",
+            "loc": ("query_text",),
+            "input": {},
+        }
+    ]
+    mock_search_controller.process_search_request.side_effect = (
+        ValidationError.from_exception_data("ValidationError", error_details)
+    )
+    body, boundary = create_multipart_form_data({"query_type": "text"})
+    event = {
+        "httpMethod": "POST",
+        "headers": {"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        "body": base64.b64encode(body).decode("utf-8"),
+        "isBase64Encoded": True,
+    }
+
+    response = lambda_handler(event, {})
+
+    assert response["statusCode"] == 400
+    body_data = json.loads(response["body"])
+    assert body_data["error"]["code"] == "VALIDATION_ERROR"
+    assert "Invalid request format" in body_data["error"]["message"]
+
+
 def test_lambda_handler_secrets_error():
     """Test that an exception is raised if secrets retrieval fails."""
     body, boundary = create_multipart_form_data(
