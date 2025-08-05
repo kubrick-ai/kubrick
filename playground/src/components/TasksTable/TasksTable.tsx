@@ -56,7 +56,8 @@ const TasksTable = ({
             <TableRow>
               <TableHead className="w-[180px]">SQS Message ID</TableHead>
               <TableHead className="w-[200px]">S3 Bucket</TableHead>
-              <TableHead className="w-[250px]">S3 Key</TableHead>
+              <TableHead className="w-[200px]">S3 Key</TableHead>
+              <TableHead className="w-[200px]">Filename</TableHead>
               <TableHead className="w-[180px]">Created At</TableHead>
               <TableHead className="w-[180px]">Updated At</TableHead>
               <TableHead className="w-[150px]">Status</TableHead>
@@ -80,7 +81,7 @@ const TasksTable = ({
                         <button
                           onClick={() =>
                             handleCopy(
-                              task.sqs_message_id ? task.sqs_message_id : "",
+                              task.sqs_message_id ? task.sqs_message_id : ""
                             )
                           }
                           className="text-muted-foreground hover:text-foreground transition"
@@ -92,7 +93,12 @@ const TasksTable = ({
                     </div>
                   </TableCell>
                   <TableCell className="truncate max-w-[200px] align-top">
-                    {task.s3_bucket}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>{task.s3_bucket}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>{task.s3_bucket}</TooltipContent>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="truncate max-w-[200px] align-top">
                     <Tooltip>
@@ -100,6 +106,18 @@ const TasksTable = ({
                         <span>{task.s3_key}</span>
                       </TooltipTrigger>
                       <TooltipContent>{task.s3_key}</TooltipContent>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell className="truncate max-w-[200px] align-top">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          {task.s3_key ? task.s3_key.split("/").pop() : ""}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {task.s3_key ? task.s3_key.split("/").pop() : ""}
+                      </TooltipContent>
                     </Tooltip>
                   </TableCell>
                   <TableCell className="truncate max-w-[200px] align-top">
