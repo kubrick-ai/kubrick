@@ -134,12 +134,12 @@ const VideoThumbnail = ({
 
             <div className="flex items-center gap-2 justify-between">
               <div className="flex items-center gap-2">
-                <MediaPlayer.Play className="text-white w-6 h-6" />
+                <MediaPlayer.Play className="text-white w-6 h-6 cursor-pointer" />
                 <MediaPlayer.Time />
               </div>
               <div className="flex items-center gap-2">
-                <MediaPlayer.Volume />
-                <MediaPlayer.Fullscreen />
+                <MediaPlayer.Volume className="cursor-pointer" />
+                <MediaPlayer.Fullscreen className="cursor-pointer" />
               </div>
             </div>
 

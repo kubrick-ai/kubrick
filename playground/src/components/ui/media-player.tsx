@@ -2294,7 +2294,7 @@ function MediaPlayerVolume(props: MediaPlayerVolumeProps) {
           data-state={mediaMuted ? "on" : "off"}
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-8 cursor-pointer"
           disabled={isDisabled}
           onClick={onMute}
         >
