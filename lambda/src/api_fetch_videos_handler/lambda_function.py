@@ -2,6 +2,7 @@ import os
 from config import get_secret, setup_logging, get_db_config
 from vector_db_service import VectorDBService
 from response_utils import (
+    ErrorCode,
     build_error_response,
     build_success_response,
 )
@@ -30,6 +31,12 @@ def lambda_handler(event, context):
 
         return build_success_response(
             data=videos_data, metadata={"total": total, "limit": limit, "page": page}
+        )
+
+    except ValueError as e:
+        logger.error(f"Error in lambda: {e}")
+        return build_error_response(
+            400, "Invalid parameters", ErrorCode.INVALID_REQUEST
         )
 
     except Exception as e:

@@ -1,230 +1,268 @@
-import sys
-import os
-import boto3
-import json
-from moto import mock_aws
+import pytest
 from unittest.mock import patch, MagicMock
 
-
-# Mock external dependencies completely
-sys.modules["twelvelabs"] = MagicMock()
-sys.modules["embed_service"] = MagicMock()
-
-# Path to layers
-layers_dir = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../src/layers")
-)
-sys.path.insert(0, os.path.join(layers_dir, "response_utils_layer"))
-sys.path.insert(0, os.path.join(layers_dir, "vector_database_layer"))
-sys.path.insert(0, os.path.join(layers_dir, "s3_utils_layer"))
-sys.path.insert(0, os.path.join(layers_dir, "config_layer"))
-
-# Lambda handler path
-sys.path.insert(
-    0,
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src/")),
+from sqs_embedding_task_producer.lambda_function import (
+    lambda_handler,
+    persist_task_metadata,
 )
 
-with patch.dict("os.environ", {"QUEUE_URL": "https://test-queue-url"}):
-    from sqs_embedding_task_producer import lambda_function
+
+# Fixtures for Mocking Services and Utilities
+@pytest.fixture
+def mock_sqs_client():
+    """Mocks the SQS client instance in the lambda function.""" 
+    with patch("sqs_embedding_task_producer.lambda_function.sqs") as mock_sqs:
+        mock_sqs.send_message.return_value = {"MessageId": "test-message-id-12345"}
+        yield mock_sqs
 
 
-class TestSQSEmbeddingTaskProducer:
+@pytest.fixture
+def mock_embed_service():
+    """Mocks the EmbedService and returns its mock instance."""
+    with patch(
+        "sqs_embedding_task_producer.lambda_function.EmbedService"
+    ) as mock_service:
+        mock_instance = MagicMock()
+        mock_task = MagicMock()
+        mock_task.id = "test-task-12345"
+        mock_instance.create_embedding_request.return_value = mock_task
+        mock_service.return_value = mock_instance
+        yield mock_instance
 
-    @mock_aws
-    @patch("sqs_embedding_task_producer.lambda_function.EmbedService")
-    @patch("sqs_embedding_task_producer.lambda_function.VectorDBService")
-    @patch("sqs_embedding_task_producer.lambda_function.s3_utils.wait_for_file")
-    @patch(
+
+@pytest.fixture
+def mock_vector_db():
+    """Mocks the VectorDBService and returns its mock instance."""
+    with patch(
+        "sqs_embedding_task_producer.lambda_function.VectorDBService"
+    ) as mock_service:
+        mock_instance = MagicMock()
+        mock_service.return_value = mock_instance
+        yield mock_instance
+
+
+@pytest.fixture
+def mock_wait_for_file():
+    """Mocks the s3_utils.wait_for_file utility, defaulting to success."""
+    with patch(
+        "sqs_embedding_task_producer.lambda_function.s3_utils.wait_for_file"
+    ) as mock_func:
+        mock_func.return_value = True
+        yield mock_func
+
+
+@pytest.fixture
+def mock_presigned_url():
+    """Mocks the s3_utils.generate_presigned_url utility."""
+    with patch(
         "sqs_embedding_task_producer.lambda_function.s3_utils.generate_presigned_url"
+    ) as mock_func:
+        mock_func.return_value = "https://test-presigned-url.com"
+        yield mock_func
+
+
+# Main Handler Tests
+@pytest.mark.parametrize(
+    "video_file",
+    ["test.mp4", "test.mov", "test.avi", "test.mkv", "test.webm"],
+)
+def test_lambda_handler_success(
+    mock_sqs_client,
+    mock_embed_service,
+    mock_vector_db,
+    mock_wait_for_file,
+    mock_presigned_url,
+    kubrick_secret,
+    test_sqs_queue,
+    test_s3_bucket,
+    event_builder,
+    video_file,
+):
+    """Test successful processing of various supported video files."""
+    s3_key = f"videos/{video_file}"
+    event = event_builder.s3_event(bucket_name=test_s3_bucket, object_key=s3_key)
+    response = lambda_handler(event, {})
+
+    assert response["status"] == "success"
+    assert response["task_id"] == "test-task-12345"
+    assert response["s3_bucket"] == test_s3_bucket
+    assert response["s3_key"] == s3_key
+    assert response["sqs_message_id"] == "test-message-id-12345"
+
+    mock_embed_service.create_embedding_request.assert_called_once()
+    mock_vector_db.store_task.assert_called_once()
+    mock_wait_for_file.assert_called_once()
+    mock_presigned_url.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "invalid_file", ["document.pdf", "image.jpg", "audio.mp3", "archive.zip"]
+)
+def test_lambda_handler_unsupported_file_type(
+    mock_sqs_client,
+    mock_vector_db,
+    kubrick_secret,
+    test_sqs_queue,
+    test_s3_bucket,
+    event_builder,
+    invalid_file,
+):
+    """Test that non-video files are marked as failed and not processed."""
+    event = event_builder.s3_event(
+        bucket_name=test_s3_bucket, object_key=f"uploads/{invalid_file}"
     )
-    def test_lambda_handler_success(
-        self,
-        mock_generate_presigned_url,
-        mock_wait_for_file,
-        mock_vector_db_service,
-        mock_embed_service,
+    response = lambda_handler(event, {})
+
+    assert response["status"] == "error"
+    assert "not a video" in response["message"]
+    mock_vector_db.store_task.assert_called_once()
+    call_args = mock_vector_db.store_task.call_args[0][0]
+    assert call_args["status"] == "failed"
+
+
+def test_lambda_handler_ignores_folder_creation(
+    mock_sqs_client,
+    mock_embed_service,
+    mock_vector_db,
+    kubrick_secret,
+    test_sqs_queue,
+    test_s3_bucket,
+    event_builder,
+):
+    """Test that S3 folder creation events (keys ending in '/') are ignored."""
+    event = event_builder.s3_event(bucket_name=test_s3_bucket, object_key="videos/")
+    response = lambda_handler(event, {})
+
+    assert response["status"] == "ignored"
+    mock_embed_service.create_embedding_request.assert_not_called()
+    mock_vector_db.store_task.assert_not_called()
+
+
+def test_lambda_handler_file_not_found(
+    mock_sqs_client,
+    mock_vector_db,
+    mock_wait_for_file,
+    kubrick_secret,
+    test_sqs_queue,
+    test_s3_bucket,
+    event_builder,
+):
+    """Test failure when the S3 file is not found after retries."""
+    mock_wait_for_file.return_value = False  # Simulate file not found
+    event = event_builder.s3_event(
+        bucket_name=test_s3_bucket, object_key="videos/missing.mp4"
+    )
+    response = lambda_handler(event, {})
+
+    assert response["status"] == "error"
+    assert "not found after retries" in response["message"]
+    mock_vector_db.store_task.assert_called_once()
+    assert mock_vector_db.store_task.call_args[0][0]["status"] == "failed"
+
+
+def test_lambda_handler_embed_service_failure(
+    mock_sqs_client,
+    mock_embed_service,
+    mock_vector_db,
+    mock_wait_for_file,
+    kubrick_secret,
+    test_sqs_queue,
+    test_s3_bucket,
+    event_builder,
+):
+    """Test failure when the embedding service raises an exception."""
+    mock_embed_service.create_embedding_request.side_effect = Exception(
+        "TwelveLabs API error"
+    )
+    event = event_builder.s3_event(
+        bucket_name=test_s3_bucket, object_key="videos/test.mp4"
+    )
+    response = lambda_handler(event, {})
+
+    assert response["status"] == "error"
+    assert "TwelveLabs API error" in response["message"]
+    mock_vector_db.store_task.assert_called_once()
+
+
+def test_lambda_handler_sqs_send_failure(
+    mock_sqs_client,
+    mock_embed_service,
+    mock_vector_db,
+    mock_wait_for_file,
+    kubrick_secret,
+    test_s3_bucket,
+    event_builder,
+    monkeypatch,
+):
+    """Test failure when sending the message to SQS fails."""
+    from botocore.exceptions import ClientError
+    mock_sqs_client.send_message.side_effect = ClientError(
+        {"Error": {"Code": "NonExistentQueue", "Message": "Queue does not exist"}},
+        "SendMessage"
+    )
+    event = event_builder.s3_event(
+        bucket_name=test_s3_bucket, object_key="videos/test.mp4"
+    )
+    response = lambda_handler(event, {})
+
+    assert response["status"] == "error"
+    assert "Queue does not exist" in response["message"]
+    mock_vector_db.store_task.assert_called_once()
+
+
+def test_lambda_handler_db_store_failure(
+    mock_sqs_client,
+    mock_embed_service,
+    mock_vector_db,
+    mock_wait_for_file,
+    kubrick_secret,
+    test_sqs_queue,
+    test_s3_bucket,
+    event_builder,
+):
+    """Test that the handler succeeds even if storing task metadata fails."""
+    mock_vector_db.store_task.side_effect = Exception("Database connection failed")
+    event = event_builder.s3_event(
+        bucket_name=test_s3_bucket, object_key="videos/test.mp4"
+    )
+    response = lambda_handler(event, {})
+
+    assert response["status"] == "success"
+    assert response["task_id"] == "test-task-12345"
+    mock_vector_db.store_task.assert_called_once()
+
+
+def test_lambda_handler_secrets_failure(
+    mock_sqs_client, event_builder, test_s3_bucket, test_sqs_queue
+):
+    """Test failure when secrets access throws an exception."""
+    event = event_builder.s3_event(
+        bucket_name=test_s3_bucket, object_key="videos/test.mp4"
+    )
+    with patch(
+        "sqs_embedding_task_producer.lambda_function.SECRET", {}
     ):
-        # Setup mocks
-        mock_embed_service_instance = MagicMock()
-        mock_embedding_response = MagicMock()
-        mock_embedding_response.id = "test-task-id-123"
-        mock_embed_service_instance.create_embedding_request.return_value = (
-            mock_embedding_response
-        )
-        mock_embed_service.return_value = mock_embed_service_instance
+        with pytest.raises(KeyError, match="TWELVELABS_API_KEY"):
+            lambda_handler(event, {})
 
-        mock_vector_db = MagicMock()
-        mock_vector_db_service.return_value = mock_vector_db
 
-        mock_wait_for_file.return_value = True
-        mock_generate_presigned_url.return_value = "https://presigned-url.com/video.mp4"
+# Helper Function Tests
+def test_persist_task_metadata_success(mock_vector_db):
+    """Test successful persistence of task metadata."""
+    metadata = {"status": "processing", "task_id": "123"}
+    mock_logger = MagicMock()
+    persist_task_metadata(mock_vector_db, metadata, logger=mock_logger)
+    mock_vector_db.store_task.assert_called_once_with(metadata)
+    mock_logger.info.assert_called_once()
 
-        # Setup AWS services
-        sqs = boto3.client("sqs", region_name="us-east-1")
-        queue_response = sqs.create_queue(QueueName="test-queue")
-        queue_url = queue_response["QueueUrl"]
 
-        secretsmanager = boto3.client("secretsmanager", region_name="us-east-1")
-        secret_value = {
-            "DB_USERNAME": "test_user",
-            "DB_PASSWORD": "test_pass",
-            "TWELVELABS_API_KEY": "test_api_key",
-        }
-        secretsmanager.create_secret(
-            Name="kubrick_secret", SecretString=json.dumps(secret_value)
-        )
-
-        # Test S3 event
-        event = {
-            "Records": [
-                {
-                    "s3": {
-                        "bucket": {"name": "test-bucket"},
-                        "object": {"key": "videos/test-video.mp4"},
-                    }
-                }
-            ]
-        }
-        context = {}
-
-        # Execute with proper environment
-        with patch.dict(
-            "os.environ", {"AWS_DEFAULT_REGION": "us-east-1", "QUEUE_URL": queue_url}
-        ), patch("sqs_embedding_task_producer.lambda_function.QUEUE_URL", queue_url):
-            response = lambda_function.lambda_handler(event, context)
-
-        # Assertions
-        assert response["status"] == "success"
-        assert response["task_id"] == "test-task-id-123"
-        assert "sqs_message_id" in response
-        assert response["s3_bucket"] == "test-bucket"
-        assert response["s3_key"] == "videos/test-video.mp4"
-
-        # Verify service calls
-        mock_embed_service_instance.create_embedding_request.assert_called_once_with(
-            url="https://presigned-url.com/video.mp4"
-        )
-        mock_vector_db.store_task.assert_called_once()
-
-    @mock_aws
-    @patch("sqs_embedding_task_producer.lambda_function.EmbedService")
-    @patch("sqs_embedding_task_producer.lambda_function.VectorDBService")
-    def test_lambda_handler_folder_event_ignored(
-        self, mock_vector_db_service, mock_embed_service
-    ):
-        # Setup minimal mocks
-        mock_vector_db = MagicMock()
-        mock_vector_db_service.return_value = mock_vector_db
-
-        secretsmanager = boto3.client("secretsmanager", region_name="us-east-1")
-        secret_value = {"TWELVELABS_API_KEY": "test_api_key"}
-        secretsmanager.create_secret(
-            Name="kubrick_secret", SecretString=json.dumps(secret_value)
-        )
-
-        # Test S3 folder creation event
-        event = {
-            "Records": [
-                {
-                    "s3": {
-                        "bucket": {"name": "test-bucket"},
-                        "object": {"key": "videos/"},
-                    }
-                }
-            ]
-        }
-        context = {}
-
-        with patch.dict("os.environ", {"AWS_DEFAULT_REGION": "us-east-1"}):
-            response = lambda_function.lambda_handler(event, context)
-
-        assert response["status"] == "ignored"
-        assert response["reason"] == "S3 event is a folder creation"
-
-    @mock_aws
-    @patch("sqs_embedding_task_producer.lambda_function.EmbedService")
-    @patch("sqs_embedding_task_producer.lambda_function.VectorDBService")
-    @patch("sqs_embedding_task_producer.lambda_function.utils.is_valid_video_file")
-    def test_lambda_handler_invalid_video_file(
-        self, mock_is_valid_video_file, mock_vector_db_service, mock_embed_service
-    ):
-        # Setup mocks
-        mock_vector_db = MagicMock()
-        mock_vector_db_service.return_value = mock_vector_db
-        mock_is_valid_video_file.return_value = False
-
-        secretsmanager = boto3.client("secretsmanager", region_name="us-east-1")
-        secret_value = {"TWELVELABS_API_KEY": "test_api_key"}
-        secretsmanager.create_secret(
-            Name="kubrick_secret", SecretString=json.dumps(secret_value)
-        )
-
-        # Test S3 event with invalid file
-        event = {
-            "Records": [
-                {
-                    "s3": {
-                        "bucket": {"name": "test-bucket"},
-                        "object": {"key": "documents/text-file.txt"},
-                    }
-                }
-            ]
-        }
-        context = {}
-
-        with patch.dict("os.environ", {"AWS_DEFAULT_REGION": "us-east-1"}):
-            response = lambda_function.lambda_handler(event, context)
-
-        assert response["status"] == "error"
-        assert (
-            "not a video" in response["message"]
-            or "not supported" in response["message"]
-        )
-
-        # Verify task metadata was stored with failed status
-        mock_vector_db.store_task.assert_called_once()
-        stored_metadata = mock_vector_db.store_task.call_args[0][0]
-        assert stored_metadata["status"] == "failed"
-
-    @mock_aws
-    @patch("sqs_embedding_task_producer.lambda_function.EmbedService")
-    @patch("sqs_embedding_task_producer.lambda_function.VectorDBService")
-    @patch("sqs_embedding_task_producer.lambda_function.s3_utils.wait_for_file")
-    def test_lambda_handler_file_not_found(
-        self, mock_wait_for_file, mock_vector_db_service, mock_embed_service
-    ):
-        # Setup mocks
-        mock_vector_db = MagicMock()
-        mock_vector_db_service.return_value = mock_vector_db
-        mock_wait_for_file.return_value = False
-
-        secretsmanager = boto3.client("secretsmanager", region_name="us-east-1")
-        secret_value = {"TWELVELABS_API_KEY": "test_api_key"}
-        secretsmanager.create_secret(
-            Name="kubrick_secret", SecretString=json.dumps(secret_value)
-        )
-
-        # Test S3 event
-        event = {
-            "Records": [
-                {
-                    "s3": {
-                        "bucket": {"name": "test-bucket"},
-                        "object": {"key": "videos/missing-video.mp4"},
-                    }
-                }
-            ]
-        }
-        context = {}
-
-        with patch.dict("os.environ", {"AWS_DEFAULT_REGION": "us-east-1"}):
-            response = lambda_function.lambda_handler(event, context)
-
-        assert response["status"] == "error"
-        assert "not found" in response["message"]
-
-        # Verify task metadata was stored with failed status
-        mock_vector_db.store_task.assert_called_once()
-        stored_metadata = mock_vector_db.store_task.call_args[0][0]
-        assert stored_metadata["status"] == "failed"
+def test_persist_task_metadata_failure(mock_vector_db):
+    """Test graceful handling of persistence failure."""
+    mock_vector_db.store_task.side_effect = Exception("DB Error")
+    metadata = {"status": "processing", "task_id": "123"}
+    mock_logger = MagicMock()
+    persist_task_metadata(
+        mock_vector_db, metadata, fallback_status="failed", logger=mock_logger
+    )
+    mock_vector_db.store_task.assert_called_once_with(metadata)
+    assert mock_logger.error.call_count == 2

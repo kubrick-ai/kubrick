@@ -22,7 +22,7 @@ def lambda_handler(event, context):
 
     # # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":
-        return build_options_response
+        return build_options_response()
 
     vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
     query_params = event.get("queryStringParameters") or {}

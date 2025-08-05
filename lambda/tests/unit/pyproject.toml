@@ -3,13 +3,22 @@ name = "lambda_unit_tests"
 version = "0.1.0"
 description = "Tests for Lambda functions"
 requires-python = ">=3.13"
-dependencies = ["pytest", "moto", "psycopg2-binary", "aioboto3"]
+dependencies = [
+  "pytest",
+  "moto",
+  "psycopg2-binary",
+  "aioboto3",
+  "python-multipart",
+  "pydantic",
+]
 
 
 [tool.pytest.ini_options]
 pythonpath = [
   "../../src/api_fetch_videos_handler/",
   "../../src/sqs_embedding_task_producer/",
+  "../../src/api_search_handler/",
+  "../../src/s3_delete_handler/",
   "../../src/layers/vector_database_layer/",
   "../../src/layers/embed_service_layer/",
   "../../src/layers/response_utils_layer/",
@@ -18,5 +27,4 @@ pythonpath = [
 ]
 
 [tool.pyright]
-extraPaths = ["../../src/"]
-
+extraPaths = ["../../src/", "../../src/api_search_handler/"]
