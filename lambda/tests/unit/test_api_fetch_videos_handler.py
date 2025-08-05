@@ -1,200 +1,194 @@
-import sys
-import os
-import boto3
 import json
-from moto import mock_aws
+import pytest
 from unittest.mock import patch, MagicMock
 
-# Path to layers
-layers_dir = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../src/layers")
-)
-sys.path.insert(0, os.path.join(layers_dir, "response_utils_layer"))
-sys.path.insert(0, os.path.join(layers_dir, "vector_database_layer"))
-sys.path.insert(0, os.path.join(layers_dir, "s3_utils_layer"))
-sys.path.insert(0, os.path.join(layers_dir, "config_layer"))
-
-# Insert lambda src into path
-sys.path.insert(
-    0,
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src/")),
-)
-
-from api_fetch_videos_handler.lambda_function import lambda_handler  # noqa: E402
+from api_fetch_videos_handler.lambda_function import lambda_handler
 
 
-class TestLambdaHandler:
-    @mock_aws
-    @patch("api_fetch_videos_handler.lambda_function.VectorDBService")
-    @patch("api_fetch_videos_handler.lambda_function.add_presigned_urls")
-    def test_lambda_handler_success(
-        self, mock_add_presigned_urls, mock_vector_db_service
-    ):
-        # Setup mocks
-        mock_vector_db = MagicMock()
-        mock_vector_db.fetch_videos.return_value = (
-            [
-                {
-                    "id": 1,
-                    "filename": "test.mp4",
-                    "s3_bucket": "test-bucket",
-                    "s3_key": "test-key",
-                    "duration": 120.5,
-                    "created_at": "2023-01-01T00:00:00",
-                    "updated_at": "2023-01-01T00:00:00",
-                    "height": 720,
-                    "width": 1280,
-                }
-            ],
-            1,
-        )
-        mock_vector_db_service.return_value = mock_vector_db
+@pytest.fixture
+def mock_vector_db():
+    """Mocks VectorDBService and returns its instance."""
+    with patch("api_fetch_videos_handler.lambda_function.VectorDBService") as mock_service:
+        mock_instance = MagicMock()
+        mock_service.return_value = mock_instance
+        yield mock_instance
 
-        # Setup Secrets Manager
-        secretsmanager = boto3.client("secretsmanager", region_name="us-east-1")
-        secret_value = {"DB_USERNAME": "test_user", "DB_PASSWORD": "test_pass"}
-        secretsmanager.create_secret(
-            Name="kubrick_secret", SecretString=json.dumps(secret_value)
-        )
 
-        # Test event
-        event = {"queryStringParameters": {"limit": "10", "page": "0"}}
-        context = {}
+@pytest.fixture
+def mock_add_presigned_urls():
+    """Mocks the add_presigned_urls utility function."""
+    with patch(
+        "api_fetch_videos_handler.lambda_function.add_presigned_urls"
+    ) as mock_func:
+        yield mock_func
 
-        # Execute with proper region
-        with patch.dict("os.environ", {"AWS_DEFAULT_REGION": "us-east-1"}):
-            response = lambda_handler(event, context)
 
-        assert response["statusCode"] == 200
-        body = json.loads(response["body"])
-        assert "data" in body
-        assert "metadata" in body
-        assert body["metadata"]["total"] == 1
-        assert body["metadata"]["limit"] == 10
-        assert body["metadata"]["page"] == 0
-        assert len(body["data"]) == 1
+@pytest.fixture
+def mock_get_secret():
+    """Mocks the get_secret utility function."""
+    with patch("api_fetch_videos_handler.lambda_function.get_secret") as mock_func:
+        yield mock_func
 
-        mock_vector_db.fetch_videos.assert_called_once_with(page=0, limit=10)
-        mock_add_presigned_urls.assert_called_once()
 
-    @mock_aws
-    @patch("api_fetch_videos_handler.lambda_function.VectorDBService")
-    def test_lambda_handler_default_params(self, mock_vector_db_service):
-        mock_vector_db = MagicMock()
-        mock_vector_db.fetch_videos.return_value = ([], 0)
-        mock_vector_db_service.return_value = mock_vector_db
+def test_lambda_handler_success(
+    mock_vector_db,
+    mock_add_presigned_urls,
+    kubrick_secret,
+    event_builder,
+    test_data_builder,
+):
+    """Test successful retrieval of a list of videos."""
+    # Setup mocks
+    videos = [test_data_builder.video()]
+    mock_vector_db.fetch_videos.return_value = (videos, 1)
 
-        secretsmanager = boto3.client("secretsmanager", region_name="us-east-1")
-        secretsmanager.create_secret(
-            Name="kubrick_secret",
-            SecretString=json.dumps({"DB_USERNAME": "test", "DB_PASSWORD": "test"}),
-        )
+    # Test event
+    event = event_builder.api_gateway_proxy_event(
+        query_params={"limit": "10", "page": "0"}
+    )
+    context = {}
 
-        event = {}
-        context = {}
+    # Execute
+    response = lambda_handler(event, context)
 
-        with patch.dict("os.environ", {"AWS_DEFAULT_REGION": "us-east-1"}):
-            response = lambda_handler(event, context)
+    # Assert
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert "data" in body
+    assert "metadata" in body
+    assert body["metadata"]["total"] == 1
+    assert body["metadata"]["limit"] == 10
+    assert body["metadata"]["page"] == 0
+    assert len(body["data"]) == 1
 
-        assert response["statusCode"] == 200
-        body = json.loads(response["body"])
-        assert body["metadata"]["limit"] == 12
-        assert body["metadata"]["page"] == 0
+    mock_vector_db.fetch_videos.assert_called_once_with(page=0, limit=10)
+    mock_add_presigned_urls.assert_called_once()
 
-        mock_vector_db.fetch_videos.assert_called_once_with(page=0, limit=12)
 
-    @mock_aws
-    @patch("api_fetch_videos_handler.lambda_function.VectorDBService")
-    def test_lambda_handler_database_error(self, mock_vector_db_service):
-        mock_vector_db = MagicMock()
-        mock_vector_db.fetch_videos.side_effect = Exception(
-            "Database connection failed"
-        )
-        mock_vector_db_service.return_value = mock_vector_db
+def test_lambda_handler_default_params(mock_vector_db, kubrick_secret, event_builder):
+    """Test that default pagination parameters are used when none are provided."""
+    # Setup mock
+    mock_vector_db.fetch_videos.return_value = ([], 0)
 
-        secretsmanager = boto3.client("secretsmanager", region_name="us-east-1")
-        secretsmanager.create_secret(
-            Name="kubrick_secret",
-            SecretString=json.dumps({"DB_USERNAME": "test", "DB_PASSWORD": "test"}),
-        )
+    # Test event (no query params)
+    event = event_builder.api_gateway_proxy_event()
+    context = {}
 
-        event = {}
-        context = {}
+    # Execute
+    response = lambda_handler(event, context)
 
-        with patch.dict("os.environ", {"AWS_DEFAULT_REGION": "us-east-1"}):
-            response = lambda_handler(event, context)
+    # Assert
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert body["metadata"]["limit"] == 12
+    assert body["metadata"]["page"] == 0
 
-        assert response["statusCode"] == 500
-        body = json.loads(response["body"])
-        assert "error" in body
-        assert body["error"]["message"] == "Internal server error"
+    mock_vector_db.fetch_videos.assert_called_once_with(page=0, limit=12)
 
-    @patch("api_fetch_videos_handler.lambda_function.get_secret")
-    def test_lambda_handler_secrets_error(self, mock_get_secret):
-        mock_get_secret.side_effect = Exception("Failed to retrieve secret")
 
-        event = {}
-        context = {}
+def test_lambda_handler_database_error(mock_vector_db, kubrick_secret, event_builder):
+    """Test 500 error response when the database service fails."""
+    # Setup mock
+    mock_vector_db.fetch_videos.side_effect = Exception("Database connection failed")
 
-        response = lambda_handler(event, context)
+    # Test event
+    event = event_builder.api_gateway_proxy_event()
+    context = {}
 
-        assert response["statusCode"] == 500
-        body = json.loads(response["body"])
-        assert "error" in body
-        assert body["error"]["message"] == "Internal server error"
+    # Execute
+    response = lambda_handler(event, context)
 
-    @mock_aws
-    @patch("api_fetch_videos_handler.lambda_function.VectorDBService")
-    def test_lambda_handler_invalid_params(self, mock_vector_db_service):
-        mock_vector_db = MagicMock()
-        mock_vector_db.fetch_videos.return_value = ([], 0)
-        mock_vector_db_service.return_value = mock_vector_db
+    # Assert
+    assert response["statusCode"] == 500
+    body = json.loads(response["body"])
+    assert "error" in body
+    assert body["error"]["message"] == "Internal server error"
 
-        secretsmanager = boto3.client("secretsmanager", region_name="us-east-1")
-        secretsmanager.create_secret(
-            Name="kubrick_secret",
-            SecretString=json.dumps({"DB_USERNAME": "test", "DB_PASSWORD": "test"}),
-        )
 
-        event = {"queryStringParameters": {"limit": "invalid", "page": "also_invalid"}}
-        context = {}
+def test_lambda_handler_secrets_error(mock_get_secret, event_builder):
+    """Test 500 error response when retrieving secrets fails."""
+    # Setup mock
+    mock_get_secret.side_effect = Exception("Failed to retrieve secret")
 
-        with patch.dict("os.environ", {"AWS_DEFAULT_REGION": "us-east-1"}):
-            response = lambda_handler(event, context)
+    # Test event
+    event = event_builder.api_gateway_proxy_event()
+    context = {}
 
-        assert response["statusCode"] == 500
-        body = json.loads(response["body"])
-        assert "error" in body
+    # Execute
+    response = lambda_handler(event, context)
 
-    @mock_aws
-    @patch("api_fetch_videos_handler.lambda_function.add_presigned_urls")
-    @patch("api_fetch_videos_handler.lambda_function.get_secret")
-    def test_lambda_handler_with_environment_variables(
-        self, mock_get_secret, mock_add_presigned_urls
-    ):
-        # Mock the SECRET_NAME at module level
-        with patch(
-            "api_fetch_videos_handler.lambda_function.SECRET_NAME", "custom_secret"
-        ), patch(
-            "api_fetch_videos_handler.lambda_function.PRESIGNED_URL_EXPIRY", 7200
-        ), patch(
-            "api_fetch_videos_handler.lambda_function.VectorDBService"
-        ) as mock_vector_db_service:
+    # Assert
+    assert response["statusCode"] == 500
+    body = json.loads(response["body"])
+    assert "error" in body
+    assert body["error"]["message"] == "Internal server error"
 
-            mock_vector_db = MagicMock()
-            mock_vector_db.fetch_videos.return_value = ([], 0)
-            mock_vector_db_service.return_value = mock_vector_db
-            mock_get_secret.return_value = {
-                "DB_USERNAME": "test",
-                "DB_PASSWORD": "test",
-            }
 
-            event = {}
-            context = {}
+def test_lambda_handler_invalid_params(mock_vector_db, kubrick_secret, event_builder):
+    """Test 400 error response for invalid pagination parameters."""
+    # Setup mock
+    mock_vector_db.fetch_videos.return_value = ([], 0)
 
-            response = lambda_handler(event, context)
+    # Test event
+    event = event_builder.api_gateway_proxy_event(
+        query_params={"limit": "invalid", "page": "also_invalid"}
+    )
+    context = {}
 
-        assert response["statusCode"] == 200
+    # Execute
+    response = lambda_handler(event, context)
 
-        mock_get_secret.assert_called_once_with("custom_secret")
-        mock_add_presigned_urls.assert_called_once_with([], 7200)
+    # Assert
+    assert response["statusCode"] == 400
+    body = json.loads(response["body"])
+    assert "error" in body
+    assert "Invalid parameters" in body["error"]["message"]
+
+
+def test_lambda_handler_with_environment_variables(
+    mock_get_secret,
+    mock_vector_db,
+    mock_add_presigned_urls,
+    kubrick_secret,
+    event_builder,
+):
+    """Test that environment variables for secrets and S3 are used correctly."""
+    # Setup mocks
+    mock_vector_db.fetch_videos.return_value = ([], 0)
+    mock_get_secret.return_value = kubrick_secret
+
+    # Test event
+    event = event_builder.api_gateway_proxy_event()
+    context = {}
+
+    # Execute
+    response = lambda_handler(event, context)
+
+    # Assert
+    assert response["statusCode"] == 200
+    mock_get_secret.assert_called_once_with("kubrick_secret")
+    mock_add_presigned_urls.assert_called_once_with([], 3600)
+
+
+def test_lambda_handler_no_videos_found(
+    mock_vector_db, kubrick_secret, event_builder
+):
+    """Test successful response with an empty data array when no videos are found."""
+    # Setup mock
+    mock_vector_db.fetch_videos.return_value = ([], 0)
+
+    # Test event
+    event = event_builder.api_gateway_proxy_event(
+        query_params={"limit": "10", "page": "0"}
+    )
+    context = {}
+
+    # Execute
+    response = lambda_handler(event, context)
+
+    # Assert
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert len(body["data"]) == 0
+    assert body["metadata"]["total"] == 0
+    mock_vector_db.fetch_videos.assert_called_once_with(page=0, limit=10)

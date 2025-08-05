@@ -96,7 +96,7 @@ def lambda_handler(event, context):
         )
 
     except Exception as e:
-        logger.exception("Unexpected error:", e)
+        logger.exception(f"Unexpected error: {e}")
 
         return build_error_response(
             status_code=500,
