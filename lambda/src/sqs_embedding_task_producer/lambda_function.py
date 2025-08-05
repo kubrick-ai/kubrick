@@ -20,8 +20,8 @@ VIDEO_EMBEDDING_SCOPES = json.loads(
 )
 QUEUE_URL = os.environ["QUEUE_URL"]
 
-sqs = boto3.client("sqs")
 logger = setup_logging()
+sqs = boto3.client("sqs")
 SECRET = get_secret(SECRET_NAME)
 DB_CONFIG = get_db_config(SECRET)
 

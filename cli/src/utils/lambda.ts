@@ -6,9 +6,9 @@ import { runCommand } from "./shell.js";
 import { symbols } from "../theme/index.js";
 
 const findLambdaPackageDirectories = (rootDir: string): string[] => {
-  const lambdaDir = join(rootDir, "lambda");
+  const lambdaSrcDir = join(rootDir, "lambda", "src");
 
-  if (!existsSync(lambdaDir)) {
+  if (!existsSync(lambdaSrcDir)) {
     return [];
   }
 
@@ -33,7 +33,7 @@ const findLambdaPackageDirectories = (rootDir: string): string[] => {
     }
   };
 
-  searchRecursively(lambdaDir);
+  searchRecursively(lambdaSrcDir);
   return directories;
 };
 
@@ -42,7 +42,7 @@ export const buildLambdas = async (rootDir: string): Promise<void> => {
   const packageDirectories = findLambdaPackageDirectories(rootDir);
 
   if (packageDirectories.length === 0) {
-    p.log.warn("No pyproject.toml files found in lambda directory");
+    p.log.warn("No pyproject.toml files found in lambda/src directory");
     return;
   }
 
