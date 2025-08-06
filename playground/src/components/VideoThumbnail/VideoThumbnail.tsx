@@ -146,12 +146,16 @@ const VideoThumbnail = ({
       </CardContent>
 
       <CardFooter className="flex-col items-start gap-2 px-4">
-        {video.url && (
+        {video.url ? (
           <a href={video.url} target="_blank" rel="noopener">
             <CardTitle className="hover:underline cursor-pointer">
               {video.filename}
             </CardTitle>
           </a>
+        ) : (
+          <CardTitle className="text-muted-foreground">
+            {video.filename}
+          </CardTitle>
         )}
         <CardDescription>{children}</CardDescription>
       </CardFooter>
