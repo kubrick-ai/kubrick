@@ -6,6 +6,7 @@ import SearchResultList from "@/components/SearchResultList";
 import { SearchParams } from "@/types";
 import SearchForm from "@/components/SearchForm";
 import ErrorDisplay from "@/components/ErrorDisplay";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 const Search = () => {
   const [searchParams, setSearchParams] = useState<SearchParams>({
@@ -23,7 +24,9 @@ const Search = () => {
         setIsOptionsOpen={setIsOptionsOpen}
       />
 
-      {isLoading && <p>Loading...</p>}
+      <div>
+        {isLoading && <LoadingOverlay isVisible={true} />}
+      </div>
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
       {results && (
