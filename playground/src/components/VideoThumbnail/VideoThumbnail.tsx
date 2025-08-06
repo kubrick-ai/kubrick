@@ -15,8 +15,6 @@ interface VideoThumbnailProps {
   video: Video;
   startTime?: number;
   endTime?: number;
-  width?: number;
-  height?: number;
   children?: React.ReactNode;
   enableChapters?: boolean;
 }
@@ -24,8 +22,6 @@ interface VideoThumbnailProps {
 const VideoThumbnail = ({
   video,
   startTime = 0,
-  width = 300,
-  height = 300,
   children,
   enableChapters = false,
 }: VideoThumbnailProps) => {
@@ -118,7 +114,11 @@ const VideoThumbnail = ({
               ref={videoRef}
               className="w-full h-full object-cover rounded-md"
             >
-              <source src={video.url} type="video/mp4" />
+              {video.url ? (
+                <source src={video.url} type="video/mp4" />
+              ) : (
+                <p className="text-red-500">Video not available</p>
+              )}
             </MediaPlayer.Video>
 
             <MediaPlayer.Loading />
@@ -146,11 +146,17 @@ const VideoThumbnail = ({
       </CardContent>
 
       <CardFooter className="flex-col items-start gap-2 px-4">
-        <a href={video.url} target="_blank" rel="noopener">
-          <CardTitle className="hover:underline cursor-pointer">
+        {video.url ? (
+          <a href={video.url} target="_blank" rel="noopener">
+            <CardTitle className="hover:underline cursor-pointer">
+              {video.filename}
+            </CardTitle>
+          </a>
+        ) : (
+          <CardTitle className="text-muted-foreground">
             {video.filename}
           </CardTitle>
-        </a>
+        )}
         <CardDescription>{children}</CardDescription>
       </CardFooter>
     </Card>
