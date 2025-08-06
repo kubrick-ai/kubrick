@@ -346,7 +346,7 @@ class VectorDBService:
                 cursor.execute(
                     """
                     UPDATE tasks SET status = %s
-                    WHERE sqs_message_id = %s 
+                    WHERE sqs_message_id = %s
                     AND status != 'completed'
                     """,
                     (new_status, sqs_message_id),

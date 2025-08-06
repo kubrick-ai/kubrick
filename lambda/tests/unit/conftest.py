@@ -78,7 +78,11 @@ def setup_python_paths():
 
 
 def setup_module_mocks():
-    """Mock external modules that may not be available in test environment."""
+    """
+    Mock external modules that may not be available in test environment.
+    This prevents import failures since modules these services are instantiated
+    as module-level globals in the lambda functions.
+    """
     for module_name in TestConfig.EXTERNAL_MODULES:
         if module_name == "twelvelabs":
             mock_twelvelabs = MagicMock()
@@ -95,12 +99,23 @@ def setup_module_mocks():
     mock_vector_db_service = MagicMock()
     sys.modules["vector_db_service"] = MagicMock()
     sys.modules["vector_db_service"].VectorDBService = mock_vector_db_service
-    
+
+    # Mock EmbedService to prevent API calls during import
+    mock_embed_service = MagicMock()
+    sys.modules["embed_service"] = MagicMock()
+    sys.modules["embed_service"].EmbedService = mock_embed_service
+
     # Mock config module functions used at module level
     mock_config = MagicMock()
     mock_config.get_secret.return_value = TestDataBuilder.kubrick_secret()
     mock_config.get_db_config.return_value = {"host": "test", "user": "test"}
+    mock_config.setup_logging.return_value = MagicMock()
     sys.modules["config"] = mock_config
+
+    # Mock SearchController for search handler
+    mock_search_controller = MagicMock()
+    sys.modules["search_controller"] = MagicMock()
+    sys.modules["search_controller"].SearchController = mock_search_controller
 
 
 def setup_env():

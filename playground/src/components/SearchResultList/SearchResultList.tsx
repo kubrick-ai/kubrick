@@ -13,7 +13,6 @@ const THUMBNAILS_PER_PAGE = 8;
 
 const SearchResultList = ({ results }: SearchResultListProps) => {
   const [page, setPage] = useState(0);
-
   const maxPage = Math.ceil(results.length / THUMBNAILS_PER_PAGE) - 1;
 
   // Calculate start/end indices for current page
@@ -25,24 +24,23 @@ const SearchResultList = ({ results }: SearchResultListProps) => {
 
   return (
     <>
-      <div className="flex justify-center">
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-screen-xlg w-full">
-          {currentResults.map((result) => (
-            <VideoThumbnail
-              key={result.id}
-              video={result.video}
-              startTime={result.start_time ?? 0}
-              enableChapters={true}
-            >
-              {result.modality && <p>Modality: {result.modality}</p>}
-              {result.scope && <p>Scope: {result.scope}</p>}
-              {result.similarity && (
-                <p>Similarity: {result.similarity.toFixed(5)}</p>
-              )}
-            </VideoThumbnail>
-          ))}
-        </div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
+        {currentResults.map((result) => (
+          <VideoThumbnail
+            key={result.id}
+            video={result.video}
+            startTime={result.start_time ?? 0}
+            enableChapters={true}
+          >
+            {result.modality && <p>Modality: {result.modality}</p>}
+            {result.scope && <p>Scope: {result.scope}</p>}
+            {result.similarity && (
+              <p>Similarity: {result.similarity.toFixed(5)}</p>
+            )}
+          </VideoThumbnail>
+        ))}
       </div>
+
       {/* Pagination controls */}
       <div className="mt-6 flex justify-center items-center gap-4">
         <Button
@@ -55,13 +53,13 @@ const SearchResultList = ({ results }: SearchResultListProps) => {
         </Button>
 
         <span>
-          Page {page + 1} of {maxPage + 1}
+          Page {results.length === 0 ? 0 : page + 1} of {maxPage + 1}
         </span>
 
         <Button
           className="cursor-pointer"
           variant="outline"
-          disabled={page === maxPage}
+          disabled={page === maxPage || results.length === 0}
           onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
         >
           Next

@@ -8,7 +8,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-
 def get_secret(secret_name: str = "kubrick_secret") -> Dict[str, Any]:
     """Retrieve secret from AWS Secrets Manager."""
 

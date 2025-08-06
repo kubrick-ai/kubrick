@@ -7,13 +7,14 @@ from utils import is_valid_video_file
 # Environment variables
 SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
 
+SECRET = get_secret(SECRET_NAME)
+DB_CONFIG = get_db_config(SECRET)
+
+logger = setup_logging()
+vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
+
 
 def lambda_handler(event, context):
-    logger = setup_logging()
-    SECRET = get_secret(SECRET_NAME)
-    DB_CONFIG = get_db_config(SECRET)
-
-    vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
     try:
         for record in event.get("Records", []):
             event_name = record.get("eventName", "")

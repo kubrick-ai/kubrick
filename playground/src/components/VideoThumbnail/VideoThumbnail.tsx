@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/card";
 import { Video } from "@/types";
 
+const DEFAULT_CLIP_LENGTH = 6;
+
 interface VideoThumbnailProps {
   video: Video;
   startTime?: number;
@@ -26,7 +28,6 @@ const VideoThumbnail = ({
   enableChapters = false,
 }: VideoThumbnailProps) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const clipLength = 6;
 
   useEffect(() => {
     const mediaElement = videoRef.current;
@@ -35,7 +36,7 @@ const VideoThumbnail = ({
     const handleLoadedMetadata = () => {
       // Remove any existing chapter tracks
       const existingTracks = Array.from(mediaElement.textTracks).filter(
-        (track) => track.kind === "chapters"
+        (track) => track.kind === "chapters",
       );
       existingTracks.forEach((track) => {
         // Clear existing cues
@@ -47,12 +48,12 @@ const VideoThumbnail = ({
       const chapterTrack = mediaElement.addTextTrack(
         "chapters",
         "Chapters",
-        "en"
+        "en",
       );
       chapterTrack.mode = "hidden";
 
       const duration = mediaElement.duration;
-      const clipEndTime = startTime + clipLength;
+      const clipEndTime = startTime + DEFAULT_CLIP_LENGTH;
 
       if (startTime > 0) {
         const preclipCue = new VTTCue(0, startTime, "");
@@ -62,7 +63,7 @@ const VideoThumbnail = ({
       const clipCue = new VTTCue(
         startTime,
         Math.min(clipEndTime, duration),
-        "Result"
+        "Result",
       );
       chapterTrack.addCue(clipCue);
 

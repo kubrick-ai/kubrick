@@ -7,10 +7,11 @@ from sqs_embedding_task_producer.lambda_function import (
 )
 
 
+# Comment
 # Fixtures for Mocking Services and Utilities
 @pytest.fixture
 def mock_sqs_client():
-    """Mocks the SQS client instance in the lambda function.""" 
+    """Mocks the SQS client instance in the lambda function."""
     with patch("sqs_embedding_task_producer.lambda_function.sqs") as mock_sqs:
         mock_sqs.send_message.return_value = {"MessageId": "test-message-id-12345"}
         yield mock_sqs
@@ -18,27 +19,19 @@ def mock_sqs_client():
 
 @pytest.fixture
 def mock_embed_service():
-    """Mocks the EmbedService and returns its mock instance."""
-    with patch(
-        "sqs_embedding_task_producer.lambda_function.EmbedService"
-    ) as mock_service:
-        mock_instance = MagicMock()
+    """Mocks the global embed_service instance in the lambda function."""
+    with patch("sqs_embedding_task_producer.lambda_function.embed_service") as mock_service:
         mock_task = MagicMock()
         mock_task.id = "test-task-12345"
-        mock_instance.create_embedding_request.return_value = mock_task
-        mock_service.return_value = mock_instance
-        yield mock_instance
+        mock_service.create_embedding_request.return_value = mock_task
+        yield mock_service
 
 
 @pytest.fixture
 def mock_vector_db():
-    """Mocks the VectorDBService and returns its mock instance."""
-    with patch(
-        "sqs_embedding_task_producer.lambda_function.VectorDBService"
-    ) as mock_service:
-        mock_instance = MagicMock()
-        mock_service.return_value = mock_instance
-        yield mock_instance
+    """Mocks the global vector_db_service instance in the lambda function."""
+    with patch("sqs_embedding_task_producer.lambda_function.vector_db_service") as mock_service:
+        yield mock_service
 
 
 @pytest.fixture
@@ -196,9 +189,10 @@ def test_lambda_handler_sqs_send_failure(
 ):
     """Test failure when sending the message to SQS fails."""
     from botocore.exceptions import ClientError
+
     mock_sqs_client.send_message.side_effect = ClientError(
         {"Error": {"Code": "NonExistentQueue", "Message": "Queue does not exist"}},
-        "SendMessage"
+        "SendMessage",
     )
     event = event_builder.s3_event(
         bucket_name=test_s3_bucket, object_key="videos/test.mp4"
@@ -233,17 +227,16 @@ def test_lambda_handler_db_store_failure(
 
 
 def test_lambda_handler_secrets_failure(
-    mock_sqs_client, event_builder, test_s3_bucket, test_sqs_queue
+    mock_sqs_client, mock_embed_service, mock_wait_for_file, mock_presigned_url, event_builder, test_s3_bucket, test_sqs_queue
 ):
-    """Test failure when secrets access throws an exception."""
+    """Test failure when embed service throws an exception due to missing API key."""
+    mock_embed_service.create_embedding_request.side_effect = KeyError("TWELVELABS_API_KEY")
     event = event_builder.s3_event(
         bucket_name=test_s3_bucket, object_key="videos/test.mp4"
     )
-    with patch(
-        "sqs_embedding_task_producer.lambda_function.SECRET", {}
-    ):
-        with pytest.raises(KeyError, match="TWELVELABS_API_KEY"):
-            lambda_handler(event, {})
+    response = lambda_handler(event, {})
+    assert response["status"] == "error"
+    assert "TWELVELABS_API_KEY" in response["message"]
 
 
 # Helper Function Tests
