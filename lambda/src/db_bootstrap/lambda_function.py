@@ -5,8 +5,10 @@ import psycopg2
 
 # Environment variables
 SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
+
 SECRET = get_secret(SECRET_NAME)
 DB_CONFIG = get_db_config(SECRET)
+
 
 def lambda_handler(event, context):
     logger = setup_logging()
