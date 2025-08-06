@@ -7,11 +7,9 @@ from api_fetch_tasks_handler.lambda_function import lambda_handler
 
 @pytest.fixture
 def mock_vector_db():
-    """Mocks VectorDBService and returns its mock instance."""
-    with patch("api_fetch_tasks_handler.lambda_function.VectorDBService") as mock_service:
-        mock_instance = MagicMock()
-        mock_service.return_value = mock_instance
-        yield mock_instance
+    """Mocks the global vector_db_service instance in the lambda function."""
+    with patch("api_fetch_tasks_handler.lambda_function.vector_db_service") as mock_service:
+        yield mock_service
 
 
 def test_lambda_handler_success(mock_vector_db, kubrick_secret, event_builder):
@@ -105,14 +103,6 @@ def test_lambda_handler_database_error(mock_vector_db, kubrick_secret, event_bui
     assert body["error"]["message"] == "Internal server error"
 
 
-def test_lambda_handler_secrets_error(event_builder):
-    """Test that an exception is raised if secrets retrieval fails."""
-    with patch("api_fetch_tasks_handler.lambda_function.get_secret") as mock_get_secret:
-        mock_get_secret.side_effect = Exception("Failed to retrieve secret")
-        event = event_builder.api_gateway_proxy_event()
-
-        with pytest.raises(Exception, match="Failed to retrieve secret"):
-            lambda_handler(event, {})
 
 
 def test_lambda_handler_boundary_conditions(

@@ -10,78 +10,36 @@ from sqs_embedding_task_consumer.lambda_function import (
 
 # Fixtures for Mocking Services and Utilities
 @pytest.fixture
-def mock_setup_logging():
-    """Mocks the setup_logging function."""
-    with patch(
-        "sqs_embedding_task_consumer.lambda_function.setup_logging"
-    ) as mock_func:
-        mock_logger = MagicMock()
-        mock_func.return_value = mock_logger
+def mock_logger():
+    """Mocks the global logger instance in the lambda function."""
+    with patch("sqs_embedding_task_consumer.lambda_function.logger") as mock_logger:
         yield mock_logger
 
 
 @pytest.fixture
-def mock_get_secret(kubrick_secret):
-    """Mocks the get_secret function to return test secret data."""
-    with patch("sqs_embedding_task_consumer.lambda_function.get_secret") as mock_func:
-        mock_func.return_value = kubrick_secret
-        yield mock_func
-
-
-@pytest.fixture
-def mock_get_db_config():
-    """Mocks the get_db_config function."""
-    with patch(
-        "sqs_embedding_task_consumer.lambda_function.get_db_config"
-    ) as mock_func:
-        mock_func.return_value = {
-            "host": "localhost",
-            "database": "kubrick",
-            "user": "postgres",
-            "password": "password",
-            "port": 5432,
-        }
-        yield mock_func
-
-
-@pytest.fixture
 def mock_embed_service():
-    """Mocks the EmbedService and returns its mock instance."""
-    with patch(
-        "sqs_embedding_task_consumer.lambda_function.EmbedService"
-    ) as mock_service:
-        mock_instance = MagicMock()
-        mock_service.return_value = mock_instance
-        yield mock_instance
+    """Mocks the global embed_service instance in the lambda function."""
+    with patch("sqs_embedding_task_consumer.lambda_function.embed_service") as mock_service:
+        yield mock_service
 
 
 @pytest.fixture
 def mock_vector_db_service():
-    """Mocks the VectorDBService and returns its mock instance."""
-    with patch(
-        "sqs_embedding_task_consumer.lambda_function.VectorDBService"
-    ) as mock_service:
-        mock_instance = MagicMock()
-        mock_service.return_value = mock_instance
-        yield mock_instance
+    """Mocks the global vector_db_service instance in the lambda function."""
+    with patch("sqs_embedding_task_consumer.lambda_function.vector_db_service") as mock_service:
+        yield mock_service
 
 
 @pytest.fixture
 def mock_sqs_client():
-    """Mocks the boto3 SQS client."""
-    with patch(
-        "sqs_embedding_task_consumer.lambda_function.boto3.client"
-    ) as mock_client:
-        mock_sqs_instance = MagicMock()
-        mock_client.return_value = mock_sqs_instance
-        yield mock_sqs_instance
+    """Mocks the global sqs client instance in the lambda function."""
+    with patch("sqs_embedding_task_consumer.lambda_function.sqs") as mock_client:
+        yield mock_client
 
 
 # Test Functions
 def test_lambda_handler_success_ready_status(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -170,17 +128,15 @@ def test_lambda_handler_success_ready_status(
     mock_vector_db_service.update_task_status.assert_called_once_with(
         message_id, "completed"
     )
-    mock_setup_logging.info.assert_any_call(
+    mock_logger.info.assert_any_call(
         "Successfully stored video and segments in DB"
     )
-    mock_setup_logging.info.assert_any_call("Successfully updated task status in DB")
+    mock_logger.info.assert_any_call("Successfully updated task status in DB")
     assert response == {}
 
 
 def test_lambda_handler_failed_status(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -208,15 +164,13 @@ def test_lambda_handler_failed_status(
     mock_vector_db_service.update_task_status.assert_called_once_with(
         message_id, "failed"
     )
-    mock_setup_logging.error.assert_called_once()  # Should log the failure
-    mock_setup_logging.info.assert_any_call("Successfully updated task status in DB")
+    mock_logger.error.assert_called_once()  # Should log the failure
+    mock_logger.info.assert_any_call("Successfully updated task status in DB")
     assert response == {}
 
 
 def test_lambda_handler_processing_status(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -244,17 +198,15 @@ def test_lambda_handler_processing_status(
     mock_vector_db_service.update_task_status.assert_called_once_with(
         message_id, "processing"
     )
-    mock_setup_logging.info.assert_any_call(
+    mock_logger.info.assert_any_call(
         f"TwelveLabs video embedding task {mock_task_id} is still processing. Re-queueing."
     )
-    mock_setup_logging.info.assert_any_call("Successfully updated task status in DB")
+    mock_logger.info.assert_any_call("Successfully updated task status in DB")
     assert response == {"batchItemFailures": [{"itemIdentifier": message_id}]}
 
 
 def test_lambda_handler_general_exception(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -279,20 +231,18 @@ def test_lambda_handler_general_exception(
     response = lambda_handler(event, context)
 
     # Assertions
-    mock_setup_logging.error.assert_called_once_with(
+    mock_logger.error.assert_called_once_with(
         f"Error processing task {message_id}: API connection error"
     )
     mock_vector_db_service.update_task_status.assert_called_once_with(
         message_id, "retrying"
     )
-    mock_setup_logging.info.assert_any_call("Successfully updated task status in DB")
+    mock_logger.info.assert_any_call("Successfully updated task status in DB")
     assert response == {"batchItemFailures": [{"itemIdentifier": message_id}]}
 
 
 def test_lambda_handler_multiple_records(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -366,9 +316,7 @@ def test_lambda_handler_multiple_records(
 
 
 def test_lambda_handler_empty_records(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -387,9 +335,7 @@ def test_lambda_handler_empty_records(
 
 
 def test_lambda_handler_malformed_message_body(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -417,7 +363,7 @@ def test_lambda_handler_malformed_message_body(
 
     response = lambda_handler(event, context)
 
-    mock_setup_logging.error.assert_called_once()  # Should log the JSON decoding error
+    mock_logger.error.assert_called_once()  # Should log the JSON decoding error
     mock_vector_db_service.update_task_status.assert_called_once_with(
         message_id, "retrying"
     )
@@ -438,9 +384,7 @@ def test_get_video_metadata_none_tl_metadata():
 
 
 def test_lambda_handler_retrieve_embed_response_no_embedding_segments(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -468,7 +412,7 @@ def test_lambda_handler_retrieve_embed_response_no_embedding_segments(
     response = lambda_handler(event, context)
 
     # Expect an error and message to be re-queued
-    mock_setup_logging.error.assert_called_once_with(
+    mock_logger.error.assert_called_once_with(
         f"Error processing task {message_id}: 'NoneType' object has no attribute 'segments'"
     )
     mock_vector_db_service.update_task_status.assert_called_once_with(
@@ -478,9 +422,7 @@ def test_lambda_handler_retrieve_embed_response_no_embedding_segments(
 
 
 def test_lambda_handler_db_store_failure(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -528,7 +470,7 @@ def test_lambda_handler_db_store_failure(
     response = lambda_handler(event, context)
 
     # The message should be re-queued because the store failed
-    mock_setup_logging.error.assert_called_once_with(
+    mock_logger.error.assert_called_once_with(
         f"Error processing task {message_id}: Database write error"
     )
     mock_vector_db_service.update_task_status.assert_called_once_with(
@@ -538,9 +480,7 @@ def test_lambda_handler_db_store_failure(
 
 
 def test_lambda_handler_db_update_task_status_failure(
-    mock_setup_logging,
-    mock_get_secret,
-    mock_get_db_config,
+    mock_logger,
     mock_embed_service,
     mock_vector_db_service,
     mock_sqs_client,
@@ -592,7 +532,7 @@ def test_lambda_handler_db_update_task_status_failure(
     response = lambda_handler(event, context)
 
     # Verify the logger was called with the error and the update_task_status was called for retrying
-    mock_setup_logging.error.assert_called_once_with(
+    mock_logger.error.assert_called_once_with(
         f"Error processing task {message_id}: Database update error"
     )
     mock_vector_db_service.update_task_status.assert_called_with(

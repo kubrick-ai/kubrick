@@ -48,31 +48,9 @@ def create_multipart_form_data(fields):
 
 @pytest.fixture
 def mock_search_controller():
-    """Mocks SearchController and returns its mock instance."""
-    with patch("api_search_handler.lambda_function.SearchController") as mock_service:
-        mock_instance = MagicMock()
-        mock_service.return_value = mock_instance
-        yield mock_instance
-
-
-@pytest.fixture
-def mock_vector_db_service():
-    """Mocks VectorDBService to prevent actual instantiation."""
-    with patch("api_search_handler.lambda_function.VectorDBService") as mock_service:
+    """Mocks the global search_controller instance in the lambda function."""
+    with patch("api_search_handler.lambda_function.search_controller") as mock_service:
         yield mock_service
-
-
-@pytest.fixture
-def mock_embed_service():
-    """Mocks EmbedService to prevent actual instantiation."""
-    with patch("api_search_handler.lambda_function.EmbedService") as mock_service:
-        yield mock_service
-
-
-@pytest.fixture(autouse=True)
-def setup_mocks(mock_search_controller, mock_vector_db_service, mock_embed_service):
-    """Autouse fixture to apply all necessary mocks for this handler."""
-    pass
 
 
 def test_lambda_handler_text_search_success(mock_search_controller, kubrick_secret):
@@ -324,22 +302,3 @@ def test_lambda_handler_validation_error(mock_search_controller, kubrick_secret)
     body_data = json.loads(response["body"])
     assert body_data["error"]["code"] == "VALIDATION_ERROR"
     assert "Invalid request format" in body_data["error"]["message"]
-
-
-def test_lambda_handler_secrets_error():
-    """Test that an exception is raised if secrets retrieval fails."""
-    body, boundary = create_multipart_form_data(
-        {"query_type": "text", "query_text": "test"}
-    )
-    event = {
-        "httpMethod": "POST",
-        "headers": {"Content-Type": f"multipart/form-data; boundary={boundary}"},
-        "body": base64.b64encode(body).decode("utf-8"),
-        "isBase64Encoded": True,
-    }
-
-    # Patch get_secret directly since this is an exceptional case
-    with patch("api_search_handler.lambda_function.get_secret") as mock_get_secret:
-        mock_get_secret.side_effect = Exception("Could not retrieve secrets")
-        with pytest.raises(Exception, match="Could not retrieve secrets"):
-            lambda_handler(event, {})
