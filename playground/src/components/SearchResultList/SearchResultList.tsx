@@ -13,7 +13,6 @@ const THUMBNAILS_PER_PAGE = 8;
 
 const SearchResultList = ({ results }: SearchResultListProps) => {
   const [page, setPage] = useState(0);
-
   const maxPage = Math.ceil(results.length / THUMBNAILS_PER_PAGE) - 1;
 
   // Calculate start/end indices for current page
@@ -55,13 +54,13 @@ const SearchResultList = ({ results }: SearchResultListProps) => {
         </Button>
 
         <span>
-          Page {page + 1} of {maxPage + 1}
+          Page {results.length === 0 ? 0 : page + 1} of {maxPage + 1}
         </span>
 
         <Button
           className="cursor-pointer"
           variant="outline"
-          disabled={page === maxPage}
+          disabled={page === maxPage || results.length === 0}
           onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
         >
           Next

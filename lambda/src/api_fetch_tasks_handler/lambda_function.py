@@ -14,17 +14,17 @@ DEFAULT_TASK_LIMIT = int(os.getenv("DEFAULT_TASK_LIMIT", "10"))
 MAX_TASK_LIMIT = int(os.getenv("MAX_TASK_LIMIT", "50"))
 DEFAULT_TASK_PAGE = int(os.getenv("DEFAULT_TASK_PAGE", "0"))
 
+SECRET = get_secret(SECRET_NAME)
+DB_CONFIG = get_db_config(SECRET)
+logger = setup_logging()
+vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
+
 
 def lambda_handler(event, context):
-    logger = setup_logging()
-    SECRET = get_secret(SECRET_NAME)
-    DB_CONFIG = get_db_config(SECRET)
-
     # # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":
         return build_options_response()
 
-    vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
     query_params = event.get("queryStringParameters") or {}
     logger.info(f"Received query params: {event.get('queryStringParameters')}")
 
