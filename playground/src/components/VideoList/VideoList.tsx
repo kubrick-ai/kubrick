@@ -25,31 +25,35 @@ const VideoList = ({
 
   return (
     <>
-      <div className="flex flex-wrap gap-4 justify-start">
-        {videos.map((video) => (
-          <VideoThumbnail key={video.id} video={video}>
-            <div className="space-y-2 text-sm">
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="secondary" className="text-xs">
-                  {video.duration}s
-                </Badge>
-                {video.width && video.height && (
-                  <Badge variant="outline" className="text-xs">
-                    {video.width}×{video.height}
+      <div className="flex justify-center">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-screen-xlg w-full">
+          {videos.map((video) => (
+            <VideoThumbnail key={video.id} video={video}>
+              <div className="space-y-2 text-sm">
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant="secondary" className="text-xs">
+                    {video.duration}s
                   </Badge>
-                )}
-              </div>
+                  {video.width && video.height && (
+                    <Badge variant="outline" className="text-xs">
+                      {video.width}×{video.height}
+                    </Badge>
+                  )}
+                </div>
 
-              <Separator />
+                <Separator />
 
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>Upload date: {video.created_at.split("T")[0]}</div>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>Upload date: {video.created_at.split("T")[0]}</div>
+                </div>
               </div>
-            </div>
-          </VideoThumbnail>
-        ))}
+            </VideoThumbnail>
+          ))}
+        </div>
       </div>
-
+      {Array.from({ length: perPage - videos.length }).map((_, i) => (
+        <div key={`placeholder-${i}`} className="invisible" />
+      ))}
       {/* Pagination controls */}
       <div className="mt-6 flex justify-center items-center gap-4">
         <Button
