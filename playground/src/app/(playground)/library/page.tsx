@@ -17,7 +17,7 @@ const Library = () => {
   const total = data?.metadata?.total ?? 0;
 
   return (
-    <div className="p-4">
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Kubrick Playground - Library</h1>
 
       {isLoading && <p>Loading videos...</p>}
