@@ -224,7 +224,7 @@ class SearchController:
 
             # Add presigned url to each result
             try:
-                add_presigned_urls(result["video"] for result in results)
+                add_presigned_urls([result["video"] for result in results])
                 self.logger.info(
                     f"Successfully processed search request, returning {len(results)} results"
                 )
