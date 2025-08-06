@@ -20,10 +20,16 @@ VIDEO_EMBEDDING_SCOPES = json.loads(
 )
 QUEUE_URL = os.environ["QUEUE_URL"]
 
-logger = setup_logging()
 sqs = boto3.client("sqs")
 SECRET = get_secret(SECRET_NAME)
 DB_CONFIG = get_db_config(SECRET)
+embed_service = EmbedService(
+    api_key=SECRET["TWELVELABS_API_KEY"],
+    model_name=EMBEDDING_MODEL_NAME,
+    clip_length=DEFAULT_CLIP_LENGTH,
+    logger=logger,
+)
+vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
 
 
 def persist_task_metadata(
@@ -40,15 +46,8 @@ def persist_task_metadata(
 
 
 def lambda_handler(event, context):
+    logger = setup_logging()
     logger.info("Lambda handler invoked")
-
-    embed_service = EmbedService(
-        api_key=SECRET["TWELVELABS_API_KEY"],
-        model_name=EMBEDDING_MODEL_NAME,
-        clip_length=DEFAULT_CLIP_LENGTH,
-        logger=logger,
-    )
-    vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
 
     try:
         bucket, key = s3_utils.extract_s3_info(event)
