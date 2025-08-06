@@ -20,7 +20,7 @@ const Library = () => {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Kubrick Playground - Library</h1>
 
-      {isLoading && <p>Loading videos...</p>}
+      {isLoading && !data && <p>Loading videos...</p>}
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
       {videos && videos.length > 0 ? (

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   SearchParams,
   SearchResultSchema,
@@ -106,7 +106,7 @@ export const useSearchVideos = (params: SearchParams) => {
   });
 };
 
-export const uploadVideo = async (file: File, filename: string) => {
+const uploadVideo = async (file: File, filename: string) => {
   try {
     const videoLinkResponse = await generateVideoUploadLink(filename);
     const presignedUrl = videoLinkResponse.data.presigned_url;
@@ -127,6 +127,21 @@ export const uploadVideo = async (file: File, filename: string) => {
   } catch (error) {
     throw createDetailedError(error);
   }
+};
+
+export const useUploadVideo = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { url: string },
+    DetailedError,
+    { file: File; filename: string }
+  >({
+    mutationFn: ({ file, filename }) => uploadVideo(file, filename),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+    },
+  });
 };
 
 export const generateVideoUploadLink = async (

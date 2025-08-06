@@ -33,7 +33,7 @@ const Embed = () => {
     <div className="px-6">
       <h1 className="text-2xl font-bold mb-6">Playground - Embed</h1>
       <div className="min-w-200">
-        <VideoUploadsForm></VideoUploadsForm>
+        <VideoUploadsForm />
       </div>
 
       {/* Embedding tasks table accordion */}
@@ -51,7 +51,9 @@ const Embed = () => {
             </AccordionTrigger>
             <AccordionContent className="w-full flex flex-col gap-4 text-balance">
               {isLoading && <p>Loading embedding tasks...</p>}
-              {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
+              {error && (
+                <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />
+              )}
               {tasks && tasks.length > 0 ? (
                 <TasksTable
                   tasks={tasks}

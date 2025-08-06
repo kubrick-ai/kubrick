@@ -30,41 +30,37 @@ import {
   UploadVideosFormData,
   UploadVideosFormDataSchema,
 } from "@/types";
-import { uploadVideo } from "@/hooks/useKubrickAPI";
+import { useUploadVideo } from "@/hooks/useKubrickAPI";
 import ErrorDisplay from "../ErrorDisplay";
 
 const MAX_FILES = 5;
 const MAX_SIZE = 2 * 1024 * 1024 * 1024;
 
 const VideoUploadsForm = () => {
+  const uploadMutation = useUploadVideo();
   const form = useForm<UploadVideosFormData>({
     resolver: zodResolver(UploadVideosFormDataSchema),
     defaultValues: {
       files: [],
     },
   });
-  const [isSending, setIsSending] = useState(false);
-  const [uploadError, setUploadError] = useState<DetailedError | null>(null);
+  const isUploading = uploadMutation.isPending;
+  const uploadError = uploadMutation.error;
 
   const onSubmit = useCallback(
     async (data: UploadVideosFormData) => {
-      setIsSending(true);
-      setUploadError(null);
-
       try {
         await Promise.all(
-          data.files.map((file) => uploadVideo(file, file.name))
+          data.files.map((file) =>
+            uploadMutation.mutateAsync({ file, filename: file.name }),
+          ),
         );
         form.reset({ files: [] });
       } catch (error) {
-        const detailedError = error as DetailedError;
-        setUploadError(detailedError);
         console.error(error);
-      } finally {
-        setIsSending(false); // always stop sending, even if there was an error
       }
     },
-    [form]
+    [form, uploadMutation],
   );
 
   return (
@@ -136,13 +132,13 @@ const VideoUploadsForm = () => {
           <Button
             type="submit"
             className="mt-4 cursor-pointer"
-            disabled={!form.formState.isValid || isSending}
+            disabled={!form.formState.isValid || isUploading}
           >
             Submit
           </Button>
         </form>
       </Form>
-      {isSending && (
+      {isUploading && (
         <div className="pt-2">
           <p>Please don&apos;t leave this page! Uploading your video(s)...</p>
         </div>
