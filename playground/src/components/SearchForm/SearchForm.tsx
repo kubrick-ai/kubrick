@@ -146,7 +146,7 @@ const SearchForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-4">
         <div className="flex w-full max-w-md items-center gap-4">
           <FormField
             control={form.control}
@@ -331,8 +331,8 @@ const SearchForm = ({
                               } else {
                                 field.onChange(
                                   currentValues.filter(
-                                    (v) => v !== "visual-text"
-                                  )
+                                    (v) => v !== "visual-text",
+                                  ),
                                 );
                               }
                             }}
@@ -347,7 +347,7 @@ const SearchForm = ({
                                 field.onChange([...currentValues, "audio"]);
                               } else {
                                 field.onChange(
-                                  currentValues.filter((v) => v !== "audio")
+                                  currentValues.filter((v) => v !== "audio"),
                                 );
                               }
                             }}

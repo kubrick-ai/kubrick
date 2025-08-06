@@ -10,23 +10,20 @@ const PAGE_LIMIT = 12;
 
 const Library = () => {
   const [page, setPage] = useState(1);
-  // const { data, isLoading, error } = useGetAndPrefetchVideos(
-  //   page - 1,
-  //   PAGE_LIMIT,
-  // );
-  const { data, isLoading, error } = {
-    data: null,
-    isLoading: true,
-    error: null,
-  };
+  const { data, isLoading, error } = useGetAndPrefetchVideos(
+    page - 1,
+    PAGE_LIMIT,
+  );
   const videos = data?.data ?? [];
   const total = data?.metadata?.total ?? 0;
 
   return (
-    <div className="p-4 w-full">
-      <h1 className="text-2xl font-bold mb-4">Kubrick Playground - Library</h1>
+    <div className="p-4 grow flex flex-col">
+      <h1 className="text-2xl font-bold mb-4 grow-0">
+        Kubrick Playground - Library
+      </h1>
 
-      <div>{isLoading && <LoadingOverlay isVisible={true} />}</div>
+      {isLoading && <LoadingOverlay isVisible={true} />}
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
       {videos && videos.length > 0 ? (
