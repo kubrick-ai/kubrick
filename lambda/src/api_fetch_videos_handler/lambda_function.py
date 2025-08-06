@@ -11,13 +11,14 @@ from s3_utils import add_presigned_urls
 # Environment variables
 SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
 PRESIGNED_URL_EXPIRY = int(os.getenv("PRESIGNED_URL_EXPIRY", "86400"))
+
+logger = setup_logging()
 SECRET = get_secret(SECRET_NAME)
 DB_CONFIG = get_db_config(SECRET)
 vector_db = VectorDBService(DB_CONFIG)
 
 
 def lambda_handler(event, context):
-    logger = setup_logging()
     try:
         logger.debug(f"event={event}")
         query_params = event.get("queryStringParameters") or {}

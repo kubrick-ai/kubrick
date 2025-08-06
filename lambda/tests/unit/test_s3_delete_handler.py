@@ -6,11 +6,9 @@ from s3_delete_handler.lambda_function import lambda_handler
 
 @pytest.fixture
 def mock_vector_db():
-    """Mocks VectorDBService and returns its mock instance."""
-    with patch("s3_delete_handler.lambda_function.VectorDBService") as mock_service:
-        mock_instance = MagicMock()
-        mock_service.return_value = mock_instance
-        yield mock_instance
+    """Mocks the global vector_db_service instance in the lambda function."""
+    with patch("s3_delete_handler.lambda_function.vector_db_service") as mock_service:
+        yield mock_service
 
 
 @pytest.fixture
@@ -140,11 +138,3 @@ def test_lambda_handler_database_exception(
     mock_vector_db.delete_video.assert_not_called()
 
 
-def test_lambda_handler_secrets_error(event_builder, test_s3_bucket):
-    """Test that an exception is raised if secrets retrieval fails."""
-    event = event_builder.s3_event(bucket_name=test_s3_bucket, object_key="videos/test.mp4")
-
-    with patch("s3_delete_handler.lambda_function.get_secret") as mock_get_secret:
-        mock_get_secret.side_effect = Exception("Could not retrieve secrets")
-        with pytest.raises(Exception, match="Could not retrieve secrets"):
-            lambda_handler(event, {})
