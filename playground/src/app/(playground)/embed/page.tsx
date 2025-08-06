@@ -33,7 +33,7 @@ const Embed = () => {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Playground - Embed</h1>
       <div className="min-w-200">
-        <VideoUploadsForm></VideoUploadsForm>
+        <VideoUploadsForm />
       </div>
 
       {/* Embedding tasks table accordion */}
@@ -46,7 +46,7 @@ const Embed = () => {
           onClick={onClick}
         >
           <AccordionItem value="embedding-tasks-table" className="w-full">
-            <AccordionTrigger className="w-full cursor-pointer">
+            <AccordionTrigger className="max-w-37 cursor-pointer">
               Embedding Tasks
             </AccordionTrigger>
             <AccordionContent className="w-full flex flex-col gap-4 text-balance">
@@ -61,7 +61,7 @@ const Embed = () => {
                   totalTasks={total}
                   perPage={PAGE_LIMIT}
                   onPageChange={setPage}
-                ></TasksTable>
+                />
               ) : (
                 !isLoading && <p>No tasks found.</p>
               )}
