@@ -16,17 +16,15 @@ const Search = () => {
   const { data: results, isLoading, error } = useSearchVideos(searchParams);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Playground - Search</h1>
+    <div className="p-6 flex flex-col grow">
+      <h1 className="grow-0 text-2xl font-bold mb-6">Playground - Search</h1>
       <SearchForm
         setSearchParams={setSearchParams}
         isOptionsOpen={isOptionsOpen}
         setIsOptionsOpen={setIsOptionsOpen}
       />
 
-      <div>
-        {isLoading && <LoadingOverlay isVisible={true} />}
-      </div>
+      {isLoading && <LoadingOverlay isVisible={true} />}
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
       {results && (

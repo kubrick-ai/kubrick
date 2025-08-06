@@ -43,9 +43,9 @@ export default function LoadingOverlay({ isVisible }: LoadingOverlayProps) {
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className="relative inset-0 z-10 flex items-center justify-center bg-white bg-opacity-80 rounded-xl"
+          className="grow relative inset-0 z-10 flex items-center justify-center bg-black rounded-xl"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: 0.1 }}
           exit={{ opacity: 0 }}
         >
           <div className="w-32 h-32">
