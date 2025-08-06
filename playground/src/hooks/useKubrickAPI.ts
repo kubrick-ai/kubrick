@@ -86,7 +86,7 @@ const search = async (params: SearchParams): Promise<Array<SearchResult>> => {
 export const useSearchVideos = (params: SearchParams) => {
   return useQuery<Array<SearchResult>, DetailedError>({
     queryKey: [
-      "searchVideos",
+      "searchResults",
       params.query_text,
       params.query_type,
       params.query_media_url,
@@ -137,7 +137,9 @@ export const generateVideoUploadLink = async (
       params: { filename },
     });
 
-    const parsedVideoUploadLink = VideoUploadResponseSchema.parse(response.data);
+    const parsedVideoUploadLink = VideoUploadResponseSchema.parse(
+      response.data,
+    );
     return parsedVideoUploadLink;
   } catch (error) {
     throw createDetailedError(error);
@@ -165,7 +167,7 @@ export const useGetAndPrefetchVideos = (page: number, limit: number) => {
   const queryClient = useQueryClient();
 
   const query = useQuery<VideosResponse, DetailedError>({
-    queryKey: ["data", page, limit],
+    queryKey: ["videos", page, limit],
     queryFn: () => fetchVideos(page, limit),
     placeholderData: (prev) => prev,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -178,7 +180,7 @@ export const useGetAndPrefetchVideos = (page: number, limit: number) => {
 
     if (page + 1 < totalPages) {
       queryClient.prefetchQuery({
-        queryKey: ["data", page + 1, limit],
+        queryKey: ["videos", page + 1, limit],
         queryFn: () => fetchVideos(page + 1, limit),
       });
     }
@@ -212,7 +214,7 @@ export const useGetAndPrefetchTasks = (
   const queryClient = useQueryClient();
 
   const query = useQuery<TasksResponse, DetailedError>({
-    queryKey: ["data", page, limit],
+    queryKey: ["tasks", page, limit],
     queryFn: () => fetchTasks(page, limit),
     placeholderData: (prev) => prev,
     refetchInterval: (query) => {
@@ -230,7 +232,7 @@ export const useGetAndPrefetchTasks = (
 
     if (page + 1 < totalPages) {
       queryClient.prefetchQuery({
-        queryKey: ["data", page + 1, limit],
+        queryKey: ["tasks", page + 1, limit],
         queryFn: () => fetchTasks(page + 1, limit),
       });
     }
