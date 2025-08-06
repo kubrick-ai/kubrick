@@ -24,32 +24,33 @@ EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"
 DEFAULT_CLIP_LENGTH = int(os.getenv("DEFAULT_CLIP_LENGTH", "6"))
 QUERY_MEDIA_FILE_SIZE_LIMIT = int(os.getenv("QUERY_MEDIA_FILE_SIZE_LIMIT", "6000000"))
 
+SECRET = get_secret(SECRET_NAME)
+DB_CONFIG = get_db_config(SECRET)
+
+# Initialize services
+embed_service = EmbedService(
+    api_key=SECRET["TWELVELABS_API_KEY"],
+    model_name=EMBEDDING_MODEL_NAME,
+    clip_length=DEFAULT_CLIP_LENGTH,
+    logger=logger,
+)
+vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
+search_controller = SearchController(
+    embed_service=embed_service,
+    vector_db_service=vector_db_service,
+    query_media_file_size_limit=QUERY_MEDIA_FILE_SIZE_LIMIT,
+    logger=logger,
+)
+
 
 def lambda_handler(event, context):
     logger = setup_logging()
-    SECRET = get_secret(SECRET_NAME)
-    DB_CONFIG = get_db_config(SECRET)
 
     # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":
         return build_options_response(allowed_methods=["POST", "OPTIONS"])
 
     logger.debug(f"event={event}")
-
-    # Initialize services
-    embed_service = EmbedService(
-        api_key=SECRET["TWELVELABS_API_KEY"],
-        model_name=EMBEDDING_MODEL_NAME,
-        clip_length=DEFAULT_CLIP_LENGTH,
-        logger=logger,
-    )
-    vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
-    search_controller = SearchController(
-        embed_service=embed_service,
-        vector_db_service=vector_db_service,
-        query_media_file_size_limit=QUERY_MEDIA_FILE_SIZE_LIMIT,
-        logger=logger,
-    )
 
     try:
         results, metadata = search_controller.process_search_request(event)
