@@ -16,11 +16,11 @@ DEFAULT_TASK_PAGE = int(os.getenv("DEFAULT_TASK_PAGE", "0"))
 
 SECRET = get_secret(SECRET_NAME)
 DB_CONFIG = get_db_config(SECRET)
+logger = setup_logging()
 vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
 
 
 def lambda_handler(event, context):
-    logger = setup_logging()
     # # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":
         return build_options_response()

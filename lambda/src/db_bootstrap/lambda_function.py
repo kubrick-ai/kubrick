@@ -8,10 +8,10 @@ SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
 
 SECRET = get_secret(SECRET_NAME)
 DB_CONFIG = get_db_config(SECRET)
+logger = setup_logging()
 
 
 def lambda_handler(event, context):
-    logger = setup_logging()
 
     try:
         with psycopg2.connect(**DB_CONFIG) as conn:

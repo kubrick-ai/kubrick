@@ -28,6 +28,7 @@ SECRET = get_secret(SECRET_NAME)
 DB_CONFIG = get_db_config(SECRET)
 
 # Initialize services
+logger = setup_logging()
 embed_service = EmbedService(
     api_key=SECRET["TWELVELABS_API_KEY"],
     model_name=EMBEDDING_MODEL_NAME,
@@ -44,7 +45,6 @@ search_controller = SearchController(
 
 
 def lambda_handler(event, context):
-    logger = setup_logging()
 
     # Handle preflight request (CORS)
     if event.get("httpMethod") == "OPTIONS":

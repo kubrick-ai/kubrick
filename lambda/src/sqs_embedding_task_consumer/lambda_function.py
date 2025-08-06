@@ -13,6 +13,7 @@ SQS_MESSAGE_VISIBILITY_TIMEOUT = int(os.getenv("SQS_MESSAGE_VISIBILITY_TIMEOUT",
 SECRET = get_secret(SECRET_NAME)
 DB_CONFIG = get_db_config(SECRET)
 
+logger = setup_logging()
 embed_service = EmbedService(
     api_key=SECRET["TWELVELABS_API_KEY"],
     model_name=os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"),
@@ -36,7 +37,6 @@ def get_video_metadata(tl_metadata: VideoEmbeddingMetadata | None, message_body)
 
 
 def lambda_handler(event, context):
-    logger = setup_logging()
     pending_message_ids = []
     for record in event["Records"]:
         message_id = record.get("messageId")
