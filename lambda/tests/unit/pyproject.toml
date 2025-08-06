@@ -7,7 +7,6 @@ dependencies = [
   "pytest",
   "moto",
   "psycopg2-binary",
-  "aioboto3",
   "python-multipart",
   "pydantic",
 ]

@@ -54,7 +54,6 @@ class TestConfig:
     # External modules to mock
     EXTERNAL_MODULES = [
         "twelvelabs",
-        "aioboto3",
     ]
 
 
@@ -92,6 +91,17 @@ def setup_module_mocks():
         else:
             sys.modules[module_name] = MagicMock()
 
+    # Mock VectorDBService to prevent database connections during import
+    mock_vector_db_service = MagicMock()
+    sys.modules["vector_db_service"] = MagicMock()
+    sys.modules["vector_db_service"].VectorDBService = mock_vector_db_service
+    
+    # Mock config module functions used at module level
+    mock_config = MagicMock()
+    mock_config.get_secret.return_value = TestDataBuilder.kubrick_secret()
+    mock_config.get_db_config.return_value = {"host": "test", "user": "test"}
+    sys.modules["config"] = mock_config
+
 
 def setup_env():
     """Setup test environment variables."""
@@ -117,7 +127,9 @@ def pytest_configure(config):
 
     # Create the secret that some modules expect at import time
     # This must be done after the mock is started and envs are set
-    sm_client = boto3.client("secretsmanager", region_name=TestConfig.ENV["AWS_DEFAULT_REGION"])
+    sm_client = boto3.client(
+        "secretsmanager", region_name=TestConfig.ENV["AWS_DEFAULT_REGION"]
+    )
     secret_name = TestConfig.ENV["SECRET_NAME"]
     secret_value = TestDataBuilder.kubrick_secret()
     sm_client.create_secret(Name=secret_name, SecretString=json.dumps(secret_value))
@@ -172,7 +184,9 @@ def kubrick_secret(secrets_manager):
         secrets_manager.describe_secret(SecretId=secret_name)
     except secrets_manager.exceptions.ResourceNotFoundException:
         secret_value = TestDataBuilder.kubrick_secret()
-        secrets_manager.create_secret(Name=secret_name, SecretString=json.dumps(secret_value))
+        secrets_manager.create_secret(
+            Name=secret_name, SecretString=json.dumps(secret_value)
+        )
 
     response = secrets_manager.get_secret_value(SecretId=secret_name)
     return json.loads(response["SecretString"])

@@ -21,7 +21,7 @@ export type EmbeddingModality = z.infer<typeof EmbeddingModalitySchema>;
 
 export const VideoSchema = z.object({
   id: z.number(),
-  url: z.string(),
+  url: z.string().nullable(),
   filename: z.string(),
   duration: z.number().nullable().optional(),
   created_at: z.string(),
@@ -133,7 +133,7 @@ export const UploadVideosFormDataSchema = z.object({
       {
         message: `File size must be less than ${VIDEO_UPLOAD_MAX_SIZE / GB}GB`,
         path: ["files"],
-      }
+      },
     ),
 });
 

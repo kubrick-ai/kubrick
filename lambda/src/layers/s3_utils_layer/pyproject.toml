@@ -3,4 +3,6 @@ name = "s3_utils_layer"
 version = "0.1.0"
 description = "AWS Lambda Layer for s3 utility functions"
 requires-python = ">=3.13"
-dependencies = ["aioboto3>=15.0.0"]
+dependencies = [
+    "boto3>=1.40.3",
+]
