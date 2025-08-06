@@ -1,6 +1,5 @@
 import os
-import asyncio
-import aioboto3
+from concurrent.futures import ThreadPoolExecutor
 import urllib.parse
 import time
 import boto3
@@ -64,57 +63,57 @@ def wait_for_file(
 def generate_presigned_url(
     bucket: str,
     key: str,
-    content_type: str = None,
+    content_type: str | None = None,
     expires_in: int = 3600,
     client_method="get_object",
+    s3_client=boto3.client("s3", region_name=S3_REGION, config=S3_CLIENT_CONFIG),
 ) -> str:
-    return asyncio.run(
-        generate_presigned_url_async(
-            bucket, key, content_type, expires_in, client_method
+    try:
+        params = {"Bucket": bucket, "Key": key}
+        logger.debug(f"params: {params}")
+
+        if content_type:
+            params["ContentType"] = content_type
+
+        url = s3_client.generate_presigned_url(
+            ClientMethod=client_method,
+            Params=params,
+            ExpiresIn=expires_in,
         )
-    )
-
-
-async def generate_presigned_url_async(
-    bucket: str,
-    key: str,
-    content_type: str = None,
-    expires_in: int = 3600,
-    client_method="get_object",
-    session=aioboto3.Session(),
-) -> str:
-    async with session.client(
-        "s3", region_name=S3_REGION, config=S3_CLIENT_CONFIG
-    ) as s3_client:  # type: ignore (type error in aioboto3 library)
-        try:
-            params = {"Bucket": bucket, "Key": key}
-
-            if content_type:
-                params["ContentType"] = content_type
-
-            url = await s3_client.generate_presigned_url(
-                ClientMethod=client_method,
-                Params=params,
-                ExpiresIn=expires_in,
-            )
-
-            return url
-        except Exception as e:
-            logger.error(f"Error generating presigned URL: {e}")
-            raise
+        logger.debug(f"Generated presigned url: {url}")
+        return url
+    except Exception as e:
+        logger.error(f"Error generating presigned URL: {e}")
+        raise
 
 
 def add_presigned_urls(items, expires_in: int = 3600):
-    asyncio.run(add_presigned_urls_async(items, expires_in))
+    if not items:
+        return
 
+    s3_client = boto3.client("s3", region_name=S3_REGION, config=S3_CLIENT_CONFIG)
 
-async def add_presigned_urls_async(items, expires_in):
-    session = aioboto3.Session()
-    for item in items:
+    def generate_url_for_item(item):
         if item.get("s3_bucket") and item.get("s3_key"):
-            item["url"] = await generate_presigned_url_async(
-                bucket=item["s3_bucket"],
-                key=item["s3_key"],
-                expires_in=expires_in,
-                session=session,
-            )
+            try:
+                url = generate_presigned_url(
+                    bucket=item["s3_bucket"],
+                    key=item["s3_key"],
+                    expires_in=expires_in,
+                    s3_client=s3_client,
+                )
+                return item, url
+            except Exception as e:
+                logger.error(
+                    f"Error generating presigned URL for {item.get('s3_key')}: {e}"
+                )
+                return item, None
+        return item, None
+
+    # Generate URLs concurrently
+    with ThreadPoolExecutor(max_workers=min(len(items), 30)) as executor:
+        results = list(executor.map(generate_url_for_item, items))
+
+    for item, url in results:
+        if url:
+            item["url"] = url
