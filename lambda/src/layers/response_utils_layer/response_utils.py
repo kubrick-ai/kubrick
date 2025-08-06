@@ -56,7 +56,7 @@ def build_cors_headers(allowed_origin=CORS_ALLOWED_ORIGIN, **kwargs) -> Dict[str
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": allowed_origin,
     }
-    for k, v in kwargs:
+    for k, v in kwargs.items():
         headers[k] = v
     return headers
 
