@@ -7,10 +7,8 @@ from api_fetch_videos_handler.lambda_function import lambda_handler
 
 @pytest.fixture
 def mock_vector_db():
-    """Mocks VectorDBService and returns its instance."""
-    with patch("api_fetch_videos_handler.lambda_function.VectorDBService") as mock_service:
-        mock_instance = MagicMock()
-        mock_service.return_value = mock_instance
+    """Mocks the vector_db instance that was created at module level."""
+    with patch("api_fetch_videos_handler.lambda_function.vector_db") as mock_instance:
         yield mock_instance
 
 
@@ -105,25 +103,6 @@ def test_lambda_handler_database_error(mock_vector_db, kubrick_secret, event_bui
     assert body["error"]["message"] == "Internal server error"
 
 
-def test_lambda_handler_secrets_error(mock_get_secret, event_builder):
-    """Test 500 error response when retrieving secrets fails."""
-    # Setup mock
-    mock_get_secret.side_effect = Exception("Failed to retrieve secret")
-
-    # Test event
-    event = event_builder.api_gateway_proxy_event()
-    context = {}
-
-    # Execute
-    response = lambda_handler(event, context)
-
-    # Assert
-    assert response["statusCode"] == 500
-    body = json.loads(response["body"])
-    assert "error" in body
-    assert body["error"]["message"] == "Internal server error"
-
-
 def test_lambda_handler_invalid_params(mock_vector_db, kubrick_secret, event_builder):
     """Test 400 error response for invalid pagination parameters."""
     # Setup mock
@@ -166,13 +145,10 @@ def test_lambda_handler_with_environment_variables(
 
     # Assert
     assert response["statusCode"] == 200
-    mock_get_secret.assert_called_once_with("kubrick_secret")
     mock_add_presigned_urls.assert_called_once_with([], 3600)
 
 
-def test_lambda_handler_no_videos_found(
-    mock_vector_db, kubrick_secret, event_builder
-):
+def test_lambda_handler_no_videos_found(mock_vector_db, kubrick_secret, event_builder):
     """Test successful response with an empty data array when no videos are found."""
     # Setup mock
     mock_vector_db.fetch_videos.return_value = ([], 0)
