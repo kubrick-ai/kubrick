@@ -168,6 +168,7 @@ export const useGetAndPrefetchVideos = (page: number, limit: number) => {
     queryKey: ["data", page, limit],
     queryFn: () => fetchVideos(page, limit),
     placeholderData: (prev) => prev,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   useEffect(() => {
