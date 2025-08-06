@@ -28,7 +28,7 @@ const Search = () => {
 
       {results && (
         <div>
-          <h2 className="text-xl font-semibold mb-4">
+          <h2 className="text-xl font-semibold mb-4 pt-5">
             Results ({results.length})
           </h2>
           <SearchResultList results={results} />
