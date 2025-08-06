@@ -10,6 +10,18 @@ SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
 QUEUE_URL = os.environ["QUEUE_URL"]
 SQS_MESSAGE_VISIBILITY_TIMEOUT = int(os.getenv("SQS_MESSAGE_VISIBILITY_TIMEOUT", "25"))
 
+SECRET = get_secret(SECRET_NAME)
+DB_CONFIG = get_db_config(SECRET)
+
+embed_service = EmbedService(
+    api_key=SECRET["TWELVELABS_API_KEY"],
+    model_name=os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"),
+    clip_length=int(os.getenv("DEFAULT_CLIP_LENGTH", 6)),
+    logger=logger,
+)
+vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
+sqs = boto3.client("sqs")
+
 
 def get_video_metadata(tl_metadata: VideoEmbeddingMetadata | None, message_body):
     metadata = {"filename": os.path.basename(message_body["s3_key"])}
@@ -25,20 +37,7 @@ def get_video_metadata(tl_metadata: VideoEmbeddingMetadata | None, message_body)
 
 def lambda_handler(event, context):
     logger = setup_logging()
-    SECRET = get_secret(SECRET_NAME)
-    DB_CONFIG = get_db_config(SECRET)
-
-    embed_service = EmbedService(
-        api_key=SECRET["TWELVELABS_API_KEY"],
-        model_name=os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7"),
-        clip_length=int(os.getenv("DEFAULT_CLIP_LENGTH", 6)),
-        logger=logger,
-    )
-    vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
-    sqs = boto3.client("sqs")
-
     pending_message_ids = []
-
     for record in event["Records"]:
         message_id = record.get("messageId")
         receipt_handle = record.get("receiptHandle")
