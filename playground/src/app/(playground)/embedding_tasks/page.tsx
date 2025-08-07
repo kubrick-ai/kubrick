@@ -8,7 +8,7 @@ import LoadingOverlay from "@/components/LoadingOverlay";
 
 const PAGE_LIMIT = 15;
 
-const Embed = () => {
+const Tasks = () => {
   const [page, setPage] = useState(1);
   const { data, isLoading, error } = useGetAndPrefetchTasks(
     page - 1,
@@ -37,4 +37,4 @@ const Embed = () => {
   );
 };
 
-export default Embed;
+export default Tasks;
