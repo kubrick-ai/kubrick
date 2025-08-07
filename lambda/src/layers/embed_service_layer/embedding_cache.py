@@ -17,14 +17,9 @@ class EmbeddingCache:
 
     def _generate_content_hash(self, content_data: Any) -> str:
         """Generate SHA256 hash of content for cache key"""
-        if hasattr(content_data, 'read'):  # File-like object (BytesIO, etc.)
-            # Read the content, hash it, then reset position
-            current_pos = content_data.tell() if hasattr(content_data, 'tell') else 0
-            content_data.seek(0)
-            content_bytes = content_data.read()
-            if hasattr(content_data, 'seek'):
-                content_data.seek(current_pos)  # Reset to original position
-            return hashlib.sha256(content_bytes).hexdigest()
+        if hasattr(content_data, "read"):  # File-like object (BytesIO, etc.)
+            # Use partial content hashing for performance
+            return self._generate_partial_hash(content_data)
         elif isinstance(content_data, (bytes, bytearray)):
             # Direct binary data
             return hashlib.sha256(content_data).hexdigest()
@@ -32,6 +27,51 @@ class EmbeddingCache:
             # String or other JSON-serializable content
             content_str = json.dumps(content_data, sort_keys=True)
             return hashlib.sha256(content_str.encode()).hexdigest()
+
+    def _generate_partial_hash(self, file_obj) -> str:
+        """Generate hash from partial file content for performance"""
+        try:
+            current_pos = file_obj.tell() if hasattr(file_obj, "tell") else 0
+
+            # Read first 8KB
+            file_obj.seek(0)
+            start_chunk = file_obj.read(8192)
+
+            # Get file size and read last 8KB
+            file_obj.seek(0, 2)  # Seek to end
+            file_size = file_obj.tell()
+
+            if file_size > 8192:
+                file_obj.seek(max(0, file_size - 8192))
+                end_chunk = file_obj.read(8192)
+            else:
+                # File is smaller than 8KB, end_chunk is empty
+                end_chunk = b""
+
+            # Reset to original position
+            if hasattr(file_obj, "seek"):
+                file_obj.seek(current_pos)
+
+            content = start_chunk + end_chunk + str(file_size).encode()
+            return hashlib.sha256(content).hexdigest()
+
+        except Exception as e:
+            self.logger.warning(
+                f"Error generating partial hash, falling back to full content hash: {e}"
+            )
+            # fall back to reading full content
+            try:
+                current_pos = file_obj.tell() if hasattr(file_obj, "tell") else 0
+                file_obj.seek(0)
+                content_bytes = file_obj.read()
+                if hasattr(file_obj, "seek"):
+                    file_obj.seek(current_pos)
+                return hashlib.sha256(content_bytes).hexdigest()
+            except Exception as fallback_error:
+                self.logger.error(
+                    f"Failed to generate any hash for file object: {fallback_error}"
+                )
+                raise RuntimeError("Unable to generate cache key for file content")
 
     def _generate_embedding_config(
         self, model_name: str, clip_length: Optional[int], embedding_scope: list
@@ -159,4 +199,3 @@ class EmbeddingCache:
             )
         except ClientError as e:
             self.logger.warning(f"Failed to update access tracking: {e}")
-
