@@ -171,3 +171,8 @@ variable "sqs_message_visibility_timeout" {
   default     = 25
 }
 
+variable "embedding_cache_table_name" {
+  description = "Name of the DynamoDB table for embedding cache"
+  type        = string
+}
+

@@ -23,6 +23,7 @@ SECRET_NAME = os.getenv("SECRET_NAME", "kubrick_secret")
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "Marengo-retrieval-2.7")
 DEFAULT_CLIP_LENGTH = int(os.getenv("DEFAULT_CLIP_LENGTH", "6"))
 QUERY_MEDIA_FILE_SIZE_LIMIT = int(os.getenv("QUERY_MEDIA_FILE_SIZE_LIMIT", "6000000"))
+EMBEDDING_CACHE_TABLE_NAME = os.getenv("EMBEDDING_CACHE_TABLE_NAME")
 
 SECRET = get_secret(SECRET_NAME)
 DB_CONFIG = get_db_config(SECRET)
@@ -34,6 +35,7 @@ embed_service = EmbedService(
     model_name=EMBEDDING_MODEL_NAME,
     clip_length=DEFAULT_CLIP_LENGTH,
     logger=logger,
+    cache_table_name=EMBEDDING_CACHE_TABLE_NAME,
 )
 vector_db_service = VectorDBService(db_params=DB_CONFIG, logger=logger)
 search_controller = SearchController(

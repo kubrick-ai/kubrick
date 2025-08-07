@@ -12,3 +12,8 @@ variable "embedding_task_queue_arn" {
   description = "ARN of the SQS queue for sending messages"
   type        = string
 }
+
+variable "embeddings_cache_table_arn" {
+  description = "ARN of the DynamoDB embeddings cache table"
+  type        = string
+}

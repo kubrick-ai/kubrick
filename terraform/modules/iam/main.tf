@@ -48,6 +48,32 @@ resource "aws_iam_policy" "sqs_change_message_visibility_policy" {
   })
 }
 
+resource "aws_iam_policy" "dynamodb_embeddings_cache_access" {
+  name        = "DynamoDBEmbeddingsCacheAccess"
+  description = "Allows Lambda to read/write to DynamoDB embeddings cache table"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ],
+        Resource = [
+          var.embeddings_cache_table_arn,
+          "${var.embeddings_cache_table_arn}/index/*"
+        ]
+      }
+    ]
+  })
+}
+
 # Creates the IAM Role for each lambda
 resource "aws_iam_role" "lambda_roles" {
   for_each           = local.lambda_roles

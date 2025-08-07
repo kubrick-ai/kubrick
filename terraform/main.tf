@@ -15,11 +15,19 @@ module "vpc_network" {
   azs    = local.azs
 }
 
+module "dynamodb" {
+  source                       = "./modules/dynamodb"
+  table_name_prefix           = "kubrick_embedding_cache"
+  environment                 = local.env
+  enable_point_in_time_recovery = true
+}
+
 module "iam" {
-  source                   = "./modules/iam"
-  secret_arn               = module.secrets_manager.secret_arn
-  environment              = local.env
-  embedding_task_queue_arn = module.sqs.queue_arn
+  source                     = "./modules/iam"
+  secret_arn                 = module.secrets_manager.secret_arn
+  environment                = local.env
+  embedding_task_queue_arn   = module.sqs.queue_arn
+  embeddings_cache_table_arn = module.dynamodb.table_arn
 }
 
 # Public S3 bucket depends on API_Gateway
@@ -85,6 +93,7 @@ module "lambda" {
   queue_arn                                         = module.sqs.queue_arn
   secret_name                                       = var.secret_name
   aws_profile                                       = var.aws_profile
+  embedding_cache_table_name                        = module.dynamodb.table_name
 }
 
 module "sqs" {
