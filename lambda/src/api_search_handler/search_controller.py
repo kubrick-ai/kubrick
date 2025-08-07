@@ -84,7 +84,7 @@ class SearchController:
     def parse_lambda_event(self, event) -> SearchRequest:
         # Lambda event body must be passed as binary data
         try:
-            self.logger.info("Starting multipart parsing")
+            self.logger.debug("Starting multipart parsing")
 
             if not event.get("body"):
                 raise SearchRequestError("Request body is empty")
@@ -140,40 +140,39 @@ class SearchController:
             # Extract form fields
             try:
                 for part in parsed:
-                    if not part or (field_name := part.name) not in valid_fields:
-                        continue
+                    try:
+                        if not part or (field_name := part.name) not in valid_fields:
+                            continue
 
-                    if part.filename:  # File field
-                        file_size = part.size
-                        size_limit = self.query_media_file_size_limit
-                        if file_size > size_limit:
-                            raise SearchRequestError(
-                                f"Query media file size too large. Limit: {size_limit/1000} KB"
+                        if part.filename:  # File field
+                            file_size = part.size
+                            size_limit = self.query_media_file_size_limit
+                            if file_size > size_limit:
+                                raise SearchRequestError(
+                                    f"Query media file size too large. Limit: {size_limit/1000} KB"
+                                )
+                            search_request[field_name] = part.raw
+                            self.logger.debug(
+                                f"Processed file field: {field_name}, size: {file_size/1000} KB"
                             )
-                        search_request[field_name] = part.raw
-                        self.logger.debug(
-                            f"Processed file field: {field_name}, size: {file_size/1000} KB"
-                        )
-                    else:  # Text field
-                        try:
-                            value = part.value
-                            if field_name in ["filter", "query_modality"] and value:
-                                value = json.loads(value)
-                            search_request[field_name] = value
-                            self.logger.debug(f"Processed text field: {field_name}")
-                        except json.JSONDecodeError as e:
-                            raise SearchRequestError(
-                                f"Invalid JSON in filter field: {str(e)}"
-                            )
-                        except UnicodeDecodeError as e:
-                            raise SearchRequestError(
-                                f"Invalid encoding in field {field_name}: {str(e)}"
-                            )
-
-                # Cleanup
-                for part in parsed.parts():
-                    if part:
-                        part.close()
+                        else:  # Text field
+                            try:
+                                value = part.value
+                                if field_name in ["filter", "query_modality"] and value:
+                                    value = json.loads(value)
+                                search_request[field_name] = value
+                                self.logger.debug(f"Processed text field: {field_name}")
+                            except json.JSONDecodeError as e:
+                                raise SearchRequestError(
+                                    f"Invalid JSON in filter field: {str(e)}"
+                                )
+                            except UnicodeDecodeError as e:
+                                raise SearchRequestError(
+                                    f"Invalid encoding in field {field_name}: {str(e)}"
+                                )
+                    finally:
+                        if part:
+                            part.close()
 
             except SearchRequestError:
                 raise
@@ -183,7 +182,7 @@ class SearchController:
             # Validate with Pydantic
             try:
                 validated_request = SearchRequest(**search_request)
-                self.logger.info("Search request validation passed")
+                self.logger.debug("Search request validation passed")
                 return validated_request
             except ValidationError as e:
                 error_details = {
@@ -208,7 +207,7 @@ class SearchController:
     def process_search_request(self, event) -> tuple[List[Any], dict[str, int]]:
         """Parse event to SearchRequest and execute the search request"""
         try:
-            self.logger.info("Processing search request")
+            self.logger.debug("Processing search request")
             search_request = self.parse_lambda_event(event)
             query_type = search_request.query_type
 
@@ -225,7 +224,7 @@ class SearchController:
             # Add presigned url to each result
             try:
                 add_presigned_urls([result["video"] for result in results])
-                self.logger.info(
+                self.logger.debug(
                     f"Successfully processed search request, returning {len(results)} results"
                 )
                 metadata = {
@@ -300,7 +299,7 @@ class SearchController:
     def _extract_text_embedding(self, query_text: str) -> List[float]:
         """Extract text embedding with error handling"""
         try:
-            self.logger.info(
+            self.logger.debug(
                 f"Extracting text embedding for query (length: {len(query_text)})"
             )
             embedding = self.embed_service.extract_text_embedding(query_text)
@@ -345,7 +344,7 @@ class SearchController:
                 raise MediaProcessingError(f"Unsupported media type: {media_type}")
 
             if media_url:
-                self.logger.info(
+                self.logger.debug(
                     f"Extracting {media_type} embedding from URL"
                     + (
                         f" with modality: {query_modality}"
@@ -361,7 +360,7 @@ class SearchController:
                 else:
                     embeddings = extract_fn(url=media_url)
             elif media_file:
-                self.logger.info(
+                self.logger.debug(
                     f"Extracting {media_type} embedding from file"
                     + (
                         f" with modality: {query_modality}"
@@ -414,7 +413,7 @@ class SearchController:
 
     def text_search(self, search_request: SearchRequest) -> List[Any]:
         try:
-            self.logger.info("Starting text search")
+            self.logger.debug("Starting text search")
 
             if not search_request.query_text:
                 raise SearchRequestError("query_text is required for text search")
@@ -422,7 +421,7 @@ class SearchController:
             search_params = search_request.get_search_params()
             results = self._perform_vector_search(embedding, search_params)
 
-            self.logger.info(f"Text search completed, found {len(results)} results")
+            self.logger.debug(f"Text search completed, found {len(results)} results")
             return results
 
         except (SearchRequestError, EmbeddingError, DatabaseError):
@@ -437,7 +436,7 @@ class SearchController:
         media_type: Literal["image", "audio", "video"],
     ) -> List[Any]:
         try:
-            self.logger.info(f"Starting {media_type} search")
+            self.logger.debug(f"Starting {media_type} search")
             embedding = self._extract_media_embedding(search_request, media_type)
             search_params = search_request.get_search_params()
             use_batch = False
@@ -455,7 +454,7 @@ class SearchController:
             results = self._perform_vector_search(
                 embedding, search_params, use_batch=use_batch
             )
-            self.logger.info(
+            self.logger.debug(
                 f"{media_type.title()} search completed, found {len(results)} results"
             )
             return results

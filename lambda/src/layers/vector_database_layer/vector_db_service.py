@@ -56,13 +56,16 @@ class VectorDBService:
                 offset = page * limit
 
                 video_query = """
-                    SELECT *
+                    SELECT *,
+                           COUNT(*) OVER() AS total_count
                     FROM videos
                     LIMIT %s
                     OFFSET %s
                     """
                 cursor.execute(video_query, (limit, offset))
                 rows = cursor.fetchall()
+
+                total_videos = rows[0]["total_count"] if rows else 0
 
                 videos_data = [
                     {
@@ -84,17 +87,6 @@ class VectorDBService:
                     }
                     for video in rows
                 ]
-
-                # Query to get the total count of videos
-                count_query = """
-                    SELECT COUNT(*) AS total_count
-                    FROM videos
-                    """
-                cursor.execute(count_query)
-                total_count_result = cursor.fetchone()
-                total_videos = (
-                    total_count_result["total_count"] if total_count_result else 0
-                )
 
             return PaginatedResult(items=videos_data, total=total_videos)
 
@@ -178,28 +170,30 @@ class VectorDBService:
 
         query_parts.append(
             """
-            SELECT
-                videos.id AS video_id,
-                videos.s3_bucket,
-                videos.s3_key,
-                videos.filename,
-                videos.duration,
-                videos.created_at,
-                videos.updated_at,
-                videos.height,
-                videos.width,
-                video_segments.id AS segment_id,
-                video_segments.modality,
-                video_segments.scope,
-                video_segments.start_time,
-                video_segments.end_time,
-                1 - (video_segments.embedding <=> %s::vector) AS similarity
-            FROM videos
-            INNER JOIN video_segments ON videos.id = video_segments.video_id
-            WHERE (1 - (video_segments.embedding <=> %s::vector)) > %s
+            WITH similarity_calc AS (
+                SELECT
+                    videos.id AS video_id,
+                    videos.s3_bucket,
+                    videos.s3_key,
+                    videos.filename,
+                    videos.duration,
+                    videos.created_at,
+                    videos.updated_at,
+                    videos.height,
+                    videos.width,
+                    video_segments.id AS segment_id,
+                    video_segments.modality,
+                    video_segments.scope,
+                    video_segments.start_time,
+                    video_segments.end_time,
+                    1 - (video_segments.embedding <=> %s::vector) AS similarity
+                FROM videos
+                INNER JOIN video_segments ON videos.id = video_segments.video_id
+            )
+            SELECT * FROM similarity_calc WHERE similarity > %s
             """
         )
-        query_params.extend([embedding, embedding, min_similarity])
+        query_params.extend([embedding, min_similarity])
 
         if filter and "scope" in filter:
             query_parts.append("AND scope = %s")
@@ -208,7 +202,7 @@ class VectorDBService:
             query_parts.append("AND modality = %s")
             query_params.append(filter["modality"])
 
-        query_parts.append("ORDER BY similarity DESC, videos.id ASC LIMIT %s OFFSET %s")
+        query_parts.append("ORDER BY similarity DESC, video_id ASC LIMIT %s OFFSET %s")
         query_params.extend([limit, offset])
 
         try:
@@ -235,38 +229,45 @@ class VectorDBService:
             query_parts = []
             query_params = []
 
+            filter_conditions = []
+            filter_params = []
+            if filter:
+                if "scope" in filter:
+                    filter_conditions.append("AND scope = %s")
+                    filter_params.append(filter["scope"])
+                if "modality" in filter:
+                    filter_conditions.append("AND modality = %s")
+                    filter_params.append(filter["modality"])
+
+            filter_clause = " ".join(filter_conditions)
+
             for i, embedding in enumerate(embeddings):
                 sub_query = f"""
-                    SELECT
-                        videos.id AS video_id,
-                        videos.s3_bucket,
-                        videos.s3_key,
-                        videos.filename,
-                        videos.duration,
-                        videos.created_at,
-                        videos.updated_at,
-                        videos.height,
-                        videos.width,
-                        video_segments.id AS segment_id,
-                        video_segments.modality,
-                        video_segments.scope,
-                        video_segments.start_time,
-                        video_segments.end_time,
-                        1 - (video_segments.embedding <=> %s::vector) AS similarity,
-                        {i} AS query_index
-                    FROM videos
-                    INNER JOIN video_segments ON videos.id = video_segments.video_id
-                    WHERE (1 - (video_segments.embedding <=> %s::vector)) > %s
+                    WITH similarity_calc_{i} AS (
+                        SELECT
+                            videos.id AS video_id,
+                            videos.s3_bucket,
+                            videos.s3_key,
+                            videos.filename,
+                            videos.duration,
+                            videos.created_at,
+                            videos.updated_at,
+                            videos.height,
+                            videos.width,
+                            video_segments.id AS segment_id,
+                            video_segments.modality,
+                            video_segments.scope,
+                            video_segments.start_time,
+                            video_segments.end_time,
+                            1 - (video_segments.embedding <=> %s::vector) AS similarity,
+                            {i} AS query_index
+                        FROM videos
+                        INNER JOIN video_segments ON videos.id = video_segments.video_id
+                    )
+                    SELECT * FROM similarity_calc_{i} 
+                    WHERE similarity > %s {filter_clause}
                 """
-                query_params.extend([embedding, embedding, min_similarity])
-
-                if filter:
-                    if "scope" in filter:
-                        sub_query += "\nAND scope = %s"
-                        query_params.append(filter["scope"])
-                    if "modality" in filter:
-                        sub_query += "\nAND modality = %s"
-                        query_params.append(filter["modality"])
+                query_params.extend([embedding, min_similarity] + filter_params)
                 query_parts.append(sub_query)
 
             full_query = f"""
@@ -276,7 +277,7 @@ class VectorDBService:
                 SELECT * FROM combined_results
                 ORDER BY
                     similarity DESC,
-                    videos.id ASC
+                    video_id ASC
                 LIMIT %s
                 OFFSET %s;
             """
@@ -364,9 +365,10 @@ class VectorDBService:
             with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 offset = page * limit
 
-                # Query to get tasks with pagination
+                # Query to get tasks with pagination and total count
                 tasks_query = """
-                    SELECT id, sqs_message_id, s3_bucket, s3_key, created_at, updated_at, status
+                    SELECT id, sqs_message_id, s3_bucket, s3_key, created_at, updated_at, status,
+                           COUNT(*) OVER() AS total_count
                     FROM tasks
                     ORDER BY created_at DESC
                     LIMIT %s OFFSET %s
@@ -374,16 +376,7 @@ class VectorDBService:
                 cursor.execute(tasks_query, (limit, offset))
                 raw_results = cursor.fetchall()
 
-                # Query to get the total count of tasks
-                count_query = """
-                    SELECT COUNT(*) AS total_count
-                    FROM tasks
-                """
-                cursor.execute(count_query)
-                total_count_result = cursor.fetchone()
-                total_tasks = (
-                    total_count_result["total_count"] if total_count_result else 0
-                )
+                total_tasks = raw_results[0]["total_count"] if raw_results else 0
 
             tasks_data = [
                 {
