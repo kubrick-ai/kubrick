@@ -12,3 +12,4 @@ output "table_id" {
   description = "ID of the DynamoDB embeddings cache table"
   value       = aws_dynamodb_table.embeddings_cache.id
 }
+

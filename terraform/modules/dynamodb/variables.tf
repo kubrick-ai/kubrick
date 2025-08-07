@@ -21,3 +21,4 @@ variable "ttl_days" {
   type        = number
   default     = 30
 }
+

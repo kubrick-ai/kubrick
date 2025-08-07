@@ -16,10 +16,10 @@ module "vpc_network" {
 }
 
 module "dynamodb" {
-  source                       = "./modules/dynamodb"
-  table_name_prefix           = "kubrick_embedding_cache"
-  environment                 = local.env
-  enable_point_in_time_recovery = true
+  source                        = "./modules/dynamodb"
+  table_name_prefix             = "kubrick_embedding_cache"
+  environment                   = local.env
+  enable_point_in_time_recovery = false
 }
 
 module "iam" {
