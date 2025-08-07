@@ -36,11 +36,11 @@ locals {
   lambda_role_policies = {
     kubrick_db_bootstrap                  = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access"]
     kubrick_s3_delete_handler             = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_full_access"]
-    kubrick_api_search_handler            = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_readonly_access"]
+    kubrick_api_search_handler            = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_readonly_access", "dynamodb_embeddings_cache_access"]
     kubrick_api_fetch_videos_handler      = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_readonly_access"]
     kubrick_api_video_upload_link_handler = ["lambda_basic_execution", "lambda_vpc_access", "s3_full_access"]
     kubrick_api_fetch_tasks_handler       = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access"]
-    kubrick_sqs_embedding_task_producer   = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_full_access", "sqs_full_access"]
+    kubrick_sqs_embedding_task_producer   = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "s3_full_access", "sqs_full_access", "dynamodb_embeddings_cache_access"]
     kubrick_sqs_embedding_task_consumer   = ["lambda_basic_execution", "lambda_vpc_access", "secrets_access", "lambda_sqs_execution", "sqs_change_message_visibility"]
   }
 
@@ -51,6 +51,7 @@ locals {
       secrets_access                   = aws_iam_policy.secrets_access.arn
       lambda_vpc_access                = aws_iam_policy.lambda_vpc_access.arn
       sqs_change_message_visibility    = aws_iam_policy.sqs_change_message_visibility_policy.arn
+      dynamodb_embeddings_cache_access = aws_iam_policy.dynamodb_embeddings_cache_access.arn
     }
   )
 }

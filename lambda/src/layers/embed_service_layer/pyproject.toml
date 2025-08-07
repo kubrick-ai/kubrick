@@ -3,4 +3,7 @@ name = "kubrick_embed_service_layer"
 version = "0.1.0"
 description = "AWS Lambda Layer for calling external multimodal embedding API"
 requires-python = ">=3.13"
-dependencies = ["twelvelabs>=1.0.0b0"]
+dependencies = [
+    "twelvelabs>=1.0.0b0",
+    "boto3>=1.40.3"
+]

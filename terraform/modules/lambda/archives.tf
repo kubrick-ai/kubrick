@@ -14,9 +14,10 @@ resource "terraform_data" "build_config_layer" {
 
 resource "terraform_data" "build_embed_layer" {
   triggers_replace = {
-    exists      = fileexists("${local.base_path}/layers/embed_service_layer/package.zip")
-    deps_hash   = filemd5("${local.base_path}/layers/embed_service_layer/pyproject.toml")
-    source_hash = filemd5("${local.base_path}/layers/embed_service_layer/embed_service.py")
+    exists             = fileexists("${local.base_path}/layers/embed_service_layer/package.zip")
+    deps_hash          = filemd5("${local.base_path}/layers/embed_service_layer/pyproject.toml")
+    source_hash        = filemd5("${local.base_path}/layers/embed_service_layer/embed_service.py")
+    cache_service_hash = filemd5("${local.base_path}/layers/embed_service_layer/embedding_cache.py")
   }
 
   provisioner "local-exec" {

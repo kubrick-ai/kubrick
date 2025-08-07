@@ -137,6 +137,7 @@ resource "aws_lambda_function" "kubrick_api_search_handler" {
       EMBEDDING_MODEL_NAME        = var.embedding_model
       QUERY_MEDIA_FILE_SIZE_LIMIT = var.query_media_file_size_limit
       SECRET_NAME                 = var.secret_name
+      EMBEDDING_CACHE_TABLE_NAME  = var.embedding_cache_table_name
       LOG_LEVEL                   = "INFO"
     }
   }
