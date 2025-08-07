@@ -1,7 +1,7 @@
 import json
 import hashlib
 import time
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, BinaryIO
 from logging import getLogger
 import boto3
 from botocore.exceptions import ClientError
@@ -15,14 +15,13 @@ class EmbeddingCache:
         self.dynamodb = boto3.resource("dynamodb")
         self.table = self.dynamodb.Table(table_name)  # type: ignore
 
-    def _generate_content_hash(self, content_data: Any) -> str:
+    def _generate_content_hash(
+        self, content_data: Optional[Union[str, BinaryIO]]
+    ) -> str:
         """Generate SHA256 hash of content for cache key"""
         if hasattr(content_data, "read"):  # File-like object (BytesIO, etc.)
             # Use partial content hashing for performance
             return self._generate_partial_hash(content_data)
-        elif isinstance(content_data, (bytes, bytearray)):
-            # Direct binary data
-            return hashlib.sha256(content_data).hexdigest()
         else:
             # String or other JSON-serializable content
             content_str = json.dumps(content_data, sort_keys=True)
@@ -87,7 +86,7 @@ class EmbeddingCache:
 
     def get_cached_embedding(
         self,
-        content_data: Any,
+        content_data: Optional[Union[str, BinaryIO]],
         model_name: str,
         clip_length: Optional[int],
         embedding_scope: list,
@@ -100,9 +99,6 @@ class EmbeddingCache:
             model_name: Embedding model name
             clip_length: Video clip length
             embedding_scope: List of embedding scopes
-
-        Returns:
-            Cached video_embedding object or None if not found
         """
         try:
             content_hash = self._generate_content_hash(content_data)
@@ -169,7 +165,7 @@ class EmbeddingCache:
                 "content_hash": content_hash,
                 "embedding_config": embedding_config,
                 "task_id": task_id,
-                "video_embedding": json.dumps(video_embedding),  # Store as JSON string
+                "video_embedding": json.dumps(video_embedding),
                 "created_at": current_time,
                 "expires_at": self._calculate_expires_at(),
                 "last_accessed": current_time,

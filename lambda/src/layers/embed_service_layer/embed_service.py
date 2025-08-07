@@ -1,4 +1,3 @@
-import os
 from typing import BinaryIO, Optional, List, Union, Dict, Any
 from twelvelabs import TwelveLabs
 from twelvelabs.types import VideoSegment, VideoEmbeddingTask, VideoEmbeddingMetadata
@@ -25,7 +24,6 @@ class EmbedService:
         self.model_name = model_name
         self.logger = logger
 
-        # Initialize cache if table name provided
         self.cache = None
         if cache_table_name:
             self.cache = EmbeddingCache(cache_table_name, logger=logger)
@@ -36,7 +34,6 @@ class EmbedService:
             self.logger.info("No cache table specified, running without cache")
 
     def extract_text_embedding(self, input_text: str) -> list[float]:
-        # Check cache first if available
         if self.cache:
             cached_embedding = self.cache.get_cached_embedding(
                 content_data=input_text,
@@ -51,7 +48,6 @@ class EmbedService:
                 if segments and segments[0].get("float"):
                     return segments[0]["float"]
 
-        # Cache miss or no cache - proceed with API call
         self.logger.info("Cache miss - creating new text embedding")
         res = self.client.embed.create(
             model_name=self.model_name, text_truncate="start", text=input_text
@@ -64,7 +60,6 @@ class EmbedService:
         ):
             raise Exception("Could not extract embedding")
 
-        # Cache the result if cache is available
         if self.cache and res.text_embedding:
             self.cache.store_embedding(
                 content_data=input_text,
@@ -84,7 +79,6 @@ class EmbedService:
     ) -> list[float]:
         content_key = url if url else file
 
-        # Check cache first if available
         if self.cache and content_key:
             cached_embedding = self.cache.get_cached_embedding(
                 content_data=content_key,
@@ -99,7 +93,6 @@ class EmbedService:
                 if segments and segments[0].get("float"):
                     return segments[0]["float"]
 
-        # Cache miss or no cache - proceed with API call
         self.logger.info("Cache miss - creating new image embedding")
         if url:
             res = self.client.embed.create(model_name=self.model_name, image_url=url)
@@ -115,7 +108,6 @@ class EmbedService:
         ):
             raise Exception("Could not extract embedding")
 
-        # Cache the result if cache is available
         if self.cache and content_key and res.image_embedding:
             self.cache.store_embedding(
                 content_data=content_key,
@@ -135,7 +127,6 @@ class EmbedService:
     ) -> list[float]:
         content_key = url if url else file
 
-        # Check cache first if available
         if self.cache and content_key:
             cached_embedding = self.cache.get_cached_embedding(
                 content_data=content_key,
@@ -150,7 +141,6 @@ class EmbedService:
                 if segments and segments[0].get("float"):
                     return segments[0]["float"]
 
-        # Cache miss or no cache - proceed with API call
         self.logger.info("Cache miss - creating new audio embedding")
         if url:
             res = self.client.embed.create(model_name=self.model_name, audio_url=url)
@@ -166,7 +156,6 @@ class EmbedService:
         ):
             raise Exception("Could not extract embedding")
 
-        # Cache the result if cache is available
         if self.cache and content_key and res.audio_embedding:
             self.cache.store_embedding(
                 content_data=content_key,
@@ -192,7 +181,6 @@ class EmbedService:
         clip_length = clip_length or self.clip_length
         content_key = url if url else file
 
-        # Check cache first if available
         if self.cache and content_key:
             cached_embedding = self.cache.get_cached_embedding(
                 content_data=content_key,
@@ -203,7 +191,6 @@ class EmbedService:
 
             if cached_embedding:
                 self.logger.info("Using cached video embedding")
-                # Extract segments from cached data matching the original format
                 segments = cached_embedding.get("segments", [])
                 return [
                     segment["embedding"]
@@ -212,7 +199,6 @@ class EmbedService:
                     and segment["modality"] in query_modality
                 ]
 
-        # Cache miss or no cache - proceed with API call
         self.logger.info("Cache miss - creating new embedding request")
         embedding_request = self.create_embedding_request(
             url=url,
@@ -226,13 +212,10 @@ class EmbedService:
 
         self._wait_for_request_completion(embedding_request)
 
-        # Get the complete response for caching
         response = self.retrieve_embed_response(embedding_request.id)
 
-        # Get normalized segments
         segments = self.retrieve_segments(embedding_request.id)
 
-        # Cache the normalized segments if cache is available
         if self.cache and content_key:
             normalized_embedding = {
                 "segments": segments,
