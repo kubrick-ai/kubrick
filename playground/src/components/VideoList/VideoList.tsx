@@ -24,32 +24,30 @@ const VideoList = ({
   const totalPages = Math.ceil(totalVideos / perPage);
 
   return (
-    <>
-      <div className="flex justify-center">
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-screen-xlg w-full">
-          {videos.map((video) => (
-            <VideoThumbnail key={video.id} video={video}>
-              <div className="space-y-2 text-sm">
-                <div className="flex gap-2 flex-wrap">
-                  <Badge variant="secondary" className="text-xs">
-                    {video.duration}s
+    <div className="w-full">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
+        {videos.map((video) => (
+          <VideoThumbnail key={video.id} video={video}>
+            <div className="space-y-2 text-sm">
+              <div className="flex gap-2 flex-wrap">
+                <Badge variant="secondary" className="text-xs">
+                  {video.duration}s
+                </Badge>
+                {video.width && video.height && (
+                  <Badge variant="outline" className="text-xs">
+                    {video.width}×{video.height}
                   </Badge>
-                  {video.width && video.height && (
-                    <Badge variant="outline" className="text-xs">
-                      {video.width}×{video.height}
-                    </Badge>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div>Upload date: {video.created_at.split("T")[0]}</div>
-                </div>
+                )}
               </div>
-            </VideoThumbnail>
-          ))}
-        </div>
+
+              <Separator />
+
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>Upload date: {video.created_at.split("T")[0]}</div>
+              </div>
+            </div>
+          </VideoThumbnail>
+        ))}
       </div>
       {Array.from({ length: perPage - videos.length }).map((_, i) => (
         <div key={`placeholder-${i}`} className="invisible" />
@@ -78,7 +76,7 @@ const VideoList = ({
           Next
         </Button>
       </div>
-    </>
+    </div>
   );
 };
 

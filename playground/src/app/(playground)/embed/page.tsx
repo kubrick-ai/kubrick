@@ -30,10 +30,10 @@ const Embed = () => {
   };
 
   return (
-    <div className="px-6">
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Playground - Embed</h1>
       <div className="min-w-200">
-        <VideoUploadsForm></VideoUploadsForm>
+        <VideoUploadsForm />
       </div>
 
       {/* Embedding tasks table accordion */}
@@ -46,12 +46,14 @@ const Embed = () => {
           onClick={onClick}
         >
           <AccordionItem value="embedding-tasks-table" className="w-full">
-            <AccordionTrigger className="w-full cursor-pointer">
+            <AccordionTrigger className="max-w-37 cursor-pointer">
               Embedding Tasks
             </AccordionTrigger>
             <AccordionContent className="w-full flex flex-col gap-4 text-balance">
               {isLoading && <p>Loading embedding tasks...</p>}
-              {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
+              {error && (
+                <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />
+              )}
               {tasks && tasks.length > 0 ? (
                 <TasksTable
                   tasks={tasks}
@@ -59,7 +61,7 @@ const Embed = () => {
                   totalTasks={total}
                   perPage={PAGE_LIMIT}
                   onPageChange={setPage}
-                ></TasksTable>
+                />
               ) : (
                 !isLoading && <p>No tasks found.</p>
               )}

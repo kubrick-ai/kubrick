@@ -24,24 +24,23 @@ const SearchResultList = ({ results }: SearchResultListProps) => {
 
   return (
     <>
-      <div className="flex justify-center">
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-screen-xlg w-full">
-          {currentResults.map((result) => (
-            <VideoThumbnail
-              key={result.id}
-              video={result.video}
-              startTime={result.start_time ?? 0}
-              enableChapters={true}
-            >
-              {result.modality && <p>Modality: {result.modality}</p>}
-              {result.scope && <p>Scope: {result.scope}</p>}
-              {result.similarity && (
-                <p>Similarity: {result.similarity.toFixed(5)}</p>
-              )}
-            </VideoThumbnail>
-          ))}
-        </div>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 ">
+        {currentResults.map((result) => (
+          <VideoThumbnail
+            key={result.id}
+            video={result.video}
+            startTime={result.start_time ?? 0}
+            enableChapters={true}
+          >
+            {result.modality && <p>Modality: {result.modality}</p>}
+            {result.scope && <p>Scope: {result.scope}</p>}
+            {result.similarity && (
+              <p>Similarity: {result.similarity.toFixed(5)}</p>
+            )}
+          </VideoThumbnail>
+        ))}
       </div>
+
       {/* Pagination controls */}
       <div className="mt-6 flex justify-center items-center gap-4">
         <Button

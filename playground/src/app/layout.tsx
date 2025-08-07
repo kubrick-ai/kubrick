@@ -27,7 +27,7 @@ const RootLayout = ({
         <QueryClientProvider client={queryClient}>
           <SidebarProvider>
             <AppSidebar />
-            <main>
+            <main className="flex flex-col w-full">
               <SidebarTrigger />
               {children}
             </main>
