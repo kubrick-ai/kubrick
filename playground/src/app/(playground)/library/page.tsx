@@ -18,9 +18,9 @@ const Library = () => {
   const total = data?.metadata?.total ?? 0;
 
   return (
-    <div className="p-4 grow flex flex-col">
+    <div className="p-6 grow flex flex-col">
       <h1 className="text-2xl font-bold mb-4 grow-0">
-        Kubrick Playground - Library
+        Playground - Library
       </h1>
 
       {isLoading && <LoadingOverlay isVisible={true} />}

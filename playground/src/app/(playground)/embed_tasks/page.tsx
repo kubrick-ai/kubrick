@@ -4,6 +4,7 @@ import TasksTable from "@/components/TasksTable";
 import { useGetAndPrefetchTasks } from "@/hooks/useKubrickAPI";
 import { useState } from "react";
 import ErrorDisplay from "@/components/ErrorDisplay";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 const PAGE_LIMIT = 10;
 
@@ -17,9 +18,9 @@ const Embed = () => {
   const total = data?.metadata?.total ?? 0;
 
   return (
-    <div className="p-6">
+    <div className="p-6 flex flex-col grow">
       <h1 className="text-2xl font-bold mb-6">Playground - Embed Tasks</h1>
-      {isLoading && <p>Loading embedding tasks...</p>}
+      {isLoading && <LoadingOverlay isVisible={true} />}
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
       {tasks && tasks.length > 0 ? (
         <TasksTable
