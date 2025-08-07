@@ -205,8 +205,7 @@ export const fetchTasks = async (
 // React Query hook for tasks
 export const useGetAndPrefetchTasks = (
   page: number,
-  limit: number,
-  isAccordionOpen: boolean,
+  limit: number
 ) => {
   const queryClient = useQueryClient();
 
@@ -218,12 +217,12 @@ export const useGetAndPrefetchTasks = (
       // Stop polling if there's an error, otherwise poll every 5 seconds
       return query.state.error ? false : 5000;
     },
-    enabled: isAccordionOpen,
+    enabled: true,
     retry: 3,
   });
 
   useEffect(() => {
-    if (!isAccordionOpen || !query.data?.metadata.total) return;
+    if (!query.data?.metadata.total) return;
 
     const totalPages = Math.ceil(query.data.metadata.total / limit);
 
@@ -233,7 +232,7 @@ export const useGetAndPrefetchTasks = (
         queryFn: () => fetchTasks(page + 1, limit),
       });
     }
-  }, [query.data?.metadata.total, page, limit, isAccordionOpen, queryClient]);
+  }, [query.data?.metadata.total, page, limit, queryClient]);
 
   return query;
 };
