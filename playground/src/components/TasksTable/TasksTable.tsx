@@ -50,17 +50,17 @@ const TasksTable = ({
 
   return (
     <>
-      <div>
-        <Table className="w-full table-fixed min-h-[400px]">
+      <div className="w-full overflow-x-auto">
+        <Table className="table-fixed min-w-[1400px] min-h-[400px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[180px]">SQS Message ID</TableHead>
-              <TableHead className="w-[200px]">S3 Bucket</TableHead>
-              <TableHead className="w-[200px]">S3 Key</TableHead>
-              <TableHead className="w-[200px]">Filename</TableHead>
-              <TableHead className="w-[180px]">Created At</TableHead>
-              <TableHead className="w-[180px]">Updated At</TableHead>
-              <TableHead className="w-[150px]">Status</TableHead>
+              <TableHead className="w-min-[200px]">SQS Message ID</TableHead>
+              <TableHead className="w-min-[200px]">S3 Bucket</TableHead>
+              <TableHead className="w-min-[200px]">S3 Key</TableHead>
+              <TableHead className="w-min-[300px]">Filename</TableHead>
+              <TableHead className="w-min-[120px]">Created At</TableHead>
+              <TableHead className="w-min-[120px]">Updated At</TableHead>
+              <TableHead className="w-min-[110px]">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -71,7 +71,7 @@ const TasksTable = ({
                     <div className="flex items-center gap-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="truncate max-w-[200px]">
+                          <span className="truncate">
                             {task.sqs_message_id}
                           </span>
                         </TooltipTrigger>
@@ -92,7 +92,7 @@ const TasksTable = ({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px] align-top">
+                  <TableCell className="truncate align-top">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>{task.s3_bucket}</span>
@@ -100,7 +100,7 @@ const TasksTable = ({
                       <TooltipContent>{task.s3_bucket}</TooltipContent>
                     </Tooltip>
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px] align-top">
+                  <TableCell className="truncate align-top">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>{task.s3_key}</span>
@@ -108,7 +108,7 @@ const TasksTable = ({
                       <TooltipContent>{task.s3_key}</TooltipContent>
                     </Tooltip>
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px] align-top">
+                  <TableCell className="truncate align-top">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>
@@ -120,14 +120,14 @@ const TasksTable = ({
                       </TooltipContent>
                     </Tooltip>
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px] align-top">
+                  <TableCell className="truncate align-top">
                     {dayjs(task.created_at).format("YYYY:MM:DD HH:mm:ss")}
                   </TableCell>
-                  <TableCell className="truncate max-w-[200px] align-top">
+                  <TableCell className="truncate align-top">
                     {dayjs(task.updated_at).format("YYYY:MM:DD HH:mm:ss")}
                   </TableCell>
                   <TableCell className="align-top">
-                    <div className="flex items-center gap-2 truncate max-w-[200px]">
+                    <div className="flex items-center gap-2 truncate">
                       {task.status === "completed" ? (
                         <IconCircleCheckFilled className="size-4 fill-green-500 dark:fill-green-400" />
                       ) : task.status === "processing" ? (
