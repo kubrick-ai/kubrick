@@ -199,8 +199,9 @@ class VectorDBService:
             query_parts.append("AND scope = %s")
             query_params.append(filter["scope"])
         if filter and "modality" in filter:
-            query_parts.append("AND modality = %s")
-            query_params.append(filter["modality"])
+            placeholders = ",".join(["%s"] * len(filter["modality"]))
+            query_parts.append(f"AND modality IN ({placeholders})")
+            query_params.extend(filter["modality"])
 
         query_parts.append("ORDER BY similarity DESC, video_id ASC LIMIT %s OFFSET %s")
         query_params.extend([limit, offset])
@@ -226,7 +227,6 @@ class VectorDBService:
         min_similarity = min_similarity or self.default_min_similarity
 
         try:
-            query_parts = []
             query_params = []
 
             filter_conditions = []
@@ -236,14 +236,20 @@ class VectorDBService:
                     filter_conditions.append("AND scope = %s")
                     filter_params.append(filter["scope"])
                 if "modality" in filter:
-                    filter_conditions.append("AND modality = %s")
-                    filter_params.append(filter["modality"])
+                    placeholders = ",".join(["%s"] * len(filter["modality"]))
+                    filter_conditions.append(f"AND modality IN ({placeholders})")
+                    filter_params.extend(filter["modality"])
 
             filter_clause = " ".join(filter_conditions)
 
+            # Build CTEs first
+            cte_parts = []
+            select_parts = []
+
             for i, embedding in enumerate(embeddings):
-                sub_query = f"""
-                    WITH similarity_calc_{i} AS (
+                cte_parts.append(
+                    f"""
+                    similarity_calc_{i} AS (
                         SELECT
                             videos.id AS video_id,
                             videos.s3_bucket,
@@ -263,18 +269,26 @@ class VectorDBService:
                             {i} AS query_index
                         FROM videos
                         INNER JOIN video_segments ON videos.id = video_segments.video_id
-                    )
+                    )"""
+                )
+
+                select_parts.append(
+                    f"""
                     SELECT * FROM similarity_calc_{i} 
                     WHERE similarity > %s {filter_clause}
                 """
-                query_params.extend([embedding, min_similarity] + filter_params)
-                query_parts.append(sub_query)
+                )
+
+                query_params.append(embedding)
+
+            for _ in embeddings:
+                query_params.extend([min_similarity] + filter_params)
 
             full_query = f"""
-                WITH combined_results AS (
-                    {" UNION ALL ".join(query_parts)}
-                )
-                SELECT * FROM combined_results
+                WITH {", ".join(cte_parts)}
+                SELECT * FROM (
+                    {" UNION ALL ".join(select_parts)}
+                ) combined_results
                 ORDER BY
                     similarity DESC,
                     video_id ASC
