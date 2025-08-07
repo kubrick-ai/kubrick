@@ -32,8 +32,8 @@ const data = {
           url: "/embed",
         },
         {
-          title: "Embed Tasks",
-          url: "/embed_tasks",
+          title: "Embedding Tasks",
+          url: "/embedding_tasks",
         },
       ],
     },

@@ -6,7 +6,7 @@ import { useState } from "react";
 import ErrorDisplay from "@/components/ErrorDisplay";
 import LoadingOverlay from "@/components/LoadingOverlay";
 
-const PAGE_LIMIT = 10;
+const PAGE_LIMIT = 15;
 
 const Embed = () => {
   const [page, setPage] = useState(1);
@@ -19,7 +19,7 @@ const Embed = () => {
 
   return (
     <div className="p-6 flex flex-col grow">
-      <h1 className="text-2xl font-bold mb-6">Playground - Embed Tasks</h1>
+      <h1 className="text-2xl font-bold mb-6">Playground - Embedding Tasks</h1>
       {isLoading && <LoadingOverlay isVisible={true} />}
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
       {tasks && tasks.length > 0 ? (
