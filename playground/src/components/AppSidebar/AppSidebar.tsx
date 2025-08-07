@@ -31,6 +31,10 @@ const data = {
           title: "Embed",
           url: "/embed",
         },
+        {
+          title: "Embed Tasks",
+          url: "/embed_tasks",
+        },
       ],
     },
     {
