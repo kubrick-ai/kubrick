@@ -316,7 +316,7 @@ class EmbedService:
             raise Exception("Could not extract embedding")
 
         segments = res.video_embedding.segments
-        self.logger.info(f"Retrieved segments: {segments}")
+        self.logger.debug(f"Retrieved segments: {segments}")
 
         return self.normalize_segments(segments)
 
@@ -333,7 +333,7 @@ class EmbedService:
         ]
 
     def _on_request_update(self, task: TasksStatusResponse):
-        self.logger.info(f"Status={task.status}")
+        self.logger.debug(f"Status={task.status}")
 
     def get_embedding_request_status(self, task_id):
         response: TasksStatusResponse = self.client.embed.tasks.status(task_id=task_id)
