@@ -55,16 +55,13 @@ const VideoList = ({
                 <Separator />
 
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <div>Upload date: {video.created_at.split("T")[0]}</div>
+                  <div>Upload date: {new Date(video.created_at).toLocaleDateString()}</div>
                 </div>
               </div>
             </VideoThumbnail>
           </div>
         ))}
       </div>
-      {Array.from({ length: perPage - videos.length }).map((_, i) => (
-        <div key={`placeholder-${i}`} className="invisible" />
-      ))}
       {/* Pagination controls */}
       <div className="mt-6 flex justify-center items-center gap-4">
         <Button
