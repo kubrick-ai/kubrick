@@ -139,7 +139,8 @@ function SidebarProvider({
             } as React.CSSProperties
           }
           className={cn(
-            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar grid grid-cols-[auto_1fr] min-h-svh w-full",
+            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar grid min-h-svh w-full",
+            "grid-cols-1 md:grid-cols-[auto_1fr]",
             className,
           )}
           {...props}

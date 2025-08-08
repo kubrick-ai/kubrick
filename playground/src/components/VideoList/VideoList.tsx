@@ -12,6 +12,8 @@ interface VideoListProps {
   totalVideos: number;
   perPage: number;
   onPageChange: (page: number) => void;
+  gridContainerRef?: React.RefObject<HTMLDivElement | null>;
+  sampleThumbnailRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 const VideoList = ({
@@ -20,33 +22,44 @@ const VideoList = ({
   totalVideos,
   perPage,
   onPageChange,
+  gridContainerRef,
+  sampleThumbnailRef,
 }: VideoListProps) => {
   const totalPages = Math.ceil(totalVideos / perPage);
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
-        {videos.map((video) => (
-          <VideoThumbnail key={video.id} video={video}>
-            <div className="space-y-2 text-sm">
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="secondary" className="text-xs">
-                  {video.duration}s
-                </Badge>
-                {video.width && video.height && (
-                  <Badge variant="outline" className="text-xs">
-                    {video.width}×{video.height}
+      <div
+        ref={gridContainerRef}
+        className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 items-start"
+      >
+        {videos.map((video, index) => (
+          <div
+            key={video.id}
+            ref={index === 0 ? sampleThumbnailRef : undefined}
+            className="h-full"
+          >
+            <VideoThumbnail video={video}>
+              <div className="space-y-2 text-sm">
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant="secondary" className="text-xs">
+                    {video.duration}s
                   </Badge>
-                )}
-              </div>
+                  {video.width && video.height && (
+                    <Badge variant="outline" className="text-xs">
+                      {video.width}×{video.height}
+                    </Badge>
+                  )}
+                </div>
 
-              <Separator />
+                <Separator />
 
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>Upload date: {video.created_at.split("T")[0]}</div>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>Upload date: {video.created_at.split("T")[0]}</div>
+                </div>
               </div>
-            </div>
-          </VideoThumbnail>
+            </VideoThumbnail>
+          </div>
         ))}
       </div>
       {Array.from({ length: perPage - videos.length }).map((_, i) => (
