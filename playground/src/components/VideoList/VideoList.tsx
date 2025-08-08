@@ -12,8 +12,8 @@ interface VideoListProps {
   totalVideos: number;
   perPage: number;
   onPageChange: (page: number) => void;
-  gridContainerRef?: React.RefObject<HTMLDivElement | null>;
-  sampleThumbnailRef?: React.RefObject<HTMLDivElement | null>;
+  gridContainerRef?: (node: HTMLDivElement | null) => void;
+  sampleThumbnailRef?: (node: HTMLDivElement | null) => void;
 }
 
 const VideoList = ({

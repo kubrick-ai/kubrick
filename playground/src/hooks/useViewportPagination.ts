@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const DEFAULT_PAGE_SIZE = 10;
-const PAGINATION_CONTROLS_HEIGHT = 100;
+const DEFAULT_PAGE_SIZE = 4;
+const PAGINATION_CONTROLS_HEIGHT = 70;
 const DEFAULT_GAP = 16;
 const MIN_VISIBLE_ROWS = 1;
 
@@ -46,30 +46,77 @@ export const useViewportPagination = () => {
     }
   }, []);
 
+  const gridContainerCallbackRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        gridContainerRef.current = node;
+        // Trigger calculation when grid container is mounted
+        setTimeout(() => {
+          const newPageSize = calculatePageSize();
+          setPageSize(newPageSize);
+        }, 0);
+      }
+    },
+    [calculatePageSize],
+  );
+
+  const sampleThumbnailCallbackRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        sampleThumbnailRef.current = node;
+        // Trigger calculation when thumbnail is mounted and has dimensions
+        setTimeout(() => {
+          if (gridContainerRef.current) {
+            const newPageSize = calculatePageSize();
+            setPageSize(newPageSize);
+          }
+        }, 0);
+      }
+    },
+    [calculatePageSize],
+  );
+
   useEffect(() => {
     const updatePageSize = () => {
       const newPageSize = calculatePageSize();
       setPageSize(newPageSize);
     };
 
-    if (document.readyState === "complete") {
+    const resizeObserver = new ResizeObserver(() => {
       updatePageSize();
-    } else {
-      window.addEventListener("load", updatePageSize);
+    });
+
+    if (gridContainerRef.current) {
+      resizeObserver.observe(gridContainerRef.current);
+      updatePageSize();
+    }
+
+    if (sampleThumbnailRef.current) {
+      resizeObserver.observe(sampleThumbnailRef.current);
+      if (gridContainerRef.current) {
+        updatePageSize();
+      }
     }
 
     window.addEventListener("resize", updatePageSize);
 
     return () => {
-      window.removeEventListener("load", updatePageSize);
+      resizeObserver.disconnect();
       window.removeEventListener("resize", updatePageSize);
     };
   }, [calculatePageSize]);
 
+  useEffect(() => {
+    if (gridContainerRef.current && sampleThumbnailRef.current) {
+      const newPageSize = calculatePageSize();
+      setPageSize(newPageSize);
+    }
+  }, [calculatePageSize]);
+
   return {
     pageSize,
-    gridContainerRef,
-    sampleThumbnailRef,
+    gridContainerRef: gridContainerCallbackRef,
+    sampleThumbnailRef: sampleThumbnailCallbackRef,
     calculatePageSize,
   };
 };
