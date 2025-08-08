@@ -16,7 +16,7 @@ const Search = () => {
   const { data: results, isLoading, error } = useSearchVideos(searchParams);
 
   return (
-    <div className="p-6 flex flex-col grow">
+    <div className="px-6 py-1 flex flex-col grow">
       <h1 className="grow-0 text-2xl font-bold mb-6">Playground - Search</h1>
       <SearchForm
         setSearchParams={setSearchParams}
@@ -28,8 +28,8 @@ const Search = () => {
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
       {results && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4 pt-5">
+        <div className="h-full">
+          <h2 className="text-xl font-semibold mb-4">
             Results ({results.length})
           </h2>
           <SearchResultList results={results} />

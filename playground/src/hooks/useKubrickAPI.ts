@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   SearchParams,
   SearchResultSchema,
@@ -161,13 +161,14 @@ export const fetchVideos = async (
 };
 
 // React Query hook for videos
-export const useGetAndPrefetchVideos = (page: number, limit: number) => {
+export const useGetAndPrefetchVideos = (page: number, limit: number, options?: { enabled?: boolean }) => {
   const queryClient = useQueryClient();
 
   const query = useQuery<VideosResponse, DetailedError>({
     queryKey: ["data", page, limit],
     queryFn: () => fetchVideos(page, limit),
     placeholderData: (prev) => prev,
+    enabled: options?.enabled ?? true,
   });
 
   useEffect(() => {

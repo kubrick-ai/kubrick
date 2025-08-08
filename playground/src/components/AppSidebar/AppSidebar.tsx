@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Settings2, SquareTerminal } from "lucide-react";
+import { BookOpen, SquareTerminal } from "lucide-react";
 import AppSidebarMain from "@/components/AppSidebarMain";
 import AppSidebarHeader from "@/components/AppSidebarHeader";
 import {

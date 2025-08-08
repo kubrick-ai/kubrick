@@ -4,40 +4,50 @@ import { SearchResult } from "@/types";
 import VideoThumbnail from "@/components/VideoThumbnail";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useViewportPagination, DEFAULT_PAGE_SIZE } from "@/hooks/useViewportPagination";
 
 interface SearchResultListProps {
   results: Array<SearchResult>;
 }
 
-const THUMBNAILS_PER_PAGE = 8;
-
 const SearchResultList = ({ results }: SearchResultListProps) => {
   const [page, setPage] = useState(0);
-  const maxPage = Math.ceil(results.length / THUMBNAILS_PER_PAGE) - 1;
+  const { pageSize, gridContainerRef, sampleThumbnailRef } =
+    useViewportPagination();
+  const effectivePageSize = pageSize ?? DEFAULT_PAGE_SIZE;
+  const maxPage = Math.ceil(results.length / effectivePageSize) - 1;
 
   // Calculate start/end indices for current page
-  const startIdx = page * THUMBNAILS_PER_PAGE;
-  const endIdx = startIdx + THUMBNAILS_PER_PAGE;
+  const startIdx = page * effectivePageSize;
+  const endIdx = startIdx + effectivePageSize;
 
   // Slice videos for current page
   const currentResults = results.slice(startIdx, endIdx);
 
   return (
     <>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 ">
-        {currentResults.map((result) => (
-          <VideoThumbnail
+      <div
+        ref={gridContainerRef}
+        className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4"
+      >
+        {currentResults.map((result, index) => (
+          <div
             key={result.id}
-            video={result.video}
-            startTime={result.start_time ?? 0}
-            enableChapters={true}
+            ref={index === 0 ? sampleThumbnailRef : undefined}
+            className="h-full"
           >
-            {result.modality && <p>Modality: {result.modality}</p>}
-            {result.scope && <p>Scope: {result.scope}</p>}
-            {result.similarity && (
-              <p>Similarity: {result.similarity.toFixed(5)}</p>
-            )}
-          </VideoThumbnail>
+            <VideoThumbnail
+              video={result.video}
+              startTime={result.start_time ?? 0}
+              enableChapters={true}
+            >
+              {result.modality && <p>Modality: {result.modality}</p>}
+              {result.scope && <p>Scope: {result.scope}</p>}
+              {result.similarity && (
+                <p>Similarity: {result.similarity.toFixed(5)}</p>
+              )}
+            </VideoThumbnail>
+          </div>
         ))}
       </div>
 

@@ -12,13 +12,13 @@ const Tasks = () => {
   const [page, setPage] = useState(1);
   const { data, isLoading, error } = useGetAndPrefetchTasks(
     page - 1,
-    PAGE_LIMIT
+    PAGE_LIMIT,
   );
   const tasks = data?.data ?? [];
   const total = data?.metadata?.total ?? 0;
 
   return (
-    <div className="p-6 flex flex-col grow">
+    <div className="px-6 py-1 flex flex-col grow">
       <h1 className="text-2xl font-bold mb-6">Playground - Embedding Tasks</h1>
       {isLoading && <LoadingOverlay isVisible={true} />}
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}

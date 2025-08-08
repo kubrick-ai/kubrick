@@ -104,8 +104,8 @@ const VideoThumbnail = ({
   }, [startTime]);
 
   return (
-    <Card className="w-full relative overflow-hidden rounded-xl shadow-sm pt-0">
-      <CardContent className="p-0">
+    <Card className="w-full relative overflow-hidden rounded-xl shadow-sm pt-0 flex flex-col h-full">
+      <CardContent className="p-0 flex-shrink-0">
         <div className="relative w-full aspect-video">
           <MediaPlayer.Root
             autoHide={false}
@@ -146,19 +146,19 @@ const VideoThumbnail = ({
         </div>
       </CardContent>
 
-      <CardFooter className="flex-col items-start gap-2 px-4">
+      <CardFooter className="flex-col items-start gap-2 px-4 flex-grow min-h-0">
         {video.url ? (
           <a href={video.url} target="_blank" rel="noopener">
-            <CardTitle className="hover:underline cursor-pointer">
+            <CardTitle className="hover:underline cursor-pointer line-clamp-2">
               {video.filename}
             </CardTitle>
           </a>
         ) : (
-          <CardTitle className="text-muted-foreground">
+          <CardTitle className="text-muted-foreground line-clamp-2">
             {video.filename}
           </CardTitle>
         )}
-        <CardDescription>{children}</CardDescription>
+        <CardDescription className="flex-grow overflow-hidden">{children}</CardDescription>
       </CardFooter>
     </Card>
   );
