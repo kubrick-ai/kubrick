@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 
-const DEFAULT_PAGE_SIZE = 4;
+export const DEFAULT_PAGE_SIZE = 4;
 const PAGINATION_CONTROLS_HEIGHT = 70;
 const DEFAULT_GAP = 16;
 const MIN_VISIBLE_ROWS = 1;
 
 export const useViewportPagination = () => {
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState<number | null>(null);
   const [gridContainer, setGridContainer] = useState<HTMLDivElement | null>(
     null,
   );

@@ -161,13 +161,14 @@ export const fetchVideos = async (
 };
 
 // React Query hook for videos
-export const useGetAndPrefetchVideos = (page: number, limit: number) => {
+export const useGetAndPrefetchVideos = (page: number, limit: number, options?: { enabled?: boolean }) => {
   const queryClient = useQueryClient();
 
   const query = useQuery<VideosResponse, DetailedError>({
     queryKey: ["data", page, limit],
     queryFn: () => fetchVideos(page, limit),
     placeholderData: (prev) => prev,
+    enabled: options?.enabled ?? true,
   });
 
   useEffect(() => {

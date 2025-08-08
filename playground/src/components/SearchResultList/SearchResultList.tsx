@@ -4,7 +4,7 @@ import { SearchResult } from "@/types";
 import VideoThumbnail from "@/components/VideoThumbnail";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useViewportPagination } from "@/hooks/useViewportPagination";
+import { useViewportPagination, DEFAULT_PAGE_SIZE } from "@/hooks/useViewportPagination";
 
 interface SearchResultListProps {
   results: Array<SearchResult>;
@@ -14,11 +14,12 @@ const SearchResultList = ({ results }: SearchResultListProps) => {
   const [page, setPage] = useState(0);
   const { pageSize, gridContainerRef, sampleThumbnailRef } =
     useViewportPagination();
-  const maxPage = Math.ceil(results.length / pageSize) - 1;
+  const effectivePageSize = pageSize ?? DEFAULT_PAGE_SIZE;
+  const maxPage = Math.ceil(results.length / effectivePageSize) - 1;
 
   // Calculate start/end indices for current page
-  const startIdx = page * pageSize;
-  const endIdx = startIdx + pageSize;
+  const startIdx = page * effectivePageSize;
+  const endIdx = startIdx + effectivePageSize;
 
   // Slice videos for current page
   const currentResults = results.slice(startIdx, endIdx);

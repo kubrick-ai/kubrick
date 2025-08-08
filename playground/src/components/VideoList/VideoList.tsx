@@ -33,6 +33,14 @@ const VideoList = ({
         ref={gridContainerRef}
         className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 items-start"
       >
+        {/* Hidden dummy element for measuring dimensions */}
+        {videos.length === 0 && (
+          <div
+            ref={sampleThumbnailRef}
+            className="h-full opacity-0 pointer-events-none"
+            style={{ minHeight: "260px" }} // Approximate thumbnail height
+          />
+        )}
         {videos.map((video, index) => (
           <div
             key={video.id}
@@ -55,7 +63,10 @@ const VideoList = ({
                 <Separator />
 
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <div>Upload date: {new Date(video.created_at).toLocaleDateString()}</div>
+                  <div>
+                    Upload date:{" "}
+                    {new Date(video.created_at).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
             </VideoThumbnail>
