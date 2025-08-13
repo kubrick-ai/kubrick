@@ -72,7 +72,7 @@ const VideoUploadsForm = () => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="w-full max-w-md"
+          className="relative w-full max-w-md"
         >
           <FormField
             control={form.control}
@@ -140,14 +140,18 @@ const VideoUploadsForm = () => {
           >
             Submit
           </Button>
+
+          {isSending && (
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-sm">
+              <div className="flex items-center gap-3 bg-white p-4 rounded-lg shadow-lg border">
+                <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
+                <p className="font-medium">Uploading...</p>
+              </div>
+            </div>
+          )}
         </form>
       </Form>
-      {true && (
-        <div className="flex items-center gap-2 pt-2">
-          <LoaderCircle className="h-4 w-4 animate-spin" />
-          <p>Uploading...</p>
-        </div>
-      )}
+
       {uploadError && (
         <div className="mt-4">
           <ErrorDisplay error={uploadError} />
