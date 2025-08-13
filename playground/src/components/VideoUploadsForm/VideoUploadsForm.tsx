@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CloudUpload, X } from "lucide-react";
+import { CloudUpload, X, LoaderCircle } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -53,7 +53,7 @@ const VideoUploadsForm = () => {
 
       try {
         await Promise.all(
-          data.files.map((file) => uploadVideo(file, file.name))
+          data.files.map((file) => uploadVideo(file, file.name)),
         );
         form.reset({ files: [] });
       } catch (error) {
@@ -64,7 +64,7 @@ const VideoUploadsForm = () => {
         setIsSending(false); // always stop sending, even if there was an error
       }
     },
-    [form]
+    [form],
   );
 
   return (
@@ -142,9 +142,10 @@ const VideoUploadsForm = () => {
           </Button>
         </form>
       </Form>
-      {isSending && (
-        <div className="pt-2">
-          <p>Please don&apos;t leave this page! Uploading your video(s)...</p>
+      {true && (
+        <div className="flex items-center gap-2 pt-2">
+          <LoaderCircle className="h-4 w-4 animate-spin" />
+          <p>Uploading...</p>
         </div>
       )}
       {uploadError && (
