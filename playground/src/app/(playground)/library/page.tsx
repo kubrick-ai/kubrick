@@ -29,6 +29,10 @@ const Library = () => {
       {(isLoading || pageSize === null) && <LoadingOverlay isVisible={true} />}
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
+      {!isLoading && videos.length === 0 && !error && pageSize !== null && (
+        <p>No videos found.</p>
+      )}
+
       <VideoList
         videos={videos}
         page={page}
@@ -38,9 +42,6 @@ const Library = () => {
         gridContainerRef={gridContainerRef}
         sampleThumbnailRef={sampleThumbnailRef}
       />
-      {!isLoading && videos.length === 0 && !error && pageSize !== null && (
-        <p>No videos found.</p>
-      )}
     </div>
   );
 };
