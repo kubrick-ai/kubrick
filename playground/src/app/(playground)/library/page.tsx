@@ -29,17 +29,15 @@ const Library = () => {
       {(isLoading || pageSize === null) && <LoadingOverlay isVisible={true} />}
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
-      {!isLoading && !!videos.length && !error && (
-        <VideoList
-          videos={videos}
-          page={page}
-          totalVideos={total}
-          perPage={pageSize ?? DEFAULT_PAGE_SIZE}
-          onPageChange={setPage}
-          gridContainerRef={gridContainerRef}
-          sampleThumbnailRef={sampleThumbnailRef}
-        />
-      )}
+      <VideoList
+        videos={videos}
+        page={page}
+        totalVideos={total}
+        perPage={pageSize ?? DEFAULT_PAGE_SIZE}
+        onPageChange={setPage}
+        gridContainerRef={gridContainerRef}
+        sampleThumbnailRef={sampleThumbnailRef}
+      />
       {!isLoading && videos.length === 0 && !error && pageSize !== null && (
         <p>No videos found.</p>
       )}
