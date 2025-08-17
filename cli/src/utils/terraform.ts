@@ -259,8 +259,7 @@ export const destroyTerraform = async (
     const excludeSecret = handleCancel(
       await p.confirm({
         message: `Exclude existing AWS secret from the destroy operation?
-    This is useful if you are planning to redeploy with the same secret.
-    You will have to choose the import existing secret option on your next deploy.`,
+    This is useful if you are planning to redeploy with the same secret.`,
         initialValue: true,
       }),
     );
