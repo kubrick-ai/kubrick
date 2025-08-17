@@ -73,7 +73,7 @@ const VideoList = ({
           </div>
         ))}
       </div>
-      {/* Pagination controls */}
+
       <div className="mt-6 flex justify-center items-center gap-4">
         <Button
           className="cursor-pointer"

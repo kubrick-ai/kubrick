@@ -5,7 +5,10 @@ import VideoList from "@/components/VideoList";
 import { useGetAndPrefetchVideos } from "@/hooks/useKubrickAPI";
 import { useState } from "react";
 import LoadingOverlay from "@/components/LoadingOverlay";
-import { useViewportPagination, DEFAULT_PAGE_SIZE } from "@/hooks/useViewportPagination";
+import {
+  useViewportPagination,
+  DEFAULT_PAGE_SIZE,
+} from "@/hooks/useViewportPagination";
 
 const Library = () => {
   const [page, setPage] = useState(1);
@@ -14,7 +17,7 @@ const Library = () => {
   const { data, isLoading, error } = useGetAndPrefetchVideos(
     page - 1,
     pageSize ?? DEFAULT_PAGE_SIZE,
-    { enabled: pageSize !== null }
+    { enabled: pageSize !== null },
   );
   const videos = data?.data ?? [];
   const total = data?.metadata?.total ?? 0;
@@ -26,16 +29,18 @@ const Library = () => {
       {(isLoading || pageSize === null) && <LoadingOverlay isVisible={true} />}
       {error && <ErrorDisplay error={error} className="mb-4 mt-4 max-w-md" />}
 
-      <VideoList
-        videos={videos}
-        page={page}
-        totalVideos={total}
-        perPage={pageSize ?? DEFAULT_PAGE_SIZE}
-        onPageChange={setPage}
-        gridContainerRef={gridContainerRef}
-        sampleThumbnailRef={sampleThumbnailRef}
-      />
-      {!isLoading && videos.length === 0 && pageSize !== null && (
+      {!isLoading && !!videos.length && !error && (
+        <VideoList
+          videos={videos}
+          page={page}
+          totalVideos={total}
+          perPage={pageSize ?? DEFAULT_PAGE_SIZE}
+          onPageChange={setPage}
+          gridContainerRef={gridContainerRef}
+          sampleThumbnailRef={sampleThumbnailRef}
+        />
+      )}
+      {!isLoading && videos.length === 0 && !error && pageSize !== null && (
         <p>No videos found.</p>
       )}
     </div>

@@ -137,7 +137,9 @@ export const generateVideoUploadLink = async (
       params: { filename },
     });
 
-    const parsedVideoUploadLink = VideoUploadResponseSchema.parse(response.data);
+    const parsedVideoUploadLink = VideoUploadResponseSchema.parse(
+      response.data,
+    );
     return parsedVideoUploadLink;
   } catch (error) {
     throw createDetailedError(error);
@@ -161,7 +163,11 @@ export const fetchVideos = async (
 };
 
 // React Query hook for videos
-export const useGetAndPrefetchVideos = (page: number, limit: number, options?: { enabled?: boolean }) => {
+export const useGetAndPrefetchVideos = (
+  page: number,
+  limit: number,
+  options?: { enabled?: boolean },
+) => {
   const queryClient = useQueryClient();
 
   const query = useQuery<VideosResponse, DetailedError>({
@@ -204,10 +210,7 @@ export const fetchTasks = async (
 };
 
 // React Query hook for tasks
-export const useGetAndPrefetchTasks = (
-  page: number,
-  limit: number
-) => {
+export const useGetAndPrefetchTasks = (page: number, limit: number) => {
   const queryClient = useQueryClient();
 
   const query = useQuery<TasksResponse, DetailedError>({
