@@ -73,30 +73,32 @@ const VideoList = ({
           </div>
         ))}
       </div>
-      {/* Pagination controls */}
-      <div className="mt-6 flex justify-center items-center gap-4">
-        <Button
-          className="cursor-pointer"
-          variant="outline"
-          disabled={page <= 1}
-          onClick={() => onPageChange(Math.max(1, page - 1))}
-        >
-          Previous
-        </Button>
 
-        <span>
-          Page {page} of {totalPages}
-        </span>
+      {!!videos.length && (
+        <div className="mt-6 flex justify-center items-center gap-4">
+          <Button
+            className="cursor-pointer"
+            variant="outline"
+            disabled={page <= 1}
+            onClick={() => onPageChange(Math.max(1, page - 1))}
+          >
+            Previous
+          </Button>
 
-        <Button
-          className="cursor-pointer"
-          variant="outline"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-        >
-          Next
-        </Button>
-      </div>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+
+          <Button
+            className="cursor-pointer"
+            variant="outline"
+            disabled={page >= totalPages}
+            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
