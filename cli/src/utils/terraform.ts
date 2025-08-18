@@ -200,6 +200,7 @@ export const deployTerraform = async (
     planOutput.match(/(\d+) to add, (\d+) to change, (\d+) to destroy/) ?? [];
 
   const toAdd = parseInt(match[1] ?? "0", 10);
+  const total = (await getTerraformStateList(terraformDir)).length + toAdd;
 
   let isUpdating = false;
   const id = setInterval(async () => {
@@ -208,9 +209,7 @@ export const deployTerraform = async (
 
     try {
       const state = await getTerraformStateList(terraformDir);
-      s.message(
-        `${deployMessage} | deploying: ${state.length} / ${state.length + toAdd}`,
-      );
+      s.message(`${deployMessage} | deploying: ${state.length} / ${total}`);
     } catch (error) {
       // Handle error silently or log
     } finally {
@@ -259,8 +258,7 @@ export const destroyTerraform = async (
     const excludeSecret = handleCancel(
       await p.confirm({
         message: `Exclude existing AWS secret from the destroy operation?
-    This is useful if you are planning to redeploy with the same secret.
-    You will have to choose the import existing secret option on your next deploy.`,
+    This is useful if you are planning to redeploy with the same secret.`,
         initialValue: true,
       }),
     );
