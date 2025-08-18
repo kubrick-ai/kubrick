@@ -15,7 +15,6 @@ const data = {
   navMain: [
     {
       title: "Playground",
-      url: "#",
       icon: SquareTerminal,
       isActive: true,
       items: [
@@ -39,24 +38,15 @@ const data = {
     },
     {
       title: "Documentation",
-      url: "#",
       icon: BookOpen,
       items: [
         {
-          title: "Introduction",
-          url: "#",
-        },
-        {
           title: "Get Started",
-          url: "#",
+          url: "http://kubrick-ai.com/guides/quick-start",
         },
         {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
+          title: "API Reference",
+          url: "http://kubrick-ai.com/api",
         },
       ],
     },
