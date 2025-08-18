@@ -19,7 +19,6 @@ import {
 
 interface ItemsProp {
   title: string;
-  url: string;
   icon?: LucideIcon;
   isActive?: boolean;
   items?: {
@@ -57,7 +56,12 @@ const AppSidebarMain = ({ items }: AppSideBarMainProps) => {
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
+                        <a
+                          href={subItem.url}
+                          target={
+                            subItem.url.startsWith("http") ? "_blank" : "_self"
+                          }
+                        >
                           <span>{subItem.title}</span>
                         </a>
                       </SidebarMenuSubButton>
