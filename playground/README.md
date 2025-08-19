@@ -1,49 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with
-[`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Kubrick Playground
 
-## Getting Started
+Kubrick Playground is a UI that allows you to interact with the Kubrick API. It serves as a test bed to validate your deployment or as an example for API integration. 
 
-First, run the development server:
+The Kubrick Playground provides an intuitive interface for:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Semantic Video Search**: Find videos using natural language queries or media-based searches
+- **Video Library Management**: Browse your video collection
+- **Video Embedding**: Upload and index new videos to make them searchable
+- **Multimodal Queries**: Search across visual, textual, and audio content within videos
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the
-result.
+### Features
 
-You can start editing the page by modifying `app/page.tsx`. The page
-auto-updates as you edit the file.
+### Search
 
-This project uses
-[`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts)
-to automatically optimize and load [Geist](https://vercel.com/font), a new font
-family for Vercel.
+- **Text-based search**: Find videos using natural language descriptions
+- **Media-based search**: Upload images, videos, or audio files to find similar content
+- **Similarity thresholds**: Fine-tune search precision with configurable similarity scores
+- **Multi-modal filtering**: Search across visual-text and audio modalities
+- **Scope control**: Search at clip-level or full video level
 
-## Learn More
+### Video Library
 
-To learn more about Next.js, take a look at the following resources:
+- Browse video collection
+- View video metadata (duration, creation date)
+- Thumbnail previews with video player integration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Video Embedding
 
-You can check out
-[the Next.js GitHub repository](https://github.com/vercel/next.js) - your
-feedback and contributions are welcome!
+- Upload videos for indexing
+- Progress tracking via the Tasks page
 
-## Deploy on Vercel
+## Installation
 
-The easiest way to deploy your Next.js app is to use the
-[Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme)
-from the creators of Next.js.
+A Playground is automatically generated and accessible via CloudFront URL when deploying Kubrick with the CLI tool. However if you would like to install and run the Playground locally, follow the guidance below. 
 
-Check out our
-[Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying)
-for more details.
+### Prerequisites
+
+- Node.js 18+
+- npm, yarn, pnpm, or bun
+- Access to a deployed Kubrick API
+
+### Setup
+
+1. **Clone the repository**
+    
+    ```bash
+    git clone https://github.com/kubrick-ai/playground.git
+    cd playground
+    
+    ```
+    
+2. **Install dependencies**
+    
+    ```bash
+    npm install
+    # or
+    yarn install
+    # or
+    pnpm install
+    
+    ```
+    
+3. **Configure environment**
+    - Create a `.env` in the playground root directory
+    - Add the following to the `.env` file
+    
+    ```bash
+    NEXT_PUBLIC_API_BASE=<your deployed Kubrick API>
+    ```
+    
+4. **Start development server**
+    
+    ```bash
+    next dev
+    ```
+    
+5. **Open the application** Navigate to [http://localhost:3000](http://localhost:3000/)
+
+##
