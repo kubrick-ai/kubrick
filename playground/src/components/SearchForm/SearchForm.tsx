@@ -78,6 +78,10 @@ const SearchForm = ({
   useEffect(() => {
     if (queryType !== "text") {
       form.setValue("query_media_file", undefined);
+
+      if (mediaFileInputRef.current) {
+        mediaFileInputRef.current.value = "";
+      }
       if (queryType !== "video") {
         form.setValue("query_modality", ["visual-text"]);
       }
