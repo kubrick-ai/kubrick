@@ -85,12 +85,6 @@ Your AWS user/role needs the following permissions to deploy Kubrick:
    git clone https://github.com/kubrick-ai/kubrick.git
    ```
 
-1. **Build Lambda Packages:**
-
-   ```bash
-   ./build-all-packages.sh
-   ```
-
 ## CLI Tool
 
 Kubrick includes a command-line interface tool that simplifies deployment and
