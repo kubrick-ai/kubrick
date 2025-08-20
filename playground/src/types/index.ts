@@ -4,7 +4,8 @@ const MIN_FILES = 1;
 const MAX_FILES = 5;
 const MB = 1024 ** 2;
 const GB = 1024 ** 3;
-const MEDIA_SEARCH_MAX_SIZE = 6 * MB; // 6MB
+const MEDIA_SEARCH_MAX_SIZE = 6 * MB; // 6 MB
+const VIDEO_SEARCH_MAX_SIZE = 1 * MB; // 1 MB
 const VIDEO_UPLOAD_MAX_SIZE = 2 * GB;
 
 export const MediaTypeSchema = z.enum(["image", "video", "audio", "text"]);
@@ -58,31 +59,45 @@ export const SearchResultSchema = z.object({
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 // The shape of the data collected from the SearchForm form component
-export const SearchFormDataSchema = z.object({
-  query_text: z
-    .string()
-    .max(250, "Query text is too long (max 250 chars)")
-    .optional(),
-  query_type: MediaTypeSchema,
-  query_media_url: z.url().optional(),
-  query_media_file: z
-    .custom<File>((val) => val instanceof File, {
-      message: "Please upload a valid file",
-    })
-    .optional()
-    .refine((file) => !file || file.size <= MEDIA_SEARCH_MAX_SIZE, {
-      message: `File size must be less than ${MEDIA_SEARCH_MAX_SIZE / MB}MB`,
-      path: ["query_media_file"],
-    }),
-  query_modality: EmbeddingModalitySchema.array().optional(),
-  search_scope: z.union([EmbeddingScopeSchema, z.literal("all")]).optional(),
-  search_modality: z
-    .union([EmbeddingModalitySchema, z.literal("all")])
-    .optional(),
-  min_similarity: z.number().min(0).max(1).optional(),
-  page_limit: z.int().min(0),
-  filter: z.string().optional(),
-});
+export const SearchFormDataSchema = z
+  .object({
+    query_text: z
+      .string()
+      .max(250, "Query text is too long (max 250 chars)")
+      .optional(),
+    query_type: MediaTypeSchema,
+    query_media_url: z.url().optional(),
+    query_media_file: z
+      .custom<File>((val) => val instanceof File, {
+        message: "Please upload a valid file",
+      })
+      .optional()
+      .refine((file) => !file || file.size <= MEDIA_SEARCH_MAX_SIZE, {
+        message: `File size must be less than ${MEDIA_SEARCH_MAX_SIZE / MB}MB`,
+        path: ["query_media_file"],
+      }),
+
+    query_modality: EmbeddingModalitySchema.array().optional(),
+    search_scope: z.union([EmbeddingScopeSchema, z.literal("all")]).optional(),
+    search_modality: z
+      .union([EmbeddingModalitySchema, z.literal("all")])
+      .optional(),
+    min_similarity: z.number().min(0).max(1).optional(),
+    page_limit: z.int().min(0),
+    filter: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.query_type === "video" &&
+      data.query_media_file &&
+      data.query_media_file.size > VIDEO_SEARCH_MAX_SIZE
+    ) {
+      ctx.addIssue({
+        message: `File size must be less than ${VIDEO_SEARCH_MAX_SIZE / MB}MB. Use a URL for longer videos.`,
+        path: ["query_media_file"],
+      });
+    }
+  });
 
 export type SearchFormData = z.infer<typeof SearchFormDataSchema>;
 
