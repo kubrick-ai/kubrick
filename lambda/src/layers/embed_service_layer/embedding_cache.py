@@ -6,6 +6,8 @@ from logging import getLogger
 import boto3
 from botocore.exceptions import ClientError
 
+DYNAMODB_SIZE_LIMIT = 350 * 1024  # B
+
 
 class EmbeddingCache:
     def __init__(self, table_name: str, ttl_days: int = 30, logger=getLogger()):
@@ -155,6 +157,14 @@ class EmbeddingCache:
             True if stored successfully, False otherwise
         """
         try:
+            serialized_embedding = json.dumps(video_embedding)
+
+            if (len(serialized_embedding.encode("utf-8"))) > DYNAMODB_SIZE_LIMIT:
+                self.logger.error(
+                    "Could not store in DynamoDB cache: embedding too large"
+                )
+                return False
+
             content_hash = self._generate_content_hash(content_data)
             embedding_config = self._generate_embedding_config(
                 model_name, clip_length, embedding_scope
@@ -165,7 +175,7 @@ class EmbeddingCache:
                 "content_hash": content_hash,
                 "embedding_config": embedding_config,
                 "task_id": task_id,
-                "video_embedding": json.dumps(video_embedding),
+                "video_embedding": serialized_embedding,
                 "created_at": current_time,
                 "expires_at": self._calculate_expires_at(),
                 "last_accessed": current_time,
